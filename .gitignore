@@ -1,0 +1,8 @@
+# Rust build artifacts
+**/target/
+
+# Cargo and rustup temp files
+**/*.rs.bk
+
+# Local environment noise
+.DS_Store

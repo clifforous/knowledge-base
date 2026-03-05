@@ -1,0 +1,4 @@
+version: 1
+display_name: Next-Day Summary
+short_description: Builds a next-day summary and task draft from Obsidian daily notes.
+default_prompt: Generate my next-day summary and tasks for DATE using this repository's journal notes.
