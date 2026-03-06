@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "AGENTS.md",
+                "file": "10_Research/midnight/2026-03-05-midnight-wallet-integration-research.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "AGENTS"
+              "title": "2026-03-05-midnight-wallet-integration-research"
             }
           }
         ]
@@ -185,6 +185,7 @@
   },
   "active": "2dcff0da194cb6f9",
   "lastOpenFiles": [
+    "AGENTS.md",
     "90_Templates/research-note-template.md",
     "90_Templates/design-note-template.md",
     "90_Templates/daily-note-template.md",
