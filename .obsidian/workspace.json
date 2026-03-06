@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "0b81a1155c3bfb13",
+        "id": "5dba464d02c8f504",
         "type": "tabs",
         "children": [
           {
-            "id": "2dcff0da194cb6f9",
+            "id": "8ee2e4e82805c56f",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "10_Research/midnight/2026-03-05-midnight-wallet-integration-research.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "2026-03-05-midnight-wallet-integration-research"
+              "title": "New tab"
             }
           }
         ]
@@ -183,13 +179,18 @@
       "bases:Create new base": false
     }
   },
-  "active": "2dcff0da194cb6f9",
+  "active": "8ee2e4e82805c56f",
   "lastOpenFiles": [
+    "10_Research/midnight/2026-03-05-midnight-wallet-integration-research.md",
+    "40_Work_Tracking/Daily/2026-03-06.md",
+    "40_Work_Tracking/Daily/2026-03-05.md",
+    "30_Designs/ascent-rivals-walletless-player-accounting-future-work.md",
+    "30_Designs/Proposed Future Work.md",
+    "40_Work_Tracking/Daily/2026-03-03.md",
     "AGENTS.md",
     "90_Templates/research-note-template.md",
     "90_Templates/design-note-template.md",
     "90_Templates/daily-note-template.md",
-    "40_Work_Tracking/Daily/2026-03-04.md",
-    "40_Work_Tracking/Daily/2026-03-03.md"
+    "40_Work_Tracking/Daily/2026-03-04.md"
   ]
 }
