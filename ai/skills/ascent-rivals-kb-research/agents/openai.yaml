@@ -1,0 +1,4 @@
+version: 1
+display_name: Ascent-Rivals KB Research
+short_description: Grounds Ascent-Rivals requests in local knowledge-base notes before proposing plans or designs.
+default_prompt: Use the Ascent-Rivals knowledge-base notes to answer this request with facts, assumptions, and gaps clearly separated.

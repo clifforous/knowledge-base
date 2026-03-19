@@ -37,6 +37,10 @@ Workflow guidance:
 - Keep changes minimal and verifiable.
 - Prefer Rust for custom tools and skill-backed automation.
 - Validate tooling outputs with concrete commands when possible.
+- Prefer lowercase folder names unless a mixed-case name is intentionally required for Obsidian presentation or a comparable concrete reason.
+- Do not copy conversation-thread-specific notes into generated durable documents.
+- Do not cite `00_Inbox/` files as sources in durable documents; inbox files are transient intake only.
+- When citing source repositories under `/home/cgarvis/projects/genun/`, prefer the canonical GitHub repository reference over a local filesystem path.
 
 ## Repository Structure
 - `00_Inbox/` quick capture and triage
@@ -46,32 +50,17 @@ Workflow guidance:
 - `40_Work_Tracking/Daily/` daily journal notes
 - `40_Work_Tracking/Summaries/` generated next-day summaries
 - `40_Work_Tracking/Tasks/` active and planned task lists
+- `50_Knowledge/` durable domain knowledge derived from research and execution
 - `90_Templates/` reusable note templates
+- `ai/docs/` AI-agent workflow and repository procedure docs
 - `ai/prompts/` reusable AI prompt snippets
 - `ai/skills/` repository-local skills
 - `ai/tools/` Rust tools used by skills
 
-## Daily Workflow
-1. Journal work in `40_Work_Tracking/Daily/YYYY-MM-DD.md`.
-2. Generate next-day summary and task draft from recent daily notes.
-3. Review and edit task priority before execution.
-
-## Next-Day Summary Tool (Rust)
-Preferred command:
-
-```bash
-cargo run --manifest-path ai/tools/next-day-summary/Cargo.toml -- --date YYYY-MM-DD
-```
-
-Optional lookback:
-
-```bash
-cargo run --manifest-path ai/tools/next-day-summary/Cargo.toml -- --date YYYY-MM-DD --lookback-days N
-```
-
-Outputs:
-- `40_Work_Tracking/Summaries/YYYY-MM-DD-summary.md`
-- `40_Work_Tracking/Tasks/YYYY-MM-DD-tasks.md`
+## Additional Agent Context
+- Read `ai/docs/README.md` for AI-agent-specific workflow docs.
+- Use `ai/docs/inbox-processing.md` for ingesting transient inbox notes into durable repository artifacts.
+- Use `ai/docs/work-tracking.md` for daily journal, summary, and task-draft workflow details.
 
 ## External Integrations
 - Notion data may be linked via MCP.

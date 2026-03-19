@@ -6,3 +6,7 @@
 
 # Local environment noise
 .DS_Store
+
+# Transient inbox intake
+00_Inbox/*
+!00_Inbox/.gitkeep
