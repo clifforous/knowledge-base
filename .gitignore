@@ -8,5 +8,5 @@
 .DS_Store
 
 # Transient inbox intake
-00_Inbox/*
-!00_Inbox/.gitkeep
+00_inbox/*
+!00_inbox/.gitkeep

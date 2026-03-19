@@ -217,9 +217,9 @@ fn write_file(path: &Path, content: &str) -> Result<(), String> {
 
 fn run(config: Config) -> Result<(), String> {
     let root = repo_root()?;
-    let daily_dir = root.join("40_Work_Tracking").join("Daily");
-    let summaries_dir = root.join("40_Work_Tracking").join("Summaries");
-    let tasks_dir = root.join("40_Work_Tracking").join("Tasks");
+    let daily_dir = root.join("40_work_tracking").join("daily");
+    let summaries_dir = root.join("40_work_tracking").join("summaries");
+    let tasks_dir = root.join("40_work_tracking").join("tasks");
 
     let mut source_days: Vec<NaiveDate> = Vec::new();
     let mut completed: Vec<String> = Vec::new();
@@ -250,7 +250,7 @@ fn run(config: Config) -> Result<(), String> {
 
     if source_days.is_empty() {
         return Err(
-            "No source daily notes found. Create at least one note in 40_Work_Tracking/Daily/YYYY-MM-DD.md before running.".to_string(),
+            "No source daily notes found. Create at least one note in 40_work_tracking/daily/YYYY-MM-DD.md before running.".to_string(),
         );
     }
 

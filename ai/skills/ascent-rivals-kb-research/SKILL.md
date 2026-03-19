@@ -12,12 +12,12 @@ Use this skill when the user asks for:
 - integration decisions across game client, backend services, and documentation
 
 ## Primary Sources
-- `20_References/Ascent-Rivals/` for source captures and indexing
-- `10_Research/` for synthesized findings
-- `30_Designs/` for architecture and decision docs
-- `40_Work_Tracking/Daily/` only when recent execution state matters
+- `20_references/ascent-rivals/` for source captures and indexing
+- `10_research/` for synthesized findings
+- `30_designs/` for architecture and decision docs
+- `40_work_tracking/daily/` only when recent execution state matters
 
-Start with `20_References/Ascent-Rivals/SOURCE_INDEX.md` when present.
+Start with `20_references/ascent-rivals/SOURCE_INDEX.md` when present.
 
 ## Workflow
 1. Scope the request.
@@ -37,9 +37,9 @@ Start with `20_References/Ascent-Rivals/SOURCE_INDEX.md` when present.
 - Call out risks and unresolved unknowns.
 
 5. Persist artifacts when requested.
-- Analysis and durable knowledge notes -> `50_Knowledge/Ascent-Rivals/`
-- Design decisions -> `30_Designs/Ascent-Rivals/`
-- Raw imported material -> `20_References/Ascent-Rivals/`
+- Analysis and durable knowledge notes -> `50_knowledge/ascent-rivals/`
+- Design decisions -> `30_designs/ascent-rivals/`
+- Raw imported material -> `20_references/ascent-rivals/`
 
 ## Quality Bar
 - Separate facts from assumptions explicitly.

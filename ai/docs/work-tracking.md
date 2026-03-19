@@ -4,7 +4,7 @@
 - Standardize how work is recorded in daily journals, summaries, and task drafts.
 
 ## Daily Workflow
-1. Journal work in `40_Work_Tracking/Daily/YYYY-MM-DD.md`.
+1. Journal work in `40_work_tracking/daily/YYYY-MM-DD.md`.
 2. Generate the next-day summary and task draft from recent daily notes.
 3. Review and edit task priority before execution.
 
@@ -27,8 +27,8 @@ cargo run --manifest-path ai/tools/next-day-summary/Cargo.toml -- --date YYYY-MM
 ```
 
 Outputs:
-- `40_Work_Tracking/Summaries/YYYY-MM-DD-summary.md`
-- `40_Work_Tracking/Tasks/YYYY-MM-DD-tasks.md`
+- `40_work_tracking/summaries/YYYY-MM-DD-summary.md`
+- `40_work_tracking/tasks/YYYY-MM-DD-tasks.md`
 
 ## Validation
 - Review generated summaries and task drafts before treating them as final.

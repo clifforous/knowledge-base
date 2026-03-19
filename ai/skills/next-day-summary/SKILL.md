@@ -11,7 +11,7 @@ Use this skill when the user asks for:
 - a task list draft based on recent daily notes
 
 ## Preconditions
-- Daily notes exist at `40_Work_Tracking/Daily/YYYY-MM-DD.md`.
+- Daily notes exist at `40_work_tracking/daily/YYYY-MM-DD.md`.
 - Notes should contain bullet lists under headings such as:
   - `## Work Completed`
   - `## Decisions`
@@ -33,8 +33,8 @@ cargo run --manifest-path ai/tools/next-day-summary/Cargo.toml -- --date YYYY-MM
 ```
 
 ## Outputs
-- Summary: `40_Work_Tracking/Summaries/YYYY-MM-DD-summary.md`
-- Tasks: `40_Work_Tracking/Tasks/YYYY-MM-DD-tasks.md`
+- Summary: `40_work_tracking/summaries/YYYY-MM-DD-summary.md`
+- Tasks: `40_work_tracking/tasks/YYYY-MM-DD-tasks.md`
 
 ## Review Step
 After generation, review with the user and refine:

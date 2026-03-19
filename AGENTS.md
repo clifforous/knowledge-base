@@ -39,19 +39,19 @@ Workflow guidance:
 - Validate tooling outputs with concrete commands when possible.
 - Prefer lowercase folder names unless a mixed-case name is intentionally required for Obsidian presentation or a comparable concrete reason.
 - Do not copy conversation-thread-specific notes into generated durable documents.
-- Do not cite `00_Inbox/` files as sources in durable documents; inbox files are transient intake only.
-- When citing source repositories under `/home/cgarvis/projects/genun/`, prefer the canonical GitHub repository reference over a local filesystem path.
+- Do not cite `00_inbox/` files as sources in durable documents; inbox files are transient intake only.
+- When citing source repositories from the local genun workspace, prefer the canonical GitHub repository reference over a local filesystem path.
 
 ## Repository Structure
-- `00_Inbox/` quick capture and triage
-- `10_Research/` exploratory analysis and findings
-- `20_References/` durable reference material
-- `30_Designs/` architecture and solution design docs
-- `40_Work_Tracking/Daily/` daily journal notes
-- `40_Work_Tracking/Summaries/` generated next-day summaries
-- `40_Work_Tracking/Tasks/` active and planned task lists
-- `50_Knowledge/` durable domain knowledge derived from research and execution
-- `90_Templates/` reusable note templates
+- `00_inbox/` quick capture and triage
+- `10_research/` exploratory analysis and findings
+- `20_references/` durable reference material
+- `30_designs/` architecture and solution design docs
+- `40_work_tracking/daily/` daily journal notes
+- `40_work_tracking/summaries/` generated next-day summaries
+- `40_work_tracking/tasks/` active and planned task lists
+- `50_knowledge/` durable domain knowledge derived from research and execution
+- `90_templates/` reusable note templates
 - `ai/docs/` AI-agent workflow and repository procedure docs
 - `ai/prompts/` reusable AI prompt snippets
 - `ai/skills/` repository-local skills
