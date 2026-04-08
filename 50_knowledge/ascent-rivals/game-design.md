@@ -2,6 +2,7 @@
 
 ## Related
 - [[overview]]
+- [[hangar]]
 - [[lore]]
 - [[game-client]]
 - [[eventun/overview|eventun]]
@@ -54,8 +55,11 @@ Functions include:
 - viewing ship parts
 - inspecting the current ship configuration
 - making cosmetic changes to ship parts
+- browsing, purchasing, and equipping compatible part cosmetics
 
 The hangar is no longer the place where pre-race gameplay loadout changes are made.
+
+See [[hangar]] for the focused unlock/shop/equip model and current Hangar-specific economy notes.
 
 ### 2. Lobby
 

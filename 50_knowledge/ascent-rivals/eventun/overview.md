@@ -4,6 +4,7 @@
 - [[../overview]]
 - [[api]]
 - [[data-model]]
+- [[gauntlet-stage-runtime-contract]]
 - [[../game-client]]
 - [[../website]]
 - [[../accountun]]
@@ -16,6 +17,7 @@ Eventun is the central competition domain service responsible for operational to
 - Interface behavior and responsibility boundaries: [[api]]
 - Domain entities and relationships: [[data-model]]
 - Event catalog and payload shapes: [[events]]
+- Gauntlet stage runtime rules and DS/client contract: [[gauntlet-stage-runtime-contract]]
 
 ## Boundary
 Eventun governs operational competition state and coordinates with [[../accountun]] for accounting lifecycle transitions associated with [[../midnight]].
