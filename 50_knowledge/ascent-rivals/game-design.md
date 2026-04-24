@@ -5,6 +5,7 @@
 - [[hangar]]
 - [[lore]]
 - [[game-client]]
+- [[competition-runtime-terms]]
 - [[eventun/overview|eventun]]
 
 ## Overview
@@ -33,22 +34,20 @@ The result is something closer to a **combat racing gauntlet game** than a conve
 
 The current game structure has three main level and flow types.
 
-### 1. Headquarters
+### 1. Menu System
 
-The primary hub experience is functionally the **menu system**, but thematically it is framed as the player’s **Headquarters** rather than as the hangar itself.
+The primary hub experience is functionally the **menu system**, which takes place on an interior of the ship in a bay where the ship is stored.
 
 Functions include:
 
-- reading news or event information
+- reading event information
 - checking stats
 - entering matchmaking through a queue action
 - entering custom games or tournament stages when those flows are available
 
 For standard matchmaking, the player queues from this menu layer and then transitions directly to the course once the session is filled on the server.
 
-The hangar is part of Headquarters rather than a primary level in its own right.
-
-Within Headquarters, the **Hangar** is a more specific ship-management space.
+Within main ui, the **Hangar** is a more specific ship-management space.
 
 Functions include:
 
@@ -56,8 +55,6 @@ Functions include:
 - inspecting the current ship configuration
 - making cosmetic changes to ship parts
 - browsing, purchasing, and equipping compatible part cosmetics
-
-The hangar is no longer the place where pre-race gameplay loadout changes are made.
 
 See [[hangar]] for the focused unlock/shop/equip model and current Hangar-specific economy notes.
 
@@ -121,6 +118,22 @@ This is one of the game’s most distinctive designs.
 The game includes **gauntlets**, which are multi-match tournament structures.
 
 A key redesign in the project context is that gauntlets are no longer thought of only as heats on different maps. They are now better understood as broader multi-match tournaments with qualifiers, optional stages, and potentially finals/brackets.
+
+Terminology guardrail:
+
+- A **heat** is a gameplay-runtime unit inside a match.
+- A **qualifier** is a gauntlet/tournament structure that can span multiple sessions and matches.
+- Do not treat qualifiers as heats in UI, API, or design language.
+
+See [[competition-runtime-terms]] for the canonical runtime hierarchy:
+
+```text
+Session
+  Match
+    Heat
+      Lap
+        Checkpoint
+```
 
 Important gauntlet design concepts from current project work include:
 

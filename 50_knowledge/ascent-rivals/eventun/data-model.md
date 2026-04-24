@@ -4,6 +4,7 @@
 - [[../overview]]
 - [[overview]]
 - [[api]]
+- [[../competition-runtime-terms]]
 - [[../game-client]]
 - [[../website]]
 - [[../accountun]]
@@ -17,6 +18,18 @@ This model captures operational competition knowledge across events, identity, s
 ### 1. Event stream domain
 Captures session, match, heat, and player lifecycle events as a durable telemetry timeline used for downstream summaries and analytics.
 
+Runtime hierarchy:
+
+```text
+Session
+  Match
+    Heat
+      Lap
+        Checkpoint
+```
+
+Qualifiers are not part of this runtime hierarchy. Qualifiers belong to the competition-structure domain and can span multiple sessions and matches.
+
 ### 2. Identity and social domain
 Captures player identity, access context, wallet linkage, team membership, join/invite state, and eligibility constraints.
 
@@ -25,6 +38,12 @@ Captures course, sponsor, and media attachments used by competition and presenta
 
 ### 4. Competition structure domain
 Captures tournament/gauntlet structure, qualifier/stage composition, participant status, and placement outcomes used for rankings and progression.
+
+Competition structure can bind to runtime data through match/session context, but the concepts remain distinct:
+
+- heats are match-internal runtime units
+- qualifiers are gauntlet-level time windows or qualification structures
+- stages/finals/brackets are tournament structures that may allocate runtime sessions
 
 ### 5. Token metadata domain
 Captures token metadata needed for entitlement and social eligibility checks.

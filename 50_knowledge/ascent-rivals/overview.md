@@ -14,6 +14,7 @@ This folder is the knowledge hub for Ascent: Rivals domain understanding.
 - [[midnight]]
 - [[cardano]]
 - [[game-design]]
+- [[competition-runtime-terms]]
 - [[hangar]]
 - [[lore]]
 - [[design-language]]

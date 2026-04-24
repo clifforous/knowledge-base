@@ -5,6 +5,7 @@
 - [[overview]]
 - [[api]]
 - [[data-model]]
+- [[../competition-runtime-terms]]
 - [[../game-client]]
 
 ## Scope
@@ -28,6 +29,22 @@ This note documents the event types currently tracked by Eventun and the current
 - `progress`: `{ placement, lap, checkpoint }`
 - `coordinate`: `{ x, y, z }`
 - `event_data`: event-specific JSON payload
+
+## Runtime Terminology Guardrail
+
+Eventun gameplay events follow the runtime hierarchy:
+
+```text
+Session
+  Match
+    Heat
+      Lap
+        Checkpoint
+```
+
+A qualifier is not a heat.
+
+`activeQualifiers` on a match context payload means the match is bound to one or more gauntlet qualifier windows. It does not mean the match's heats are qualifiers.
 
 ## Indexed Payload Fields
 The schema extracts and stores these `event_data` fields for indexing or direct query use:
@@ -63,7 +80,7 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 - `raceMode`: mode label such as `Deathrace`
 - `stage`: stage index
 - `gauntletId`: gauntlet identifier when the match is tied to a gauntlet
-- `activeQualifiers`: qualifier ids active for the match
+- `activeQualifiers`: qualifier ids active for the match; these are gauntlet qualification windows, not heats
 
 ### Heat Context Payload
 - `courseCode`: canonical course identifier (course code cannot change per heat so repeat information from match context payload)
