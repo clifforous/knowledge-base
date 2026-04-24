@@ -11,9 +11,9 @@
 
 ## Purpose
 
-This note is the practical runtime contract for gauntlet stage sessions.
+This note is the practical runtime contract for gauntlet stage attempts.
 
-It is intended to help:
+It is intended to guide:
 
 - Eventun implementation work
 - dedicated server implementation work
@@ -26,39 +26,43 @@ Current Eventun behavior assumes:
 
 - a gauntlet stage creates at most one active shard in the current phase
 - the shard key is currently `primary`
-- Eventun persists a durable `gauntlet_stage_session` attempt row
-- Eventun writes `StageSessionId`, `StageSessionAttempt`, and `StageSessionShardKey` into AccelByte session attributes
+- Eventun persists a durable `gauntlet_stage_attempt` row
+- `stage_attempt_id` is Eventun's durable attempt id
+- `session_id` is the AccelByte game session id and server-event session id
+- Eventun writes `StageAttemptId`, `AttemptNumber`, and `StageAttemptShardKey` into AccelByte session attributes
 - the AccelByte session remains public for now
-- the dedicated server is the final admission gate
-- automatic retry is not implemented yet
-- player assignment snapshots are not implemented yet
+- the game client preflight result is advisory only
+- the dedicated server is the final admission, seat replacement, and kick authority
+- participation is consumed only when Eventun accepts final placement rows
+- automatic retry and bracket advancement are not implemented yet
+- team hierarchy/designated racer priority metadata is not implemented yet
 
-## Session Identity
+## Identity
 
-A gauntlet stage runtime session is identified by:
+A gauntlet stage runtime attempt is identified by:
 
 - `GauntletId`
 - `GauntletStage`
-- `StageSessionId`
-- `StageSessionAttempt`
-- `StageSessionShardKey`
+- `StageAttemptId`
+- `AttemptNumber`
+- `StageAttemptShardKey`
 
-The dedicated server should treat `StageSessionId` as the durable attempt identity.
+The dedicated server should treat `StageAttemptId` as `stage_attempt_id`.
 
-`session_id` is the AccelByte transport/session handle.
+`session_id` always means the AccelByte session id reported by AccelByte and used by Eventun event tables.
 
-`StageSessionId` is the Eventun competition-attempt handle.
+Do not invent a second meaning for `session_id`.
 
-## Current Session Attributes
+## AccelByte Session Attributes
 
 The dedicated server should expect these stage-related attributes in the AccelByte session:
 
 - `Gauntlet`
 - `GauntletId`
 - `GauntletStage`
-- `StageSessionId`
-- `StageSessionAttempt`
-- `StageSessionShardKey`
+- `StageAttemptId`
+- `AttemptNumber`
+- `StageAttemptShardKey`
 - `MatchStartTimeSeconds`
 - `EntryRequirement`
 - `PlayersPerTeam`
@@ -78,99 +82,136 @@ The dedicated server should expect these stage-related attributes in the AccelBy
 
 The dedicated server should not infer gauntlet stage identity from session name or browsing behavior.
 
-## Eligibility Fetch Model
+## Eventun APIs
 
-The dedicated server should fetch and cache a stage-attempt eligibility snapshot from Eventun.
+### Dedicated server / privileged APIs
 
-Recommended flow:
+The dedicated server uses AdminService with its trusted token:
 
-1. read `StageSessionId` from the AccelByte session attributes
-2. call an Eventun endpoint such as `GetGauntletStageEligibility`
-3. cache the returned eligibility snapshot locally for the life of that attempt
-4. use the cached snapshot for all join decisions in that session
+- `ClaimGauntletStageAttempt(stage_attempt_id, session_id)`
+- `CheckGauntletStageAttemptAdmission(stage_attempt_id, session_id, player_id)`
+- `FinalizeGauntletStageAttempt(stage_attempt_id, session_id, match_id)`
 
-The dedicated server should not derive final eligibility from live gauntlet standings at join time.
+Legacy `ReportGauntletStageResults` still exists, but the current dedicated-server target should be `FinalizeGauntletStageAttempt`.
 
-Live standings can change or become ambiguous later. A stage-attempt eligibility snapshot is the cleaner source of truth.
+### Client API
 
-### Expected eligibility response shape
+The game client uses:
 
-The snapshot should include:
+- `GetGauntletStageJoinStatus(gauntlet_id, stage)`
 
-- `StageSessionId`
-- `GauntletId`
-- `GauntletStage`
-- `StageSessionAttempt`
-- `StageSessionShardKey`
-- stage rules such as `EntryRequirement`, `AllowedTeams`, `PlayersPerTeam`, `MinCompetitors`, `MinLobbySize`, and `Circuit`
-- the eligible player list for that attempt
-- any team, group, or bracket metadata needed for admission
+This endpoint uses the logged-in player. It returns advisory joinability, reason, active `stage_attempt_id`, AccelByte `session_id`, match-start state, attempt status, stage rules, and player admission summary when applicable.
+
+### Event ingest
+
+The dedicated server should continue using the existing trusted telemetry path:
+
+- `ServerService.Event`
+
+Finalization derives standings from `match_summary(session_id, match_id)`, so the trusted server event stream must contain the expected `MatchStart` and `PlayerMatchEnd` data before finalization.
 
 ## Admission Model
 
-### General Rule
+The game client can guide players toward likely-valid sessions.
 
-The game client is allowed to guide players toward valid sessions.
+The dedicated server makes the final runtime decision.
 
-The dedicated server is responsible for the final allow or reject decision.
+The AccelByte session is public in the current model:
 
-### Public Session Constraint
+- public discovery is not permission
+- every incoming join should be treated as untrusted
+- the DS should reject or remove invalid players as early as the runtime allows
 
-The AccelByte session is public in the current model.
+Eventun sparse admission rows are audit/cache records. They are not a participant roster and do not count as participation.
 
-That means:
+## Join Mode Behavior
 
-- any player may technically discover or attempt to join the session
-- discovery is not permission
-- the dedicated server must treat every incoming join as untrusted until validated
+### Pure unrestricted open
 
-## Dedicated Server Allow Rules
+If the stage is open and has no team, group, stage-win, or stage-loss restriction:
 
-For gauntlet stages, the dedicated server should allow a player to remain only if all applicable rules pass.
+- the DS can skip Eventun admission checks
+- the DS admits players first come until full
+- the DS still owns capacity and start readiness
 
-### Base rules
+### Qualification modes
 
-- The session must be a gauntlet stage session.
-- The player must be a real human competitor.
-- The player must be present in the cached eligibility snapshot for this attempt.
-- The player must not already be participating in a conflicting stage shard.
+For qualifier/qualification stages:
 
-### Team / bracket / group rules
+- call `CheckGauntletStageAttemptAdmission`
+- Eventun returns allowed/denied and `priority_score=qualification_points`
+- if the lobby is full, the DS may replace the lowest-priority current player with a higher-priority joiner
+- Eventun does not decide who to kick
 
-When applicable, the dedicated server should enforce:
+### Team-restricted qualifier modes
 
-- `AllowedTeams`
-- `EntryRequirement`
-- `RequiredStageWins`
-- `RequiredStageLosses`
-- `GroupId`
-- `PlayersPerTeam`
+For team-scoped stages:
 
-## Dedicated Server Kick / Removal Rules
+- Eventun validates player qualification and team membership/scope
+- Eventun returns `team_id` and qualification context
+- the DS applies the current team priority policy
 
-If a player is not valid for the session, the dedicated server should reject them as early as possible.
+### Invite-only
 
-Preferred behavior:
+For invite-only stages:
 
-- deny before the player is treated as a valid competitor if the runtime stack allows it
-- if the runtime has already admitted the player, remove or kick them immediately
-- do not count rejected players toward readiness, start thresholds, or final standings
+- Eventun validates explicit player, team, or group invite
+- after Eventun validation, the DS defaults to first come
+- future team hierarchy/designated racer data may refine this, but it is not implemented now
 
-Players should be removed when:
+## Dedicated Server Implementation Checklist
 
-- they are not qualified for the stage
-- they are not in the cached eligibility snapshot
-- they are not in the allowed team or bracket/group scope
-- they are a bot in a human-only gauntlet stage
-- they are duplicated or otherwise invalid for the current shard
+- On session start, read AccelByte session attributes and verify `Gauntlet=true`.
+- Require `StageAttemptId` and the AccelByte `session_id`.
+- Call `ClaimGauntletStageAttempt(stage_attempt_id, session_id)`.
+- Cache the claim response for the life of the attempt.
+- Reject the stage if Eventun says the attempt/session binding is invalid.
+- For each player join request, decide whether the stage is pure open or restricted.
+- For pure open, admit first come until capacity is full.
+- For restricted modes, call `CheckGauntletStageAttemptAdmission(stage_attempt_id, session_id, player_id)`.
+- Reject denied players using the returned reason.
+- For allowed restricted players, apply DS capacity and replacement rules.
+- When replacing, use Eventun `priority_score` and returned team context as policy input.
+- Do not count claim, join, or admission as participation.
+- Do not include players rejected or kicked before a normally completed match in final standings.
+- Do include every human participant in a normally completed match, including disconnected/DNF players.
+- Post trusted server events through `ServerService.Event`.
+- Call `FinalizeGauntletStageAttempt(stage_attempt_id, session_id, match_id)` after the match completes normally and required events have been posted.
+- Retry finalization with the same inputs after transient failures; the call is intended to be idempotent.
 
-The dedicated server should log or emit telemetry for unauthorized join attempts.
+## Game Client Implementation Checklist
+
+- Fetch gauntlet calendar data for the target upcoming window.
+- Detect stages near now using the configured join window.
+- Call `GetGauntletStageJoinStatus(gauntlet_id, stage)` before AccelByte join.
+- Treat returned `session_id` as the AccelByte session id.
+- Treat returned `stage_attempt_id` as Eventun's attempt id for display/debugging only; the DS still owns admission.
+- Treat `joinable=true` as advisory, not as a seat reservation.
+- Hide or disable normal join affordances for non-joinable reasons.
+- Still handle DS rejection or kick after AccelByte join.
+- Present DS rejection/kick as a gauntlet rules outcome rather than a generic network failure.
+- Refresh Eventun-backed gauntlet state after rejection, kick, match completion, or stage finalization.
+- Treat Eventun-accepted standings as authoritative over provisional local race UI.
+
+## Client Preflight Reasons
+
+Known advisory reason strings:
+
+- `no_active_attempt`
+- `session_not_created`
+- `match_started`
+- `stage_completed`
+- `already_completed_stage`
+- `not_qualified`
+- `not_invited`
+- `wrong_session`
+- `inactive_attempt`
+- `player_not_found`
+- `joinable`
 
 ## Start Rules
 
-The dedicated server should not start the stage unless the stage is valid under gauntlet rules.
-
-### Human-player requirements
+The dedicated server should not start the stage unless the lobby is valid under gauntlet rules.
 
 For gauntlet stages:
 
@@ -179,100 +220,20 @@ For gauntlet stages:
 - `MinCompetitors` should be treated as a qualified human threshold
 - `MinLobbySize` should be treated as a qualified human lobby threshold before a valid start
 
-### If start conditions are not met
-
-If the stage cannot validly start by the configured start deadline:
-
-- report `aborted(insufficient_players)` to Eventun once that API exists
-- close the session cleanly
-- do not publish final standings
+If the stage cannot validly start, do not publish final standings. A dedicated abort API is still pending.
 
 ## Participation Semantics
 
-A player should only be considered to have competed in a stage if the stage attempt completes successfully after race start.
+A player should only be considered to have competed in a stage if Eventun accepts finalization and writes `gauntlet_stage_placement`.
 
 This means:
 
 - joining the lobby does not count as competing
+- being admitted by Eventun does not count as competing
 - leaving before race start does not count as competing
 - an aborted, deferred, or failed attempt does not count as competing
 - a server crash does not count as competing if the attempt is not accepted as completed
-- disconnecting mid-race still counts as competing if the attempt completes successfully
-
-The dedicated server should therefore avoid treating lobby presence alone as participation. Eventun should consume participation only when final completed results are accepted.
-
-## Runtime Reporting Expected From the Dedicated Server
-
-The dedicated server should continue using the existing trusted telemetry path:
-
-- `Server.Event`
-
-That covers:
-
-- session lifecycle telemetry
-- match lifecycle telemetry
-- heat telemetry
-- player telemetry
-
-In addition, the dedicated server is expected to call new or updated Eventun gauntlet-stage APIs.
-
-### Expected status API
-
-Planned Eventun API:
-
-- `ReportGauntletStageStatus`
-
-Expected status transitions reported by the dedicated server:
-
-- `claimed`
-- `started`
-- `heartbeat`
-- `aborted` with reason
-- `failed` with reason
-
-Expected reasons include:
-
-- `insufficient_players`
-- `runtime_failure`
-- `invalid_assignment`
-
-### Expected final-results API
-
-Planned Eventun API:
-
-- `ReportGauntletStageResults`
-
-Expectations:
-
-- report final standings for the whole stage attempt
-- include `StageSessionId` or another attempt identity input once the API is updated
-- treat the call as idempotent
-- retries must be safe
-
-## Game Client Rules
-
-The game client should follow these rules.
-
-### Join UX
-
-- show a gauntlet stage join action only when Eventun says the player is qualified
-- do not use public AccelByte session visibility as join permission
-- if the player is not qualified, do not expose the join affordance in normal UI
-
-### Rejection handling
-
-If the dedicated server rejects or removes the player:
-
-- treat that as a competition-rules outcome
-- show a clear stage-specific message
-- refresh Eventun-backed gauntlet state after the rejection
-- return the player to the correct gauntlet or menu state without implying generic network failure
-
-### End-of-stage behavior
-
-- runtime placement shown immediately after play may be provisional
-- Eventun-accepted standings remain authoritative for the gauntlet stage record
-- after completion or abort, refresh Eventun-backed gauntlet state
+- disconnecting mid-race still counts as competing if the attempt completes successfully and the DS emits the participant's final event
 
 ## Admin Web Expectations
 
@@ -280,19 +241,18 @@ The admin surface should eventually support:
 
 - viewing stage attempts per gauntlet stage
 - viewing current status and failure reason
-- viewing region, `StageSessionId`, and AccelByte `session_id`
+- viewing region, `stage_attempt_id`, and AccelByte `session_id`
 - manual retry / hold / defer / cancel controls
 - attempt history
 
 ## Current Failure Semantics
 
-Current Eventun sweep behavior already enforces these fallback failures:
+Current Eventun sweep behavior enforces these fallback failures:
 
 - `allocating` or `session_created` past `deadline_claim` -> `failed(no_server_claim)`
-- `claimed` past `deadline_start` -> `failed(start_timeout)`
-- `started` past `deadline_finish` -> `failed(no_final_report)`
+- `claimed` or `started` past `deadline_finish` -> `failed(no_final_report)`
 
-Dedicated-server-driven reporting should replace or refine those generic timeout reasons whenever possible.
+Dedicated-server-driven abort/failure reporting should refine these generic timeout reasons later.
 
 ## Operational Notes
 
@@ -303,11 +263,9 @@ Dedicated-server-driven reporting should replace or refine those generic timeout
 
 ## Outstanding Gaps
 
-The following backend pieces are still needed before the full contract exists:
-
-- dedicated-server eligibility snapshot API
-- dedicated server status API
-- stage-attempt-aware final standings API
-- player assignment snapshot storage
+- explicit DS abort/failure status API
+- explicit `claimed -> started` status API
+- team hierarchy/designated racer priority metadata
+- bracket advancement
 - admin controls for retry / hold / defer / cancel
 - better cleanup for failed attempts with live AccelByte sessions

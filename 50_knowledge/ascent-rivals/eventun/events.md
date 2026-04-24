@@ -82,6 +82,8 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 - `gauntletId`: gauntlet identifier when the match is tied to a gauntlet
 - `activeQualifiers`: qualifier ids active for the match; these are gauntlet qualification windows, not heats
 
+For gauntlet stage attempts, Eventun finalization verifies `MatchStart` by `session_id`, `match_id`, `gauntletId`, and `stage`.
+
 ### Heat Context Payload
 - `courseCode`: canonical course identifier (course code cannot change per heat so repeat information from match context payload)
 - `uniqueCourseCode`: course key used by the session (unique course code cannot change per heat so repeat information from match context payload)
@@ -182,7 +184,7 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 | `AscensionStart` | Ascension Start | Marks the transition into the ascension phase as a lifecycle marker with no currently observed payload fields. | `client_event`, `server_event` | Empty Payload | Observed in both larger dumps with empty payloads. |
 | `ReplaySaved` | Replay Saved | Records that a replay artifact was saved for a match. | `client_event`, `server_event` | Replay Payload | Schema-defined; `replayRecordKey` is referenced by match-summary and replay purge logic. |
 | `PlayerMatchStart` | Player Match Start | Marks the point where a player's match participation begins. | `client_event`, `server_event` | Unknown Payload | Schema-defined only; not present in sampled dumps. |
-| `PlayerMatchEnd` | Player Match End | Captures per-player final match results used for standings, career stats, and gauntlet scoring. | `client_event`, `server_event` | Match Result Payload | Observed in both dumps and used heavily by analytics SQL. |
+| `PlayerMatchEnd` | Player Match End | Captures per-player final match results used for standings, career stats, and gauntlet scoring. | `client_event`, `server_event` | Match Result Payload | Observed in both dumps and used heavily by analytics SQL. For accepted gauntlet stage finalization, the dedicated server must emit this for every human participant in a normally completed match, including disconnected/DNF players. |
 | `PlayerHeatStart` | Player Heat Start | Captures the player's ship, loadout snapshot, and weight profile at the start of a heat. | `client_event`, `server_event` | Player Loadout Payload | Observed in both larger dumps; server match summary joins this event for loadout details. |
 | `PlayerHeatEnd` | Player Heat End | Captures per-player heat results and placement. | `client_event`, `server_event` | Heat Result Payload | Observed in both dumps and used by match summary heat standings. |
 | `PlayerCheckpoint` | Player Checkpoint | Captures checkpoint-level performance and combat-efficiency telemetry during a heat. | `client_event`, `server_event` | Segment Stats Payload | Observed heavily in both dumps. |

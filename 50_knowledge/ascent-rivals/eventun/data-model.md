@@ -44,6 +44,12 @@ Competition structure can bind to runtime data through match/session context, bu
 - heats are match-internal runtime units
 - qualifiers are gauntlet-level time windows or qualification structures
 - stages/finals/brackets are tournament structures that may allocate runtime sessions
+- `gauntlet_stage_attempt` is the durable Eventun record for trying to run one stage shard
+- `gauntlet_stage_attempt.session_id` is the AccelByte session id, not another Eventun id
+- `gauntlet_stage_attempt_admission` stores sparse evaluated join decisions for audit/cache use
+- `gauntlet_stage_placement` is the accepted participation/result record and includes `stage_attempt_id`
+
+Admission records are not a participant roster. Claiming an attempt, joining a lobby, or being admitted by Eventun does not consume participation.
 
 ### 5. Token metadata domain
 Captures token metadata needed for entitlement and social eligibility checks.

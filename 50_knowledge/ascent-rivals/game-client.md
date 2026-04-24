@@ -24,8 +24,13 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - Consumes competition domain state represented by [[eventun/overview|eventun]].
 - Uses service-owned persistent state for competition/accounting concerns instead of treating client runtime as the source of truth.
 - Must not treat public AccelByte session visibility as gauntlet join authorization.
-- Should expose gauntlet-stage join only when Eventun-backed qualification rules say the player may join.
+- Should call Eventun `GetGauntletStageJoinStatus(gauntlet_id, stage)` before attempting a gauntlet stage AccelByte join.
+- Should expose gauntlet-stage join only when Eventun returns an advisory joinable status.
+- Must treat Eventun preflight as advisory; the dedicated server remains the final admission authority.
+- Must treat returned `session_id` as the AccelByte session id.
+- Should treat returned `stage_attempt_id` as Eventun attempt context, not as a join token.
 - Must treat dedicated-server rejection or kick during gauntlet stage admission as a normal competition-rules flow, not just a transport failure.
+- Should refresh Eventun-backed gauntlet state after rejection, kick, stage completion, or finalization.
 
 ## Open Questions
 - What is the canonical sequence from match completion to externalized competition state updates?
