@@ -138,11 +138,11 @@ Stages, finals, and brackets are gauntlet/tournament structures.
 
 They may allocate gameplay sessions for runtime execution, but they are not the same thing as matches, heats, laps, or checkpoints.
 
-A **stage attempt** is Eventun's durable record for trying to run a stage shard. Its `stage_attempt_id` is not an AccelByte session id.
+A **stage run** is Eventun's durable record for one execution of a stage shard. Its `stage_run_id` is not an AccelByte session id.
 
 For gauntlet stage runtime:
 
-- `stage_attempt_id` identifies Eventun's durable attempt
+- `stage_run_id` identifies Eventun's durable run
 - `session_id` identifies the AccelByte game session and server-event session
 - final accepted placement, not lobby join, is the participation signal
 

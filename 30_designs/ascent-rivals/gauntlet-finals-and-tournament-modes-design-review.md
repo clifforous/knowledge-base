@@ -25,9 +25,9 @@ The current direction is mostly right, but the stage rule model will become brit
 
 Good direction already in place:
 
-- durable `gauntlet_stage_session`
-- stage-attempt identity carried into the AccelByte session
-- dedicated-server eligibility fetch by `StageSessionId`
+- durable `gauntlet_stage_run`
+- stage-run identity carried into the AccelByte session
+- dedicated-server claim/admission by `StageRunId`
 - explicit player invite list for a stage
 - creator/admin defer control and admin launch-now control
 
@@ -48,7 +48,7 @@ The simplest durable model is to separate these concerns explicitly:
 4. runtime assignment snapshot
 5. progression state
 
-That gives one session lifecycle and one DS contract that can support all of the requested modes.
+That gives one stage-run lifecycle and one DS contract that can support all of the requested modes.
 
 ## Real-World Pattern Review
 
@@ -149,19 +149,19 @@ A stage therefore also needs admission policy.
 Recommended admission fields:
 
 - `players_per_team` as the current team admission cap
-- `admission_order_source`
 - `overflow_policy`
+- `admission_priority_rule`
 - `roster_lock_point`
 
 Suggested semantics:
 
 - `players_per_team`: maximum active racers from one team for team-based stages
-- `admission_order_source`: how players are prioritized within a qualified team, for example qualification points
 - `overflow_policy`:
   - `reject_new`
   - `replace_lowest_prestart`
+- `admission_priority_rule`: how allowed players are compared when capacity or replacement decisions need priority, for example `first_come`, `qualification_points`, `selection_rank`, `team_member_rank`, or `bracket_seed`
 - `roster_lock_point`:
-  - `race_start`
+  - `match_start`
 
 This directly supports the team final use case:
 
@@ -174,9 +174,9 @@ This directly supports the team final use case:
 
 No matter how a stage was selected, the dedicated server should always see one resolved shape:
 
-- stage-attempt identity
+- stage-run identity
 - stage rules
-- resolved entrants for that attempt
+- resolved entrants for that run
 - ordered admission data when team caps matter
 
 This is the main unifying idea in the design.
@@ -189,14 +189,20 @@ The DS should not care whether the stage came from:
 - a team standings cutoff
 - a bracket builder
 
-The DS should receive one stage-attempt snapshot and enforce it.
+The DS should receive one stage-run snapshot and enforce it.
 
 Long term, this should be a real runtime table such as:
 
-- `gauntlet_stage_session_entry`
-- and optionally `gauntlet_stage_session_player`
+- `gauntlet_stage_run_entry`
+- and optionally `gauntlet_stage_run_player`
 
 The input sources can stay different. Runtime enforcement should be one shape.
+
+`gauntlet_stage_run_entry` should represent the resolved entrant field for one run. For player stages, one row would represent one selected player. For team stages, one row would represent one selected team. Useful columns include run id, entrant type, player id or team id, selection source, seed/rank, priority score, and compact metadata used for audit/debugging.
+
+`gauntlet_stage_run_player` should exist only if team stages need per-member eligibility or ordered roster data. It would sit under a team entry and record the candidate player id, team id, member priority/rank, qualification score, and whether the player is eligible to occupy one of the team's active racer slots.
+
+These snapshot tables should not replace `gauntlet_stage_run_admission`. The snapshot says "these entrants were resolved for this run." Admission says "this player asked to join/rejoin and Eventun evaluated that request."
 
 ## 5. Progression State
 
@@ -212,14 +218,14 @@ Instead:
 
 ## Participation Rule
 
-A player or team should only be treated as having competed in a stage if the attempt reaches accepted completion after race start.
+A player or team should only be treated as having competed in a stage if the run reaches accepted completion after race start.
 
 Recommended rule:
 
 - not competed: joined the lobby and left before race start
 - not competed: session failed, aborted, deferred, or crashed before accepted completion
-- competed: the race actually started and the attempt completed successfully
-- competed even if disconnected mid-race: yes, if the attempt completes and the player or team was a valid participant
+- competed: the race actually started and the run completed successfully
+- competed even if disconnected mid-race: yes, if the run completes and the player or team was a valid participant
 
 That means participation should not be consumed on join, claim, or lobby presence. It should only be consumed when Eventun accepts a completed stage result.
 
@@ -241,8 +247,8 @@ This keeps retries fair for failed finals and failed bracket rounds.
 
 These choices are good and should remain:
 
-- `gauntlet_stage_session`
-- stage-attempt-scoped DS eligibility fetch
+- `gauntlet_stage_run`
+- stage-run-scoped DS claim/admission
 - explicit stage player invite table
 - creator/admin controls for defer and launch-now
 - public AccelByte session with dedicated-server enforcement
@@ -271,9 +277,9 @@ A reasonable role for groups is:
 
 - creator/admin authoring convenience
 - a bulk-selection cohort for stage invites or seeding
-- a way to organize participants before a stage-attempt snapshot is resolved
+- a way to organize participants before a stage-run snapshot is resolved
 
-That means groups can still help drive a final, but the DS should not depend on live group membership plus live standings as the final authority for admission. Eventun should resolve groups into an explicit attempt snapshot first.
+That means groups can still help drive a final, but the DS should not depend on live group membership plus live standings as the final authority for admission. Eventun should resolve groups into an explicit run snapshot first.
 
 ## Recommended Treatment Of `gauntlet_player_status`
 
@@ -296,18 +302,26 @@ Even then, bracket routing should still come from explicit entrant materializati
 Keep these:
 
 - `gauntlet_stage_invite_player`
+- `gauntlet_stage_invite_team`
 - `allowed_teams`
 - current `GauntletStage` timing and lobby fields
-- `gauntlet_stage_session`
-- DS eligibility fetch by `StageSessionId`
+- `gauntlet_stage_run`
+- DS claim/admission by `StageRunId`
 
 Add next:
 
-- `gauntlet_stage_invite_team`
-- DS eligibility response support for team stages
+- clearer DS admission response support for team stages
 - explicit team standings query or materialized read model
 
 This is enough to support player invited finals now and move toward team invited and team qualified finals without a redesign.
+
+Current support distinction:
+
+- Team invitational v1 is close to supported: `gauntlet_stage_team`/`allowed_teams` can list invited teams, Eventun admission can validate that a joining player belongs to one of those teams, and the DS can enforce `players_per_team`.
+- Team-restricted player qualification is partially supported: a player can be required to qualify individually and also belong to an allowed team.
+- True team-qualified finals are not implemented: Eventun does not yet compute team standings, select teams by team score, or materialize ordered eligible members for a qualified team.
+
+The current model is acceptable for simple team invitationals where any member of an invited team may try to join subject to DS capacity. Team-qualified finals should wait for explicit team standings and runtime entrant snapshots.
 
 ## Medium-Term Structural Direction
 
@@ -316,22 +330,23 @@ Add explicit stage-level semantics:
 - `participant_type`: `player` or `team`
 - `selection_mode`: `open`, `explicit_invite`, `player_standings`, `team_standings`, `progression`
 - `team_score_top_n`: nullable, for team qualification
-- `admission_order_source`: nullable
+- `admission_priority_rule`: `first_come`, `qualification_points`, `selection_rank`, `team_member_rank`, or `bracket_seed`
 - `overflow_policy`: nullable
+- `roster_lock_point`: currently `match_start`
 - `seed_source`: nullable
 
 Then add runtime snapshot tables:
 
-- `gauntlet_stage_session_entry`
-  - one row per qualifying player or team for that attempt
-- `gauntlet_stage_session_player`
+- `gauntlet_stage_run_entry`
+  - one row per qualifying player or team for that run
+- `gauntlet_stage_run_player`
   - optional per-player roster data when entrant type is team
 
 This is the structural simplification. It lets all finals modes share:
 
-- one DS fetch model
+- one DS contract
 - one admission model
-- one session-attempt lifecycle
+- one stage-run lifecycle
 
 ## Team Finals Design Notes
 
@@ -432,8 +447,8 @@ These should be answered before team finals or brackets ship:
 - Should pre-start overflow default to `reject_new` or `replace_lowest_prestart`?
 - How should ties be broken in team standings when the top N player totals are equal?
 - Do team finals need `min_teams` in addition to player-count thresholds?
-- Should brackets allow manual reassignment of entrants after a failed attempt?
-- When a bracket attempt fails after race start but before accepted completion, should the round replay with the same explicit entrants? The recommended answer is yes.
+- Should brackets allow manual reassignment of entrants after a failed run?
+- When a bracket run fails after race start but before accepted completion, should the round replay with the same explicit entrants? The recommended answer is yes.
 
 ## Overall Recommendation
 
@@ -442,10 +457,10 @@ Do not keep expanding the current stage rule model sideways.
 Use this rule instead:
 
 - stage config decides what kind of competition a stage is
-- Eventun resolves that into explicit entrants for the attempt
-- the dedicated server only enforces the resolved attempt snapshot
+- Eventun resolves that into explicit entrants for the run
+- the dedicated server only enforces the resolved run snapshot
 
-That gives one durable session lifecycle, one DS contract, one admin intervention model, and one place to support player finals, team finals, and brackets.
+That gives one durable stage-run lifecycle, one DS contract, one admin intervention model, and one place to support player finals, team finals, and brackets.
 
 ## References
 

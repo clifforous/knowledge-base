@@ -44,12 +44,18 @@ Competition structure can bind to runtime data through match/session context, bu
 - heats are match-internal runtime units
 - qualifiers are gauntlet-level time windows or qualification structures
 - stages/finals/brackets are tournament structures that may allocate runtime sessions
-- `gauntlet_stage_attempt` is the durable Eventun record for trying to run one stage shard
-- `gauntlet_stage_attempt.session_id` is the AccelByte session id, not another Eventun id
-- `gauntlet_stage_attempt_admission` stores sparse evaluated join decisions for audit/cache use
-- `gauntlet_stage_placement` is the accepted participation/result record and includes `stage_attempt_id`
+- a stage can define one or more configured stage matches/circuits through `gauntlet_stage_circuit(gauntlet_id, stage, match_id)`
+- stage circuit `match_id` values are match indexes within the stage/session context and can start at `0`
+- `gauntlet_stage_run` is the durable Eventun record for running one stage shard
+- `gauntlet_stage_run.session_id` is the AccelByte session id, not another Eventun id
+- `gauntlet_stage_run_admission` stores sparse on-demand evaluated join decisions for audit/cache use
+- `gauntlet_stage_run_match` stores accepted match ids for a stage run; configured match plans remain in `gauntlet_stage_circuit`
+- `gauntlet_stage_run_match_result` stores per-player accepted result rows for each accepted stage-run match
+- `gauntlet_stage_placement` is the accepted final participation/result record and includes `stage_run_id`
 
-Admission records are not a participant roster. Claiming an attempt, joining a lobby, or being admitted by Eventun does not consume participation.
+Admission records are not a participant roster. Claiming a run, joining a lobby, or being admitted by Eventun does not consume participation.
+
+Current implementation note: multi-match stages are supported by accepting each configured match for the stage run, then completing the run once all required matches are accepted. Final stage placement rows are aggregate rows ordered by summed circuit points, then best placement, placement sum, and player id for deterministic tie-breaking.
 
 ### 5. Token metadata domain
 Captures token metadata needed for entitlement and social eligibility checks.
