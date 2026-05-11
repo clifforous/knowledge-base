@@ -1,7 +1,7 @@
 # Ascent Rivals Website Design Documentation Roadmap
 
-Date: 2026-04-13
-Status: Draft
+Date: 2026-05-11
+Status: Active Draft
 
 ## Related
 - [[unified-design]]
@@ -22,6 +22,7 @@ Status: Draft
 - [[pages/sponsors-index]]
 - [[shell-concepts]]
 - [[pencil-design-brief]]
+- [[pencil-terminal-ops-follow-up-prompt]]
 - [[../../../50_knowledge/ascent-rivals/design-language|design-language]]
 - [[../../../50_knowledge/ascent-rivals/competition-runtime-terms|competition-runtime-terms]]
 
@@ -40,7 +41,7 @@ The current unified design doc is useful but too broad to serve every audience w
 - project phasing
 - open questions
 
-The next step should be decomposition into focused documents.
+The current step is to keep the decomposition accurate, close the remaining gaps, and use the focused specs to drive the next Pencil design pass.
 
 ## Important Adjustment
 
@@ -71,11 +72,35 @@ The existing docs are strong in:
 
 The remaining gaps are mostly specification gaps rather than strategy gaps.
 
+## Current Status
+
+As of 2026-05-11, the design documentation has moved from broad discovery into focused draft specifications.
+
+Completed or substantially drafted:
+
+- [[unified-design]] remains the top-level PRD and product/design index.
+- [[information-architecture]] defines the working route model, top-bar navigation direction, bridge rule, search architecture, and initial phase-1 page state matrix.
+- [[terminal-ops-design-system]] defines Terminal Ops as the primary working visual direction, with component inventory, navigation behavior, responsive collapse guidance, accessibility guardrails, and SEO guardrails.
+- Page specs exist for homepage, gauntlets, gauntlet detail, player directory, player profile, course leaderboards, teams, team profile, and sponsors.
+- Flow specs exist for authentication, wallet linking, and team lifecycle workflows.
+- Terminal Ops concept images and the original broad [[pencil-design-brief]] are preserved as durable reference artifacts.
+
+Still missing or incomplete:
+
+- A dedicated `/game` page spec.
+- A consolidated open-question register.
+- A standalone content strategy.
+- A standalone responsive/accessibility/SEO baseline, unless the project accepts the distributed coverage in the design system and page specs.
+- Dedicated flow specs for gauntlet creation/editing, gauntlet prize/funding/claim workflows, and sponsor administration.
+- A second Pencil pass against constrained page specs and Terminal Ops instead of another broad shell exploration.
+
 ## Outstanding Work
 
 ### 1. Product requirements extraction
 
-Create a focused product requirements document or keep the unified doc as the PRD while adding a clear index.
+Status: substantially complete for now.
+
+Keep [[unified-design]] as the PRD while adding focused spec links and status notes as the document set evolves.
 
 Minimum content:
 
@@ -99,7 +124,7 @@ Recommendation:
 
 ### 2. Information architecture spec
 
-Create a dedicated IA note.
+Status: substantially drafted.
 
 Current draft:
 
@@ -113,6 +138,10 @@ Required content:
 - search architecture
 - route ownership and purpose
 - page state matrix for anonymous, logged-in, team-authorized, and admin users
+
+Current gap:
+
+- expand or validate the page-state matrix as page specs and auth/admin implementation decisions become firmer
 
 Phase-1 page state matrix should cover:
 
@@ -133,7 +162,7 @@ Phase-1 page state matrix should cover:
 
 ### 3. Design system specification
 
-Create a dedicated Terminal Ops design-system spec.
+Status: substantially drafted.
 
 Current draft:
 
@@ -171,7 +200,9 @@ Recommendation:
 
 ### 4. Page specifications
 
-Create page-level specs for phase-1 must-have pages.
+Status: mostly drafted.
+
+Create or finish page-level specs for phase-1 must-have pages.
 
 Each page spec should include:
 
@@ -210,9 +241,15 @@ Current drafts:
 - [[pages/team-profile]]
 - [[pages/sponsors-index]]
 
+Current gap:
+
+- create a dedicated `/game` page spec
+
 ### 5. User flow documentation
 
-Create flow notes for stateful interactions.
+Status: partially drafted.
+
+Create or finish flow notes for stateful interactions.
 
 Initial flows:
 
@@ -232,9 +269,18 @@ Current drafts:
 - [[flows/wallet-linking]]
 - [[flows/team-lifecycle]]
 
+Current gaps:
+
+- gauntlet creation/editing
+- logged-in gauntlet participation context
+- gauntlet prize/funding/claim workflows
+- sponsor administration
+
 ### 6. Responsive strategy
 
-Create a responsive strategy note or include it in the design-system spec.
+Status: partially covered in [[terminal-ops-design-system]] and page specs.
+
+Create a dedicated responsive strategy note if the distributed guidance is not enough for implementation.
 
 Required decisions:
 
@@ -247,6 +293,8 @@ Required decisions:
 - mobile profile and gauntlet sub-navigation
 
 ### 7. Content strategy
+
+Status: not started as a dedicated note.
 
 Create a content strategy note.
 
@@ -261,7 +309,9 @@ Required decisions:
 
 ### 8. Accessibility and SEO baseline
 
-Create an accessibility and SEO baseline note or include these sections in page specs and the design-system spec.
+Status: partially covered in [[terminal-ops-design-system]], [[tone-and-voice]], and page specs.
+
+Create a dedicated accessibility and SEO baseline note if the distributed guidance is not enough for implementation.
 
 Required decisions:
 
@@ -275,6 +325,8 @@ Required decisions:
 - performance budget for image-heavy pages
 
 ### 9. Open-question register
+
+Status: not started.
 
 Create a single open-question register.
 
@@ -311,6 +363,8 @@ Conditions for revisiting:
 
 ## Next Mock Pass Recommendation
 
+Use [[pencil-terminal-ops-follow-up-prompt]] for the next pass.
+
 Before asking Pencil for another broad exploration, provide tighter page constraints.
 
 Recommended next mocks:
@@ -333,13 +387,14 @@ Design goals:
 
 Recommended order:
 
-1. Create the design system specification.
-2. Create the information architecture spec with page state matrix.
-3. Run the next Pencil pass against the completed core page specs.
-4. Create the responsive/accessibility baseline.
-5. Create user flow specs for authenticated workflows.
-6. Create content strategy.
-7. Consolidate open questions.
+1. Complete or accept the current draft design system specification. Status: drafted.
+2. Complete or accept the current draft information architecture spec with page state matrix. Status: drafted.
+3. Run the next Pencil pass against the completed core page specs. Status: prompt drafted in [[pencil-terminal-ops-follow-up-prompt]].
+4. Create the missing `/game` page spec. Status: not started.
+5. Create the responsive/accessibility/SEO baseline or explicitly accept distributed coverage. Status: partial.
+6. Create remaining user-flow specs for gauntlet/admin workflows. Status: partial.
+7. Create content strategy. Status: not started.
+8. Consolidate open questions. Status: not started.
 
 Reason:
 
@@ -349,14 +404,15 @@ Reason:
 
 ## Verification Checklist
 
-- [ ] Unified doc links to every focused design document.
+- [x] Unified doc links to every focused design document created so far.
 - [ ] Every section of the unified doc has a destination in the decomposed set.
-- [ ] Every phase-1 must-have page has a page spec.
-- [ ] Phase-1 page state matrix exists.
-- [ ] Design system maps Terminal Ops tokens to canonical game palette.
-- [ ] Component inventory covers the core Terminal Ops components.
-- [ ] User flows cover authenticated and admin workflows preserved from the current site.
+- [ ] Every phase-1 must-have page has a page spec. Missing: `/game`.
+- [x] Phase-1 page state matrix exists.
+- [x] Design system maps Terminal Ops tokens to canonical game palette.
+- [x] Component inventory covers the core Terminal Ops components.
+- [ ] User flows cover authenticated and admin workflows preserved from the current site. Missing: gauntlet/admin/prize-specific flows.
 - [ ] Responsive strategy addresses navigation, tables, and two-column layouts.
-- [ ] Accessibility guidance addresses terminal metaphor and box-drawing risks.
+- [x] Accessibility guidance addresses terminal metaphor and box-drawing risks.
 - [ ] SEO baseline exists for public entity pages.
-- [ ] Navigation has a recorded working decision and revisit criteria.
+- [x] Navigation has a recorded working decision and revisit criteria.
+- [x] Next Pencil pass prompt exists for Terminal Ops validation.

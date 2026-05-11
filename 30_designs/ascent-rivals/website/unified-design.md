@@ -10,6 +10,7 @@ Status: Draft
 - [[../../../50_knowledge/ascent-rivals/accountun|accountun]]
 - [[../../../50_knowledge/ascent-rivals/game-design|game-design]]
 - [[pencil-design-brief]]
+- [[pencil-terminal-ops-follow-up-prompt]]
 - [[shell-concepts]]
 - [[design-doc-roadmap]]
 - [[information-architecture]]
