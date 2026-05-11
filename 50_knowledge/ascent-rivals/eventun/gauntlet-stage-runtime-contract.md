@@ -236,6 +236,7 @@ For invite-only stages:
 - After each normally completed stage match, call `AcceptGauntletStageRunMatch(stage_run_id, session_id, match_id)` after required events have been posted.
 - When the response reports `ready_to_complete=true`, call `CompleteGauntletStageRun(stage_run_id, session_id)`.
 - Retry match acceptance and run completion with the same inputs after transient failures; both calls are intended to be idempotent for the same accepted facts.
+- Do not shut down a final stage-run dedicated server solely because the final match was accepted. Wait for `CompleteGauntletStageRun` success, or for local bounded retries to exhaust and log a terminal completion failure.
 
 ## Game Client Checklist
 

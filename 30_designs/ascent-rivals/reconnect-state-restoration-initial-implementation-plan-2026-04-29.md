@@ -95,6 +95,8 @@ The in-race TAB list should keep the disconnected row visible and greyed out. It
 
 Reserved disconnected human seats also count against bot backfill while the reservation is active. A bot must not fill a reserved human participant slot during pre-heat or between heats unless the reservation has expired or been explicitly released.
 
+Editor-only manual bot injection is a separate debug workflow. Console/cheat-command `AddBots` may add bots to an active race when running from editor, but automatic bot backfill must continue to respect reserved seats and must not replace a disconnected human mid-heat.
+
 ### Implementation Clarification: Active Reconnect Modes
 
 Replace the previous boolean temp-spectator rule with an explicit active-heat mode:
@@ -104,6 +106,56 @@ Replace the previous boolean temp-spectator rule with an explicit active-heat mo
 - `RejectUntilNextHeat`: a reserved reconnect during the same active heat is rejected. Rejoin can be attempted again after that active heat is no longer running.
 
 These modes intentionally override invalid `LateJoinersMustSpectate` combinations for reserved reconnects: checkpoint mode can force competitor for the same active heat, and temp-spectator mode can force temp spectator even if ordinary late joiners may race.
+
+---
+
+## Follow-Up Bugs And Policy Decisions
+
+### Seat Reservation Expiry
+
+Current code releases the reserved seat when `UHGPlayerLifecycleServerSubsystem::ExpireSnapshots()` marks the participant row `ReservationExpired` and removes the server-only disconnected snapshot. It is called from reconnect checks, disconnected-state queries, loadout/stat restore, reserved-seat join rejection, and bot-backfill seat counting.
+
+Implementation update: expiry should be timer-driven. The lifecycle subsystem should keep one timer pointed at the earliest `ExpiresAtUtc`, expire all elapsed snapshots when it fires, then reschedule for the next earliest snapshot. Lazy expiry calls remain as a defensive fallback.
+
+Follow-up fix:
+
+- Keep the explicit server timer active when disconnected snapshots exist, so expiry is applied at the configured time without waiting for a join/backfill path.
+- Keep the capacity-release behavior in `ShouldRejectJoinForReservedSeat()` and `GetReservedHumanCompetitorCount()` as a defensive lazy expiry fallback.
+- After timer-driven expiry removes at least one reservation, notify server backfill so AccelByte tickets and configured bot backfill can react to the newly open seat.
+- Add a verification case: disconnect one or more racers, wait past `DisconnectedSeatReservationSeconds`, confirm the lifecycle snapshots are removed, the seats no longer block bot/human admission, and the participant rows transition to the intended post-expiry presentation state.
+
+### Lobby Visibility After Expiry
+
+Stable participant rows are intentionally not removed during a match, and the race scoreboard currently shows any row with a valid participant slot and known participant kind. Expiring the lifecycle snapshot therefore releases capacity, but it does not automatically remove the participant from every UI projection.
+
+Policy recommendation for ordinary non-final matches:
+
+- Keep expired rows in heat and match summaries, because they are historical results.
+- Hide expired, absent participant rows from the lobby after returning from a completed match unless the player has a live `AHGPlayerEntity`.
+- Keep reserved-but-not-expired rows visible as disconnected in race/post-heat contexts while the seat can still be reclaimed.
+
+Policy recommendation for finals or future gauntlet stages:
+
+- Treat reservations as match-series policy rather than a global reconnect timeout.
+- Finals may use permanent or stage-duration reservations so disconnected finalists remain visible in the lobby/roster and can reclaim their seat.
+- Implement this as a gauntlet/finals-specific lifecycle policy in the gauntlet re-entry pass, not by making ordinary `DisconnectedSeatReservationSeconds` infinite for every mode.
+
+### Circuit Points For Fully Missed Heats
+
+Current code can award circuit points to a disconnected participant who misses an entire later heat. The risky path is that absent non-connected rows can be carried into a new heat as committed rows, and finalization currently grants placement CP to non-connected committed rows when they still have a positive placement.
+
+Policy recommendation:
+
+- A participant should only be eligible for positive heat circuit points if they were connected at heat start, reconnected during that heat, or otherwise had authoritative heat participation for that heat.
+- A reserved disconnected player who is carried forward for scoreboard continuity but never reconnects during the heat should receive a DNF heat result with zero newly awarded circuit points for that heat.
+- Existing completed heat history and match-summary rows should remain intact.
+- Eventun should still receive the heat/match end rows with `ResultOrigin` so downstream analysis can distinguish live DNF, disconnected DNF, and reservation-expired DNF.
+
+Follow-up fix:
+
+- Add an explicit per-heat participation/CP-eligibility flag to the participant row or heat result row, instead of inferring eligibility from `CommittedToCurrentHeat`.
+- Reset carried-forward disconnected placement/progress at heat start unless checkpoint reconnect mode intentionally gives them active-race progress.
+- In `FinalizeParticipantHeatRows`, award new CP only when the row is CP-eligible for that heat.
 
 ---
 
