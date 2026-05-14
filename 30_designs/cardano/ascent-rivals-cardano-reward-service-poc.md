@@ -1,7 +1,8 @@
 # Ascent Rivals Cardano Reward Service Proof of Concept
 
-Status: draft for review
+Status: initial proof-of-concept implementation in progress
 Date: 2026-05-07
+Last updated: 2026-05-14
 
 ## Goal
 
@@ -9,7 +10,9 @@ Design a proof-of-concept Cardano service for Ascent: Rivals that receives filte
 
 This is a one-off Cardano ecosystem proof of concept, not a long-term Ascent Rivals product integration. The goal is to demonstrate feasibility, transaction throughput, and service orchestration using Ascent Rivals match data as the source of realistic gameplay events. Players do not interact with, see, recover, link, or manage these proof-of-concept wallets.
 
-This is not an approved implementation plan. It is a research-backed proposal intended to drive review questions before service scaffolding begins.
+This began as a research-backed proposal. As of 2026-05-14, the `cardanoun` proof-of-concept service has an initial Bun/TypeScript implementation with SQLite state, Hono/Zod APIs, Blockfrost provider integration, Mesh transaction builders, UTXOS developer-controlled player wallet support, CLI setup/operations commands, and Azure-oriented readiness checks.
+
+The proof of concept still should not be treated as a production economy launch. `tokun` remains an experimental native asset with a deliberately simple hot-key minting policy.
 
 ## Knowledge Base Context
 
@@ -50,8 +53,12 @@ Mesh research:
 UTXOS.dev research:
 
 - UTXOS markets wallet-as-a-service, developer-controlled wallets, and transaction sponsorship for Cardano.
-- Their sponsorship flow replaces static placeholder UTxOs with real sponsor UTxOs server-side, signs with a developer-controlled wallet, then returns a transaction for the user wallet to sign.
-- UTXOS.dev is a separate third-party service outside Mesh. It is relevant if Mesh is insufficient or if the proof of concept shifts toward passkey/social/non-custodial wallets, but it should not be part of the preferred path.
+- Developer-controlled wallets are a good fit for this proof of concept's backend-managed player wallets. UTXOS creates project wallets, stores encrypted key material, and requires the backend-held Entity Secret private key for signing.
+- UTXOS developer-controlled wallet APIs run on the backend only. The Entity Secret and API key must never be exposed to game clients or browser code.
+- Losing the Entity Secret means losing access to all wallets created under that Entity Secret. Use a separate UTXOS project and separate Entity Secret per Cardanoun deployment, even for two Preprod deployments.
+- UTXOS Cardano examples initialize the SDK with a provider such as Blockfrost and use `network: "testnet"` for test networks or `network: "mainnet"` for mainnet.
+- UTXOS beta pricing currently lists dev-controlled wallet quotas by tier. Treat quota and rate-limit confirmation as a pre-mainnet and pre-load-test checklist item because pricing and limits may change.
+- UTXOS transaction sponsorship is separate from the developer-controlled wallet custody path. It remains deferred unless the POC needs UTXOS to sponsor externally controlled user wallets.
 
 Sources:
 
@@ -84,6 +91,9 @@ External sources:
 - Mesh Aiken integration: https://meshjs.dev/aiken
 - Aiken validators: https://aiken-lang.org/language-tour/validators
 - UTXOS introduction: https://docs.utxos.dev/
+- UTXOS developer-controlled wallets: https://docs.utxos.dev/wallet/developer-controlled
+- UTXOS Cardano developer-controlled wallet usage: https://docs.utxos.dev/wallet/developer-controlled/usage/cardano
+- UTXOS pricing: https://docs.utxos.dev/project/pricing
 - UTXOS Cardano sponsorship: https://docs.utxos.dev/sponsor/usage/cardano
 - UTXOS sponsorship flow: https://docs.utxos.dev/sponsor/how-it-works
 - Azure Container Apps storage mounts: https://learn.microsoft.com/en-us/azure/container-apps/storage-mounts
@@ -102,12 +112,17 @@ External sources:
 - No Ascent Rivals game client or dedicated-server event changes are planned for this proof of concept. The intended game-side integration is limited to Eventun calling `cardanoun` when an end-of-match event batch arrives.
 - Eventun should not know or send Cardano wallet addresses for this proof of concept. `cardanoun` owns managed-wallet lookup and creation.
 - Mainnet test funding is expected to be limited, roughly USD 1,000 to USD 2,000 converted into ADA. The mainnet test runs until the allocated funds are spent.
+- Blockfrost is the selected provider for the initial Preprod deployment.
+- UTXOS developer-controlled wallets are the selected player-wallet custody provider for deployed tests. Local HD player wallets remain a development fallback.
+- Service wallets remain Cardanoun-managed HD wallets for mint authority, reserve, collection, and worker lanes.
+- Each Cardanoun deployment should use its own SQLite database, service wallet secret, Blockfrost project, UTXOS project, UTXOS Entity Secret, Eventun bearer token, and operator bearer token.
+- Newly built real transactions should include a configured `invalidHereafter` validity window so ambiguous submission failures have a deterministic expiry point.
 
 ## Recommended Approach
 
 Build `cardanoun` as an asynchronous Cardano transaction orchestration service.
 
-Eventun calls `cardanoun` after accepting an end-of-match event batch. Eventun should filter and forward the relevant accepted events, not derive a special reward contract and not include wallet data. `cardanoun` derives proof-of-concept entry-fee and reward transactions from that event input, persists transaction jobs, assigns jobs across funded HD subwallet lanes, submits transactions, and tracks block inclusion and confirmation.
+Eventun calls `cardanoun` after accepting an end-of-match event batch. Eventun should filter and forward the relevant accepted events, not derive a special reward contract and not include wallet data. `cardanoun` derives proof-of-concept entry-fee and reward transactions from that event input, persists transaction jobs, provisions managed player wallets through UTXOS when configured, assigns jobs across funded worker lanes, submits transactions, and tracks block inclusion and confirmation.
 
 Use a Cardano native fungible token for the proof-of-concept currency:
 
@@ -117,6 +132,12 @@ Use a Cardano native fungible token for the proof-of-concept currency:
 - Mainnet test hardening: use a separate mainnet-test policy, separate keys, explicit supply caps or operator approval, and clear product copy that the asset is experimental.
 
 Do not include an Aiken entry-fee contract in the first version. Use direct wallet transactions with metadata for the simulated entry fee.
+
+Use scoped bearer tokens:
+
+- `CARDANOUN_EVENTUN_BEARER_TOKEN` only authorizes `/v1/eventun/*` ingestion.
+- `CARDANOUN_OPERATOR_BEARER_TOKEN` authorizes privileged operations routes such as mint queueing, funding movement, signing, submission, observation, and runner controls.
+- The API should refuse startup if the route tokens are missing or identical.
 
 ## Service Boundaries
 
@@ -247,8 +268,8 @@ For the proof of concept, these roles can derive from one mnemonic or root key, 
 
 Initial proof of concept:
 
-- If Eventun includes a player without a proof-of-concept managed wallet, `cardanoun` creates a service-managed custodial wallet.
-- Store only encrypted key material or a secret reference. Do not log mnemonic words, private keys, signatures, or full payloads.
+- If Eventun includes a player without a proof-of-concept managed wallet, `cardanoun` creates a service-managed player wallet. For deployed tests, use UTXOS developer-controlled wallets and store the UTXOS wallet id/provider reference.
+- Store only encrypted key material or a secret reference. Do not log mnemonic words, private keys, UTXOS Entity Secrets, signatures, or full payloads.
 - Send the first reward token output with required minimum ADA to the wallet address.
 
 Important constraint:
@@ -260,6 +281,7 @@ Product guardrail:
 - A service-managed proof-of-concept wallet is not the same as a user-linked Cardano wallet.
 - Because players will not interact with these wallets, no public UI copy is required for the proof of concept.
 - If these wallets are ever shown to users, use separate language such as `Managed reward wallet` and define export/recovery policy first.
+- UTXOS developer-controlled player wallets are not the same as website-linked Cardano wallets and are not player-recoverable through the current public product flow.
 
 ## Fee Funding Model
 
@@ -269,8 +291,8 @@ Recommended proof-of-concept fee model:
 
 - Reward payout transactions spend service reserve UTxOs only. The service wallet supplies reward tokens, minimum ADA for the player token output, and transaction fees.
 - Simulated entry-fee transactions spend the player's managed wallet UTxO for the entry-fee token and a service-wallet ADA UTxO for fees and any ADA delta needed by outputs.
-- If the simulated entry-fee transaction spends a player wallet UTxO, sign with both the player managed wallet and the service fee subwallet. Mesh multi-signature and partial-signing support should be enough for this, but it must be validated with a local or Preprod integration test before the design is considered implementation-ready.
-- Avoid relying on UTXOS.dev sponsorship unless Mesh alone proves insufficient.
+- If the simulated entry-fee transaction spends a player wallet UTxO, sign with both the player managed wallet and the service fee subwallet. For UTXOS developer-controlled player wallets, Cardanoun loads the UTXOS Cardano wallet through the backend SDK and uses it as the player signer.
+- Avoid relying on UTXOS transaction sponsorship for this POC unless an externally controlled user wallet flow is introduced later.
 
 Operational implication:
 
@@ -298,11 +320,12 @@ Recommended worker model:
 4. Build a transaction that either pays a simulated entry fee or transfers one reward amount to the player address.
 5. Include minimum ADA in the player output.
 6. Attach compact transaction metadata containing a reward reference, not raw personal data.
-7. Sign with the required service and/or managed player wallet.
-8. Submit through the configured provider.
-9. Mark the job `submitted` with transaction hash.
-10. Watch for block inclusion and confirmation depth.
-11. Mark the job `confirmed` when the confirmation policy is satisfied.
+7. Add an `invalidHereafter` validity upper slot using the configured transaction validity window.
+8. Sign with the required service and/or managed player wallet.
+9. Submit through the configured provider.
+10. Mark the job `submitted` with transaction hash.
+11. Watch for block inclusion and confirmation depth.
+12. Mark the job `confirmed` when the confirmation policy is satisfied.
 
 Statuses:
 
@@ -313,6 +336,7 @@ wallet_created
 ready
 building
 signed
+submission_unknown
 submitted
 in_block
 confirmed
@@ -320,6 +344,14 @@ failed_retryable
 failed_terminal
 reconciled
 ```
+
+Submission uncertainty:
+
+- Blockfrost can return `404` for a transaction hash shortly after submission, before its indexing path sees the transaction. Treat that as pending, not proof of failure.
+- If signed CBOR submission fails after the service already has a signed transaction hash, move the job to `submission_unknown` rather than immediately rebuilding.
+- `submission_unknown` jobs should be observed by hash. If the transaction appears on-chain, move to `in_block` or `confirmed`.
+- If the latest provider tip passes `invalid_hereafter_slot + tx_expiry_grace_slots` and the transaction is still not observed, it can no longer validly appear in a later block. Clear stale CBOR and move the job back to `failed_retryable` for rebuilding.
+- Keep the validity window configurable. The initial implementation default is 300 slots, with an additional 60-slot expiry grace window.
 
 No batching:
 
@@ -423,6 +455,7 @@ Initial tables:
 - `forwarded_event`: event batch id, derived event id, name, player id, heat, progress, event data hash, raw event JSON.
 - `reward_fact`: deterministic reward id, kind, player id, amount, source event reference, ordinal, status.
 - `transaction_job`: job id, job type, reward id or entry fee id, assigned subwallet id, status, tx hash, parent job id, attempts.
+- `transaction_job` should also store signed CBOR only for internal submission, an `invalid_hereafter_slot` for real signed transactions, submission/build locks, and last error details. Operations APIs should not expose signed CBOR.
 - `transaction_observation`: tx hash, block slot, block hash, confirmation depth, observed at.
 - `entry_fee_payment`: event batch id, player id, amount, status, tx hash.
 - `utxo_lane`: wallet role, tx hash, output index, amount summary, lane status, reserved job id.
@@ -437,13 +470,23 @@ Follow Accountun's deployment style where practical:
 - Azure Container Registry publish flow similar to Accountun.
 - Azure-hosted service with environment-specific configuration for Preprod and Mainnet.
 - Persistent storage mount for the SQLite database file.
+- Persistent storage mount for the service wallet secret file.
 - Azure Key Vault for secrets; avoid `.env` secrets outside local development.
 - Health endpoint and metrics endpoint.
 - Operations endpoint for worker subwallet balances, refill status, job backlog, block inclusion rate, and remaining mainnet ADA budget.
+- Deployment readiness gate that can fail startup when bearer tokens, durable paths, provider health, service wallets, tokun policy, or custody settings are not production-like.
+- Background runner that wakes on Eventun ingestion or operator actions, processes queued work, submits signed jobs when enabled, observes pending jobs, reconciles funding after confirmations, and stops when no active work remains.
+
+Azure resource shape:
+
+- Mirroring Accountun with a separate `rg-cardanoun`, `cardanoun` container registry, `cardanoun-env` Container Apps environment, and `cardanoun-api` app is acceptable for the POC.
+- Sharing an existing container registry is the most obvious small cost optimization, but separate resources are operationally cleaner and easier to tear down.
+- Keep the Container App on the Consumption plan and a single replica for the SQLite proof of concept.
+- Avoid dedicated workload profiles, min replicas greater than zero, or high log retention unless the test requires them.
 
 Provider options:
 
-- Start with Blockfrost or another Mesh-compatible provider for Preprod.
+- Start with Blockfrost for Preprod.
 - Keep provider access behind `cardanoun` and never expose API keys to client code.
 - Consider a self-hosted node/Ogmios/Kupo path only after the proof-of-concept transaction model stabilizes.
 
@@ -453,12 +496,19 @@ Custody:
 
 - If Ascent creates wallets and holds keys, it is operating a custodial wallet service for those assets.
 - The proof of concept needs a written export/recovery/loss policy before it is exposed to real users.
-- Key custody should use Key Vault or a wallet provider designed for delegated custody. Plain encrypted mnemonics in a database are a weak mainnet posture.
+- Service wallet custody should use Key Vault or an equivalent mounted secret path for deployment. Plain encrypted mnemonics in a database are a weak mainnet posture.
+- UTXOS player wallets depend on the Entity Secret. Use one UTXOS project and Entity Secret per deployment, store the Entity Secret private key securely, and treat compromise as compromise of all wallets in that deployment.
+
+Operations:
+
+- Eventun ingestion and operator controls must not share bearer credentials.
+- Signed transaction CBOR should remain internal to the worker/submission path and should not be returned by operations APIs.
+- Mainnet submission requires both normal transaction submission enablement and an explicit mainnet allow flag.
 
 Mint authority:
 
-- A hot mint key can inflate supply if compromised.
-- Mainnet tests should use separate keys and supply controls, even if the POC uses a simple single-signature policy.
+- A hot mint key can inflate supply if compromised. For this POC, unlimited or repeated `tokun` minting is acceptable as long as operator access is controlled and product copy does not position the asset as a durable public currency.
+- Mainnet tests should use separate keys, a separate policy id, small initial funding, and stable operator request ids for mint jobs.
 
 Economy:
 
@@ -480,7 +530,7 @@ Abuse:
 
 ### Recommended POC: Native token rewards plus direct entry fee metadata
 
-Use Mesh headless wallets, native-script minting, worker subwallet reserve transfers, and direct simulated entry-fee payments with metadata.
+Use Mesh transaction builders, Cardanoun-managed service wallets, UTXOS developer-controlled player wallets, native-script minting, worker subwallet reserve transfers, and direct simulated entry-fee payments with metadata.
 
 This proves the core chain loop fastest:
 
@@ -493,7 +543,7 @@ This proves the core chain loop fastest:
 
 Tradeoff:
 
-- It does not showcase an Aiken script. That is acceptable for the first grant-provider demonstration because the requested goal is transaction feasibility and throughput.
+- It does not showcase an Aiken script. It also introduces UTXOS as a third-party wallet dependency. That is acceptable for the first grant-provider demonstration because the requested goal is transaction feasibility, managed-wallet orchestration, and throughput.
 
 ### Deferred Alternative: Aiken entry-fee script
 
@@ -503,40 +553,41 @@ Tradeoff:
 
 - Better smart-contract demo, but it adds collateral, script debugging, and more failure modes before the basic reward pipeline is proven.
 
-### Wallet-provider POC: UTXOS.dev sponsorship and managed/non-custodial wallets
+### Deferred Alternative: UTXOS sponsorship and non-custodial wallets
 
-Use UTXOS for wallet creation and sponsorship.
+Use UTXOS transaction sponsorship for externally controlled user wallets.
 
 Tradeoff:
 
-- Could reduce custom wallet infrastructure and enable user-controlled passkey/social wallets, but it introduces an external vendor, a different custody model, pricing/availability dependency, and integration surface that is not yet represented in existing Ascent services.
-- This is not recommended for the preferred path because the requested dependency boundary is Mesh first, with other SDKs or services only if Mesh is insufficient.
+- Could enable user-controlled passkey/social wallets later, but it adds a different custody and approval model. It is not needed while players do not interact with the POC wallets.
 
 ## Review Questions
 
-1. Which Azure store should be used for the first deployment: SQLite on Azure Files, or Cosmos DB free tier?
-2. How many worker subwallet lanes should be pre-funded for the initial Preprod throughput test?
-3. What per-worker ADA and `tokun` thresholds should define top-up behavior?
-4. Which match modes are eligible: public matchmaking only, gauntlets only, custom games, local/scrimmage, or a dedicated blockchain test queue?
-5. What throughput measurement should be shown to grant providers: submitted transactions per minute, block-included transactions per minute, confirmed transactions per minute, cost per transaction, or all of these?
-6. What safety limit should stop the mainnet test: remaining ADA reserve, submitted transaction count, block fullness threshold, or elapsed duration?
+1. Which match modes are eligible: public matchmaking only, gauntlets only, custom games, local/scrimmage, or a dedicated blockchain test queue?
+2. What throughput measurement should be shown to grant providers: submitted transactions per minute, block-included transactions per minute, confirmed transactions per minute, cost per transaction, or all of these?
+3. What safety limit should stop the mainnet test: remaining ADA reserve, submitted transaction count, block fullness threshold, or elapsed duration?
+4. What UTXOS tier or custom quota is needed for the expected number of managed player wallets?
+5. Should the SQLite/Azure Files POC move to a managed database before any multi-replica deployment?
 
 ## Proposed Next Plan
 
-After review, produce an implementation plan with these phases:
+Initial implementation status as of 2026-05-14:
 
-1. Define reward facts and Eventun bridge contract.
-2. Scaffold `cardanoun` Bun service.
-3. Implement Preprod wallet/provider configuration.
-4. Implement native token policy and reserve minting CLI.
-5. Implement main HD service wallet and worker subwallet derivation.
-6. Implement custodial player wallet creation and storage.
-7. Implement Eventun filtered-event ingestion.
-8. Implement entry-fee and reward job derivation.
-9. Implement subwallet balance management, top-ups, and UTxO fan-out.
-10. Implement transaction workers, confirmation watcher, and reconciliation.
-11. Implement throughput and budget reporting.
+- Bun workspace, API, CLI, and core packages are scaffolded.
+- SQLite durable state, service wallets, worker lanes, player wallets, Eventun ingestion, reward derivation, entry-fee jobs, mint-reserve jobs, fund moves, fan-out jobs, chain balance sync, reconciliation, real Mesh builders/signing, signed-job submission, observation, `submission_unknown`, validity-window expiry, background runner, and Azure readiness checks are implemented.
+- A Preprod integration test exists for build-submit-observe mint-reserve flow and is gated behind an environment flag.
+- A deployment runbook exists for bringing up a new chain/deployment.
+
+Remaining near-term work:
+
+1. Create Azure resources for `cardanoun`.
+2. Publish and deploy the API container.
+3. Configure durable Azure Files paths, bearer tokens, Blockfrost, UTXOS project credentials, and background worker settings.
+4. Initialize the service wallet and tokun policy on the mounted deployment paths.
+5. Fund `mint_authority`, mint reserve, fund worker wallets, and fan out lanes.
+6. Run deployment readiness and one deployed Eventun smoke batch.
+7. Decide whether any additional Preprod integration or load tests are required before mainnet.
 
 ## Review Checkpoint
 
-The first decision should be persistence: SQLite on Azure Files or Cosmos DB free tier. My default recommendation is SQLite on Azure Files for the fastest Accountun-like service structure, unless the deployment environment makes file mounts inconvenient. The second decision is how many worker subwallet lanes to pre-fund for the first Preprod throughput test.
+SQLite on Azure Files is the selected persistence path for the POC. The next checkpoint is deployment readiness in Azure, followed by a deployed Preprod smoke test using Eventun-shaped input and Blockfrost/UTXOS credentials for that deployment.
