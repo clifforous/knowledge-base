@@ -2,7 +2,7 @@
 
 Status: initial proof-of-concept implementation in progress
 Date: 2026-05-07
-Last updated: 2026-05-14
+Last updated: 2026-05-19
 
 ## Goal
 
@@ -10,7 +10,7 @@ Design a proof-of-concept Cardano service for Ascent: Rivals that receives filte
 
 This is a one-off Cardano ecosystem proof of concept, not a long-term Ascent Rivals product integration. The goal is to demonstrate feasibility, transaction throughput, and service orchestration using Ascent Rivals match data as the source of realistic gameplay events. Players do not interact with, see, recover, link, or manage these proof-of-concept wallets.
 
-This began as a research-backed proposal. As of 2026-05-14, the `cardanoun` proof-of-concept service has an initial Bun/TypeScript implementation with SQLite state, Hono/Zod APIs, Blockfrost provider integration, Mesh transaction builders, UTXOS developer-controlled player wallet support, CLI setup/operations commands, and Azure-oriented readiness checks.
+This began as a research-backed proposal. As of 2026-05-15, the `cardanoun` proof-of-concept service has an initial Bun/TypeScript implementation with PostgreSQL state, Hono/Zod APIs, Blockfrost provider integration, Mesh transaction builders, UTXOS developer-controlled player wallet support, CLI setup/operations commands, and Azure-oriented readiness checks.
 
 The proof of concept still should not be treated as a production economy launch. `tokun` remains an experimental native asset with a deliberately simple hot-key minting policy.
 
@@ -110,25 +110,28 @@ External sources:
 - The proof-of-concept reward token is `tokun`. It is unrelated to ARC and must not be described as an Ascent Rivals economy token.
 - Each rewardable event produces an individual Cardano transaction. Batch transport from Eventun is allowed, but `cardanoun` must expand the request into one transaction job per reward.
 - No Ascent Rivals game client or dedicated-server event changes are planned for this proof of concept. The intended game-side integration is limited to Eventun calling `cardanoun` when an end-of-match event batch arrives.
-- Eventun should not know or send Cardano wallet addresses for this proof of concept. `cardanoun` owns managed-wallet lookup and creation.
+- Eventun should not know or send Cardano network, wallet, asset, or chain data for this proof of concept. `cardanoun` owns chain configuration, managed-wallet lookup, and wallet creation.
 - Mainnet test funding is expected to be limited, roughly USD 1,000 to USD 2,000 converted into ADA. The mainnet test runs until the allocated funds are spent.
 - Blockfrost is the selected provider for the initial Preprod deployment.
 - UTXOS developer-controlled wallets are the selected player-wallet custody provider for deployed tests. Local HD player wallets remain a development fallback.
-- Service wallets remain Cardanoun-managed HD wallets for mint authority, reserve, collection, and worker lanes.
-- Each Cardanoun deployment should use its own SQLite database, service wallet secret, Blockfrost project, UTXOS project, UTXOS Entity Secret, Eventun bearer token, and operator bearer token.
+- Service wallets remain Cardanoun-managed HD wallets for mint authority, reserve, and collection. The reserve wallet owns the reward-lane UTxOs; there are no separate worker subwallets in the current POC model.
+- Each Cardanoun deployment should use its own PostgreSQL database, service wallet secret, Blockfrost project, UTXOS project, UTXOS Entity Secret, Eventun bearer token, and operator bearer token.
+- Each Cardanoun deployment owns exactly one Cardano network. Switching networks means creating a separate deployment and database rather than reusing one database with different network configuration.
+- The Cardanoun database does not use `network` columns for relational scoping. Network-prefixed ids may remain as human/debug labels, but deployment/database isolation is the network boundary.
 - Newly built real transactions should include a configured `invalidHereafter` validity window so ambiguous submission failures have a deterministic expiry point.
+- The proof-of-concept should include a lightweight dashboard package for demos and operator visibility. The dashboard should be read-only, separately deployed from the API, and should not expose privileged operator controls or signing/submission capabilities.
 
 ## Recommended Approach
 
 Build `cardanoun` as an asynchronous Cardano transaction orchestration service.
 
-Eventun calls `cardanoun` after accepting an end-of-match event batch. Eventun should filter and forward the relevant accepted events, not derive a special reward contract and not include wallet data. `cardanoun` derives proof-of-concept entry-fee and reward transactions from that event input, persists transaction jobs, provisions managed player wallets through UTXOS when configured, assigns jobs across funded worker lanes, submits transactions, and tracks block inclusion and confirmation.
+Eventun calls `cardanoun` after accepting an end-of-match event batch. Eventun should filter and forward the relevant accepted events, not derive a special reward contract and not include wallet data. `cardanoun` derives proof-of-concept entry-fee and reward transactions from that event input, persists transaction jobs, provisions managed player wallets through UTXOS when configured, reserves reward-lane UTxOs from the reserve wallet, submits transactions, and tracks block inclusion and confirmation.
 
 Use a Cardano native fungible token for the proof-of-concept currency:
 
 - Asset name: `tokun`.
 - Policy: native script requiring a service mint authority signature.
-- Supply model: mint an initial reserve to the main service wallet, then distribute funds across HD child subwallet lanes. If any lane falls below its threshold, top it up from the main wallet.
+- Supply model: mint an initial reserve to the `reserve` service wallet, then split reserve funds into reward-lane UTxOs held by the reserve address. Treat `reserve` as the main operating wallet; `mint_authority` signs the policy and only keeps a small ADA operating float for mint transaction fees and minimum-ADA mint outputs. Reconciliation should top up `mint_authority` from `reserve` when active mint jobs need that float, and move mint-authority ADA above the float back to `reserve`; `mint_authority` should not behave as the backing reserve for the reserve wallet.
 - Mainnet test hardening: use a separate mainnet-test policy, separate keys, explicit supply caps or operator approval, and clear product copy that the asset is experimental.
 
 Do not include an Aiken entry-fee contract in the first version. Use direct wallet transactions with metadata for the simulated entry fee.
@@ -160,7 +163,7 @@ Eventun should:
 - own service-managed wallet records and encrypted key references for custodial wallets
 - derive entry-fee and reward jobs from Eventun's filtered accepted events
 - own managed-wallet lookup and creation by Eventun player id
-- own HD subwallet lane funding, top-ups, and rebalancing
+- own reserve reward-lane funding, reservation, and rebalancing
 - expose idempotent APIs for Eventun
 - expose operations APIs for reserve balance, stuck transactions, failed jobs, and chain sync health
 
@@ -183,7 +186,6 @@ Request shape, conceptually:
   "requestId": "eventun:session:match:events-v1",
   "sessionId": "accelbyte-session-id",
   "matchId": 0,
-  "network": "preprod",
   "submittedAt": "2026-05-07T00:00:00Z",
   "events": [
     {
@@ -255,14 +257,12 @@ Use two wallet classes:
 
 ### Service wallets
 
-- Main HD service wallet: derives child subwallets and can refill them.
+- Main HD service root: derives the service roles.
 - Mint authority wallet: signs minting transactions under the token policy. This may be the main HD wallet in the proof of concept but should be modeled as a distinct role.
-- Reserve wallet: holds the main `tokun` reserve and ADA reserve for top-ups.
-- Worker subwallets: HD child wallets used as independent transaction lanes. Each holds enough ADA and `tokun` to build reward and simulated entry-fee transactions without blocking on one shared UTxO.
-- Sponsor wallet or sponsor lanes: fund fees/min-ADA outputs if separated from reserve.
+- Reserve wallet: holds the main `tokun` and ADA reserve, owns reward-lane UTxOs, funds reward payouts, and sponsors entry-fee transactions.
 - Collection wallet: receives entry fees collected from the optional contract.
 
-For the proof of concept, these roles can derive from one mnemonic or root key, but the database and configuration should store role, account index, address index, and network explicitly.
+For the proof of concept, these roles can derive from one mnemonic or one HD root private key. A mnemonic is a human-friendly representation of wallet seed material, while an HD root private key/xprv can preserve child-key derivation without storing words. Storing only a single payment private key is not equivalent because it cannot derive role keys. The database and configuration should store role, account index, and address index; deployment/database isolation, not a database `network` column, is the network boundary.
 
 ### Player wallets
 
@@ -290,8 +290,8 @@ Cardano does not have an Ethereum-style separate gas payer field. Transaction fe
 Recommended proof-of-concept fee model:
 
 - Reward payout transactions spend service reserve UTxOs only. The service wallet supplies reward tokens, minimum ADA for the player token output, and transaction fees.
-- Simulated entry-fee transactions spend the player's managed wallet UTxO for the entry-fee token and a service-wallet ADA UTxO for fees and any ADA delta needed by outputs.
-- If the simulated entry-fee transaction spends a player wallet UTxO, sign with both the player managed wallet and the service fee subwallet. For UTXOS developer-controlled player wallets, Cardanoun loads the UTXOS Cardano wallet through the backend SDK and uses it as the player signer.
+- Simulated entry-fee transactions spend the player's managed wallet UTxO for the entry-fee token and a reserve ADA UTxO for fees and any ADA delta needed by outputs.
+- If the simulated entry-fee transaction spends a player wallet UTxO, sign with both the player managed wallet and the reserve wallet. For UTXOS developer-controlled player wallets, Cardanoun loads the UTXOS Cardano wallet through the backend SDK and uses it as the player signer.
 - Avoid relying on UTXOS transaction sponsorship for this POC unless an externally controlled user wallet flow is introduced later.
 
 Operational implication:
@@ -309,14 +309,14 @@ For each new filtered event batch:
 1. Create managed player wallets for unseen human player ids.
 2. Create simulated entry-fee jobs for the batch's human players. These jobs run before reward jobs.
 3. Create reward jobs from `PlayerLap`, `PlayerKill`, `PlayerMatchEnd`, and `PlayerHeatEnd.obelisks`.
-4. Assign jobs to available worker subwallet lanes.
+4. Reserve available reserve reward-lane UTxOs for reward jobs.
 5. Submit as many independent transactions as reasonable without intentionally clogging blocks.
 
-Recommended worker model:
+Recommended execution model:
 
 1. Normalize and persist event-derived transaction jobs.
 2. Ensure the player has a Cardano address.
-3. Select a funded worker subwallet with enough `tokun`, ADA, and available UTxOs.
+3. For reward jobs, reserve one available reserve reward-lane UTxO with enough `tokun` and ADA.
 4. Build a transaction that either pays a simulated entry fee or transfers one reward amount to the player address.
 5. Include minimum ADA in the player output.
 6. Attach compact transaction metadata containing a reward reference, not raw personal data.
@@ -356,7 +356,7 @@ Submission uncertainty:
 No batching:
 
 - Do not combine multiple reward facts into one Cardano transaction.
-- Throughput comes from multiple UTxO lanes and workers, not from batching reward outputs.
+- Throughput comes from multiple reserve-owned reward-lane UTxOs, not from batching reward outputs.
 - The throughput goal is to fit many independent transactions in a block without intentionally filling blocks or congesting the network.
 
 Transaction chaining:
@@ -368,33 +368,32 @@ Transaction chaining:
 
 UTxO lane strategy:
 
-- Derive multiple HD child subwallets from the main service wallet and treat each as an independent transaction lane.
-- Pre-fund each worker subwallet with enough ADA and `tokun` for a configured number of transactions.
-- Pre-split each worker subwallet into many UTxOs sized for expected reward and entry-fee transactions.
-- Keep separate lanes for token reserve and ADA fee/min-ADA funding.
+- Treat individual reserve UTxOs as independent reward lanes.
+- Pre-split reserve funds into many UTxOs sized for one expected reward transaction.
+- Keep each reward-lane UTxO above the player output's minimum ADA and with enough `tokun` for the configured reward amount.
+- Size reward-lane ADA with fee/change headroom. The current implementation uses `CARDANOUN_REWARD_LANE_ADA_LOVELACE`, defaulting to twice `CARDANOUN_MIN_ADA_LOVELACE`; token-bearing outputs are built with the protocol-calculated minimum ADA from Blockfrost protocol parameters.
 - Monitor lane count, pending ratio, reserve balance, and failed submissions.
 
-## Subwallet Balance Management
+## Reserve Lane Management
 
-The main service wallet acts as the reserve. Worker subwallets are treated as consumable transaction lanes.
+The reserve service wallet is both the operating reserve and the source of reward-lane UTxOs. This intentionally removes the earlier worker-subwallet layer, which created extra funding, fan-out, and reconciliation complexity without improving the first POC enough to justify it.
 
 Balance targets:
 
-- `minAda`: the ADA threshold below which a worker subwallet is paused for top-up.
-- `targetAda`: the ADA balance a worker subwallet should have after top-up.
-- `minTokun`: the `tokun` threshold below which a worker subwallet is paused for top-up.
-- `targetTokun`: the `tokun` balance a worker subwallet should have after top-up.
-- `minSpendableUtxos`: the minimum number of independent UTxOs a worker subwallet should have available for parallel job assignment.
+- `minAda`: fallback/conservative local ADA floor used for reserve-lane defaults and offline helper logic.
+- `rewardLaneAda`: the ADA expected in each reserve reward-lane UTxO, including fee/change headroom.
+- `rewardTokun`: the token amount expected in each reward-lane UTxO.
+- `maxInFlightTransactions`: the target number of reserve reward lanes to keep available for concurrent reward signing/submission.
 
-Top-up flow:
+Lane refill flow:
 
-1. A balance monitor watches each worker subwallet.
-2. If a worker falls below threshold, mark it `refill_pending` and stop assigning new jobs to it.
-3. Build a refill transaction from the main reserve wallet to the worker subwallet.
-4. After the refill is included, optionally fan out the refill output into multiple smaller UTxOs for that worker.
-5. Mark the worker `active` once it has enough ADA, `tokun`, and spendable UTxOs.
+1. Chain sync records reserve UTxOs as available, reserved, spent, or recycle reward lanes.
+2. Reward job claiming atomically reserves an available reward lane before signing.
+3. Confirmed reward observations mark the consumed lane spent.
+4. Reconciliation queues a reserve-to-reserve funding transaction with one output per missing lane.
+5. After the refill transaction confirms and the provider indexes it, chain sync records those outputs as available lanes.
 
-This model is more important than transaction chaining for the first throughput demo. Independent funded subwallets make it plausible to submit many transactions that can land in the same block without every transaction contending for the same wallet state.
+This model is simpler than worker wallets while still allowing multiple reward transactions to be built from independent UTxOs. It also makes reconfiguration simpler: if reward size changes, reconciliation can classify old lane sizes as recycle candidates and create new reserve lanes with the new target shape.
 
 ## Entry Fee Simulation
 
@@ -429,36 +428,34 @@ Ordering:
 
 ## Data Store
 
-Use SQLite for the proof of concept unless the deployment requires multiple active replicas. This avoids standing up a full database while still giving the worker a durable transaction queue.
+Use PostgreSQL for deployed proof-of-concept state. Neon is the initial managed PostgreSQL target for Azure deployment.
 
 Preferred deployment:
 
-- SQLite is only durable in Azure if the database file is on persistent storage, such as a mounted Azure Files share or another configured persistent volume. A database file stored only inside an ordinary container filesystem can be lost on restart, redeploy, or reschedule.
-- Use a single writer process or a single active service replica for the proof of concept. If multiple replicas are required, move to Postgres or another central store.
-- Run SQLite in WAL mode and treat transaction job state as the source of truth for retry/reconciliation.
+- Use one PostgreSQL database per Cardanoun deployment/network.
+- Run SQL migrations automatically on API/CLI startup under a PostgreSQL advisory lock.
+- Treat transaction job state as the source of truth for retry/reconciliation.
+- Scale service replicas conservatively until Postgres job locking and Cardano UTxO lane behavior have been revalidated under the intended deployment topology.
 
 Azure alternatives:
 
-- Azure Cosmos DB free tier is the best managed durable-store candidate if SQLite-on-Azure-Files is not acceptable. It offers a lifetime free tier for one account with 1000 RU/s and 25 GB storage when enabled at account creation. Use the NoSQL or Table API and model records as schemaless documents. This avoids migration management but adds RU budgeting and a less relational query model.
-- Azure SQL Database has a free offer, but it is still a relational database. It is not preferred here because it brings schema migrations back into the project.
-- Azure Table Storage is cheap and schemaless, but the free-tier story is less clear than Cosmos DB free tier. Use it only if the Azure subscription already standardizes on Storage Tables.
+- Azure SQL Database remains a possible managed relational alternative if Neon does not fit the deployment.
+- Azure Cosmos DB or Azure Table Storage are less direct fits because Cardanoun now relies on relational job claims, row locks, and SQL migrations.
 
 Initial tables:
 
-- `cardano_network`: network name, provider config, confirmation depth.
-- `asset_policy`: policy id, asset name, script type, network, active flag.
-- `service_wallet`: role, address, network, derivation path or account index, secret reference, status.
-- `worker_subwallet`: service wallet id, derivation index, address, status, min/target ADA, min/target `tokun`, current lane count.
-- `player_wallet`: player id, address, network, custody mode, provider wallet id, created at.
+- `asset_policy`: policy id, asset name, script type, active flag.
+- `service_wallet`: role, address, derivation path or account index, secret reference, status.
+- `player_wallet`: player id, address, custody mode, provider wallet id, created at.
 - `wallet_secret_ref`: wallet id, secret storage reference, key version, disabled flag.
 - `event_batch`: Eventun request id, session id, match id, status.
 - `forwarded_event`: event batch id, derived event id, name, player id, heat, progress, event data hash, raw event JSON.
 - `reward_fact`: deterministic reward id, kind, player id, amount, source event reference, ordinal, status.
-- `transaction_job`: job id, job type, reward id or entry fee id, assigned subwallet id, status, tx hash, parent job id, attempts.
+- `transaction_job`: job id, job type, reward id or entry fee id, source wallet id, reserved reward-lane id, status, tx hash, parent job id, attempts.
 - `transaction_job` should also store signed CBOR only for internal submission, an `invalid_hereafter_slot` for real signed transactions, submission/build locks, and last error details. Operations APIs should not expose signed CBOR.
 - `transaction_observation`: tx hash, block slot, block hash, confirmation depth, observed at.
 - `entry_fee_payment`: event batch id, player id, amount, status, tx hash.
-- `utxo_lane`: wallet role, tx hash, output index, amount summary, lane status, reserved job id.
+- `reward_lane`: reserve wallet id, tx hash, output index, amount summary, lane status, reserved job id, observed at.
 
 ## Deployment Shape
 
@@ -469,11 +466,11 @@ Follow Accountun's deployment style where practical:
 - Docker image built from the service package.
 - Azure Container Registry publish flow similar to Accountun.
 - Azure-hosted service with environment-specific configuration for Preprod and Mainnet.
-- Persistent storage mount for the SQLite database file.
-- Persistent storage mount for the service wallet secret file.
+- Managed PostgreSQL database for durable state.
+- Key Vault secret or equivalent mounted/managed secret for the service wallet root key material.
 - Azure Key Vault for secrets; avoid `.env` secrets outside local development.
 - Health endpoint and metrics endpoint.
-- Operations endpoint for worker subwallet balances, refill status, job backlog, block inclusion rate, and remaining mainnet ADA budget.
+- Operations endpoint for service wallet balances, reserve reward-lane status, job backlog, block inclusion rate, and remaining mainnet ADA budget.
 - Deployment readiness gate that can fail startup when bearer tokens, durable paths, provider health, service wallets, tokun policy, or custody settings are not production-like.
 - Background runner that wakes on Eventun ingestion or operator actions, processes queued work, submits signed jobs when enabled, observes pending jobs, reconciles funding after confirmations, and stops when no active work remains.
 
@@ -481,7 +478,7 @@ Azure resource shape:
 
 - Mirroring Accountun with a separate `rg-cardanoun`, `cardanoun` container registry, `cardanoun-env` Container Apps environment, and `cardanoun-api` app is acceptable for the POC.
 - Sharing an existing container registry is the most obvious small cost optimization, but separate resources are operationally cleaner and easier to tear down.
-- Keep the Container App on the Consumption plan and a single replica for the SQLite proof of concept.
+- Keep the Container App on the Consumption plan and start with conservative replica counts until Postgres job locking and Cardano UTxO lane behavior have been load-tested.
 - Avoid dedicated workload profiles, min replicas greater than zero, or high log retention unless the test requires them.
 
 Provider options:
@@ -490,19 +487,143 @@ Provider options:
 - Keep provider access behind `cardanoun` and never expose API keys to client code.
 - Consider a self-hosted node/Ogmios/Kupo path only after the proof-of-concept transaction model stabilizes.
 
+## Dashboard Package
+
+Add a separate static dashboard package for demonstration and light operational visibility. Working package name:
+
+```text
+packages/dashboard
+```
+
+Primary goals:
+
+- show the Cardanoun service is actively turning Eventun batches into chain transactions
+- make transaction state transitions visible during demos
+- show reserve, mint-authority, collection, and reward-lane health at a glance
+- show job queue pressure, recent failures, and runner state without exposing privileged controls
+- link on-chain transaction hashes to a public Cardano explorer after they are known
+
+Recommended frontend shape:
+
+- static SPA, not Next.js for the first dashboard
+- Vite + TypeScript
+- Tailwind CSS for layout and styling
+- Solid + TanStack Router/Query is acceptable if the team wants to trial the Solid path; verify Solid/TanStack version compatibility at scaffold time
+- Prefer a framework-agnostic charting library for Solid, such as Apache ECharts, Chart.js, or ApexCharts; Recharts and Tremor are React-oriented and should only be selected if the dashboard uses React instead of Solid
+
+Recommended deployment:
+
+- deploy as Azure Static Web Apps
+- use `dashboard.cardanoun.com` as the stable custom domain
+- keep the API at `api.cardanoun.com`
+- prefer Azure Static Web Apps over Azure Storage static website hosting because Static Web Apps supports custom domains with managed SSL directly; Azure Storage static website custom-domain HTTPS typically requires Azure CDN or Front Door
+
+Authentication and API scope:
+
+- add a third bearer token for dashboard read-only APIs, tentatively `CARDANOUN_DASHBOARD_BEARER_TOKEN`
+- dashboard token must not authorize minting, fund movement, signing, submission, queue mutation, runner controls, or secret-bearing endpoints
+- if the static dashboard is public or broadly shared, do not bake the dashboard token into the bundle; use Static Web Apps auth or a tiny server/API proxy later
+- for internal POC demos, a token entered into the UI and stored in memory/session storage is acceptable if the token has read-only scope
+- dashboard local development should keep mock mode as the default. API mode should be enabled with `VITE_CARDANOUN_DASHBOARD_MODE=api`, point to `VITE_CARDANOUN_API_BASE_URL` such as `https://api.cardanoun.com`, and prompt for the read-only dashboard token in the browser session.
+
+Dashboard API surface:
+
+- add read-only routes under `/v1/dashboard/*` or equivalent, protected by the dashboard token
+- initial implementation can use a single `/v1/dashboard/snapshot` endpoint that summarizes existing data rather than exposing privileged operations responses directly
+- keep a separate paginated transaction-history endpoint as a likely follow-up once the recent transaction list grows beyond what the snapshot should carry
+- useful first endpoints:
+  - summary: runner state, active jobs, recent confirmations, recent failures
+  - transactions over time: counts by job type and status, grouped into time buckets
+  - job queue: recent and active jobs with type, status, attempts, tx hash, updated time
+  - wallets: service wallet ADA/`tokun` balances and reward-lane counts
+  - failures: recent retryable and terminal errors grouped by message and job type
+
+Dashboard persistence/read model:
+
+- persist transaction job status transitions in a small history table so charts are not limited to the current mutable `transaction_job.status`
+- include `job_id` on transaction observations, or otherwise make latest observation joins unambiguous
+- snapshot responses can aggregate from the status history, current jobs, service wallet balances, and reward lanes
+- if lane/job time-series charts need more accurate historical snapshots later, add a lightweight metric snapshot table written by the runner cycle
+
+Live update behavior:
+
+- use polling/long-polling style updates first; do not add WebSockets or SSE until the dashboard proves it needs them
+- when active jobs exist, refresh high-volatility panels every 3 to 5 seconds
+- when the queue is quiet, back off to 30 to 60 seconds
+- allow manual refresh and a visible last-updated timestamp
+- TanStack Query's refetch intervals and stale-time behavior are a good fit for this model
+- avoid hammering Blockfrost from the browser; the dashboard should read Cardanoun's database/API summaries, not call chain providers directly
+- graph bucket size should be adaptive or configurable. Preprod may have short bursts of activity a few times per week, so 10-minute buckets are useful during a live test but hourly or daily buckets are more useful when reviewing quiet/off-day history.
+
+Recommended dashboard views:
+
+- Overview: current runner state, active job counts, confirmed transaction count, failed job count, reserve available lanes, reserve ADA/`tokun`
+- Transactions: time-series chart of submitted, in-block, and confirmed transactions by job type (`reward`, `entry_fee`, `fund_move`, `mint_reserve`)
+- Queue: filterable table of active and recent transaction jobs
+- Wallets/Lanes: service wallet balances, reward-lane availability, recycle lanes, reserved lanes
+- Recent Chain Activity: latest known tx hashes, status, confirmation depth, block slot, explorer link
+
+Initial graph set:
+
+- Transactions over time by status: submitted, in-block, confirmed, failed. This is the primary "work is happening on-chain" demo graph.
+- Transactions over time by type: `entry_fee`, `reward`, `fund_move`, and `mint_reserve`. If useful, reward transactions can later be split by reward kind.
+- Job state pipeline over time: ready, signed, submitted, in-block, confirmed, failed-retryable, and failed-terminal counts. This should make backlog and stuck-state behavior visible.
+- Confirmation latency: time from submitted to confirmed, shown as a line, histogram, or compact distribution summary.
+- Reward lane availability over time: available, reserved, recycle, and spent lane counts. This shows current transaction throughput capacity.
+
+Use table/list views rather than graphs for:
+
+- active job queue
+- recent transactions
+- recent Eventun batches
+- service wallet balances
+- recent failures
+
+Dashboard metric dimensions:
+
+- Keep `jobType` separate from gameplay reward reason.
+- `jobType` examples: `entry_fee`, `reward`, `fund_move`, `mint_reserve`.
+- `rewardKind` examples: `lap`, `kill`, `match_end`, `obelisk`.
+- Charts should use `jobType` for operational flow and `rewardKind` only when showing gameplay-derived reward mix.
+
+Deferred player-wallet view:
+
+- A later dashboard page may show managed player wallets, player ids, balances, provider wallet ids, and recent wallet transactions.
+- Treat this as privacy-sensitive even though chain transactions are public. Player ids, wallet addresses, provider ids, and balances should not be casually exposed in a public demo view.
+- If added, prefer an operator-only route or explicit "debug/private" dashboard mode, and consider masking player ids by default.
+
+Explorer links:
+
+- Use a network-aware helper for public transaction links.
+- Cardanoscan URL pattern:
+  - Preprod: `https://preprod.cardanoscan.io/transaction/{txHash}`
+  - Mainnet: `https://cardanoscan.io/transaction/{txHash}`
+- Cexplorer URL pattern:
+  - Mainnet: `https://cexplorer.io/tx/{txHash}`
+  - Preprod/testnet support should be verified before making it the default
+- Pick one default explorer in configuration, but keep the helper easy to swap.
+
+Non-goals for the first dashboard:
+
+- no wallet creation or key handling in the browser
+- no mint/fund/sign/submit buttons
+- no direct Blockfrost or UTXOS API calls from the browser
+- no player-facing wallet UI
+- no public claims that `tokun` is a production currency
+
 ## Security and Compliance Risks
 
 Custody:
 
 - If Ascent creates wallets and holds keys, it is operating a custodial wallet service for those assets.
 - The proof of concept needs a written export/recovery/loss policy before it is exposed to real users.
-- Service wallet custody should use Key Vault or an equivalent mounted secret path for deployment. Plain encrypted mnemonics in a database are a weak mainnet posture.
+- Service wallet custody should use Key Vault or an equivalent secret source for deployment. The preferred Cardanoun deployment secret is `CARDANOUN_SERVICE_ROOT_PRIVATE_KEY`, a bech32 HD root private key/xprv capable of deriving the configured service roles. A single address payment private key is not sufficient for this derivation model, and plain encrypted mnemonics in a database are a weak mainnet posture.
 - UTXOS player wallets depend on the Entity Secret. Use one UTXOS project and Entity Secret per deployment, store the Entity Secret private key securely, and treat compromise as compromise of all wallets in that deployment.
 
 Operations:
 
 - Eventun ingestion and operator controls must not share bearer credentials.
-- Signed transaction CBOR should remain internal to the worker/submission path and should not be returned by operations APIs.
+- Signed transaction CBOR should remain internal to the build/submission path and should not be returned by operations APIs.
 - Mainnet submission requires both normal transaction submission enablement and an explicit mainnet allow flag.
 
 Mint authority:
@@ -530,7 +651,7 @@ Abuse:
 
 ### Recommended POC: Native token rewards plus direct entry fee metadata
 
-Use Mesh transaction builders, Cardanoun-managed service wallets, UTXOS developer-controlled player wallets, native-script minting, worker subwallet reserve transfers, and direct simulated entry-fee payments with metadata.
+Use Mesh transaction builders, Cardanoun-managed service wallets, UTXOS developer-controlled player wallets, native-script minting, reserve-owned reward lanes, and direct simulated entry-fee payments with metadata.
 
 This proves the core chain loop fastest:
 
@@ -539,7 +660,7 @@ This proves the core chain loop fastest:
 - per-event transactions
 - chain confirmation
 - Eventun bridge
-- reserve, worker subwallet, and UTxO lane operations
+- reserve, reward-lane, and UTxO operations
 
 Tradeoff:
 
@@ -567,27 +688,27 @@ Tradeoff:
 2. What throughput measurement should be shown to grant providers: submitted transactions per minute, block-included transactions per minute, confirmed transactions per minute, cost per transaction, or all of these?
 3. What safety limit should stop the mainnet test: remaining ADA reserve, submitted transaction count, block fullness threshold, or elapsed duration?
 4. What UTXOS tier or custom quota is needed for the expected number of managed player wallets?
-5. Should the SQLite/Azure Files POC move to a managed database before any multi-replica deployment?
+5. What Postgres/Neon sizing and connection-pool settings are needed for the intended transaction load test?
 
 ## Proposed Next Plan
 
-Initial implementation status as of 2026-05-14:
+Initial implementation status as of 2026-05-15:
 
 - Bun workspace, API, CLI, and core packages are scaffolded.
-- SQLite durable state, service wallets, worker lanes, player wallets, Eventun ingestion, reward derivation, entry-fee jobs, mint-reserve jobs, fund moves, fan-out jobs, chain balance sync, reconciliation, real Mesh builders/signing, signed-job submission, observation, `submission_unknown`, validity-window expiry, background runner, and Azure readiness checks are implemented.
-- A Preprod integration test exists for build-submit-observe mint-reserve flow and is gated behind an environment flag.
+- PostgreSQL durable state, service wallets, reserve reward lanes, player wallets, Eventun ingestion, reward derivation, entry-fee jobs, mint-reserve jobs, fund moves, chain balance sync, reconciliation, real Mesh builders/signing, signed-job submission, observation, `submission_unknown`, validity-window expiry, background runner, and Azure readiness checks are implemented.
+- Preprod integration tests exist for build-submit-observe mint-reserve flow and an opt-in 50+ reward-job load pass. Both are gated behind explicit environment flags because they submit real Preprod transactions.
 - A deployment runbook exists for bringing up a new chain/deployment.
 
 Remaining near-term work:
 
 1. Create Azure resources for `cardanoun`.
 2. Publish and deploy the API container.
-3. Configure durable Azure Files paths, bearer tokens, Blockfrost, UTXOS project credentials, and background worker settings.
-4. Initialize the service wallet and tokun policy on the mounted deployment paths.
-5. Fund `mint_authority`, mint reserve, fund worker wallets, and fan out lanes.
+3. Configure Neon/PostgreSQL, bearer tokens, Blockfrost, UTXOS project credentials, `CARDANOUN_SERVICE_ROOT_PRIVATE_KEY`, and background worker settings.
+4. Initialize the service wallet and tokun policy for the deployment.
+5. Fund the `reserve` operating wallet, let reconciliation top up `mint_authority` for mint jobs, mint reserve `tokun`, and let reconciliation create reserve reward-lane UTxOs.
 6. Run deployment readiness and one deployed Eventun smoke batch.
 7. Decide whether any additional Preprod integration or load tests are required before mainnet.
 
 ## Review Checkpoint
 
-SQLite on Azure Files is the selected persistence path for the POC. The next checkpoint is deployment readiness in Azure, followed by a deployed Preprod smoke test using Eventun-shaped input and Blockfrost/UTXOS credentials for that deployment.
+PostgreSQL/Neon is the selected persistence path for the POC. The next checkpoint is deployment readiness in Azure, followed by a deployed Preprod smoke test using Eventun-shaped input and Blockfrost/UTXOS credentials for that deployment.

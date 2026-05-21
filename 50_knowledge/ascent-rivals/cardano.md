@@ -15,13 +15,19 @@ Cardanoun is a separate Cardano proof-of-concept reward service for Ascent Rival
 
 Cardanoun receives filtered accepted Eventun event batches, creates backend-managed player wallets, mints/distributes an experimental native asset named `tokun`, and simulates entry-fee transactions. These wallets are not user-linked website wallets, are not visible to players, and do not change public wallet-linking copy or recovery expectations.
 
-As of 2026-05-14, the Cardanoun POC uses:
+As of 2026-05-15, the Cardanoun POC uses:
 
 - Blockfrost for initial Preprod provider access.
 - Cardanoun-managed service wallets for mint authority, reserve, collection, and worker lanes.
 - UTXOS developer-controlled wallets for deployed managed player wallets, with one UTXOS project and Entity Secret per deployment.
-- SQLite on durable storage for POC job state.
+- PostgreSQL, initially Neon for Azure deployment, for POC job state.
 - Separate Eventun-ingestion and operator bearer tokens.
+
+Cardanoun deployment assumptions:
+
+- Each Cardanoun deployment owns exactly one Cardano network and one database. Switching networks means creating a separate deployment/database rather than reusing the same database with different configuration.
+- Eventun sends gameplay event data only. It does not send Cardano network, wallet, asset, or chain data.
+- The Cardanoun database does not use `network` columns for scoping. Network-prefixed ids may remain as human/debug labels, but they are not the isolation model.
 
 Do not generalize Cardanoun's managed wallets into the production Cardano identity model without a separate product and custody review.
 
