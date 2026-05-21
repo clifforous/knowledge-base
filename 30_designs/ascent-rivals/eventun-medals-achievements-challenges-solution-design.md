@@ -27,6 +27,7 @@ Eventun currently:
 - records match and heat summary stats such as kills, deaths, crashes, credits, obelisks, placement, podium finish, lap times, circuit points, and finish time
 - derives current player career and course stats from stored events
 - uses SQL functions, views, and materialized views for several derived stats surfaces today, including career overview, recommendation metrics, best-lap/best-finish rankings, and gauntlet standings
+- currently uses Eventun course data such as default lap counts to decide whether some stats and records are comparable, but that data is copied from the game client and can become stale
 - does not yet own a durable medal, achievement, mastery, challenge, reward-claim, or notification/read-state model
 
 Ascentun currently:
@@ -93,6 +94,8 @@ Examples:
 
 Achievements may grant rewards.
 
+Achievement, mastery, and challenge definitions may need presentation metadata, such as a 2D image/icon. The asset source is not settled. Assets may be built into the game client, referenced from the Eventun definition, or handled by a mixed approach.
+
 ### Mastery
 
 A mastery is an achievement category focused on sustained use or demonstrated skill with a ship part, weapon, or similar game component.
@@ -144,17 +147,42 @@ Challenges may grant rewards.
 
 A reward is granted when a player completes an achievement, mastery, or challenge goal.
 
-Expected reward types:
+Expected V1 reward examples:
 
 - ARC
 - skins
-- titles
+
+For V1, rewards should be treated as AccelByte-backed where possible. Titles are a future-facing example of how reward types could expand beyond skins and ARC; they are not yet a committed implementation requirement.
 
 Rewards are generally not granted directly from medals.
 
 Reward fulfillment should use AccelByte APIs where AccelByte owns the rewardable item or entitlement.
 
 Rewards should not expire after a player earns them. Time windows constrain earning challenge progress, not post-completion reward availability.
+
+### Competitive Stats Eligibility
+
+Competitive stats eligibility is the match-level signal that tells Eventun whether the match's stats are valid for durable competitive use.
+
+This is broader than medal, achievement, mastery, or challenge progression. It also applies to records and stat surfaces such as:
+
+- best finish time for a course
+- best lap time
+- most kills
+- career stats
+- leaderboards and ranking views
+
+The game runtime should own this decision because it knows whether the match used the expected course defaults, lap count, starting parts, race mode, or other settings that make the result comparable. Eventun should not infer eligibility from stale copied course defaults when the game can report the result directly.
+
+Working field name:
+
+- `competitiveStatsEligible`
+
+Optional supporting field:
+
+- `competitiveStatsDisabledReason`
+
+The final payload field name can change during solution design, but the requirement is that `MatchStart` or equivalent match context carries a game-authored eligibility signal for durable competitive stats.
 
 ### AccelByte Reward And Entitlement Findings
 
@@ -256,6 +284,8 @@ Decision:
 19. Claim failures should keep the reward claimable, usually in `earned`, and record `last_claim_error` plus `claim_attempt_count`.
 20. Expected claim failures include configuration mismatches between Eventun and AccelByte, such as item id/SKU mistakes, entitlement configuration issues, and possible supply or quantity constraints.
 21. Limited-supply rewards are not a V1 requirement, but the reward model should not make them impossible later.
+22. V1 should assume reward grants are AccelByte-backed where possible.
+23. Titles are a future reward-type example and should not force additional V1 implementation complexity.
 
 ### Progress Evaluation Requirements
 
@@ -266,22 +296,28 @@ Decision:
 5. Eventun should record newly completed goals and claimable rewards.
 6. Evaluation should be reliable if a match summary is accepted more than once or retried.
 7. Evaluation should be able to backfill from historical Eventun events where sufficient source data exists.
-8. Match-start or match-context events must identify whether the match is qualified for stat, medal, achievement, mastery, and challenge tracking.
-9. Special matches, such as races with different starting parts or fewer laps, may be marked not qualified for progression tracking.
-10. Progress evaluation must respect the match's tracking eligibility.
+8. Match-start or match-context events must identify whether the match is eligible for durable competitive stats.
+9. Competitive stats eligibility must apply beyond achievements and medals, including course records, career stats, leaderboards, and similar derived stat surfaces.
+10. Special matches, such as races with different starting parts, fewer laps, modified course defaults, or nonstandard modes, may be marked not eligible for competitive stats.
+11. Eventun should rely on the game-authored eligibility signal rather than inferring comparability from copied course defaults where the game can provide the authoritative answer.
+12. Progress, record, and stat evaluation must respect the match's competitive stats eligibility.
 
 ### Notification and Claim Requirements
 
 1. Players need a way to learn that achievements, masteries, or challenges completed.
 2. Claiming a reward can serve as a notification surface.
 3. The design must evaluate whether claim-only notification is too brittle.
-4. The game client may need a post-match API to ask for newly completed achievements, masteries, challenges, and rewards.
-5. If a post-match "new completions" API exists, Eventun may need an inbox/read-state model so already-seen completions are not repeatedly returned as new.
-6. V1 should focus on game-client visibility before public website visibility.
-7. The game client already knows which medals were awarded during the match, so Eventun does not need to be the immediate post-match medal notification source.
-8. Eventun should support career medal totals so the game client and future website can replace AccelByte-backed medal stat display.
-9. A durable notification inbox is not a V1 requirement.
-10. AccelByte player messaging may be a candidate for later notification delivery and should be researched before building an Eventun notification system.
+4. After the event batch for a match is accepted and evaluated, the game client must be able to determine which goals were achieved and which rewards became claimable.
+5. The exact API shape for post-match completion lookup is a solution-design decision rather than a settled requirement.
+6. If a post-match "new completions" API exists, Eventun may need an inbox/read-state model so already-seen completions are not repeatedly returned as new.
+7. V1 should focus on game-client visibility before public website visibility.
+8. The game client already knows which medals were awarded during the match, so Eventun does not need to be the immediate post-match medal notification source.
+9. Eventun should support career medal totals so the game client and future website can replace AccelByte-backed medal stat display.
+10. A durable notification inbox is not a V1 requirement.
+11. AccelByte player messaging may be a candidate for later notification delivery and should be researched before building an Eventun notification system.
+12. Completed achievements, masteries, challenges, medal totals, and related progression stats can be publicly readable by default unless a specific definition or future privacy requirement says otherwise.
+13. The game client and website decide which public stats to surface in their own presentation contexts.
+14. Achievement, mastery, and challenge presentation may require assets such as icons or 2D images, but asset storage and delivery are solution-design details rather than requirements. The solution may use Eventun uploads, client-bundled assets, or another approach.
 
 ### Administration Requirements
 
@@ -304,19 +340,22 @@ Decision:
 - The game runtime owns medal-rule logic.
 - Eventun stores medal facts and derives progression from those facts.
 - Only qualified, successfully completed matches should affect durable medal/progression stats.
+- Only competitively eligible matches should affect durable records, career stats, progression, leaderboards, and similar competitive stat surfaces.
 - Eventun owns progression evaluation.
 - AccelByte owns fulfillment for AccelByte-backed rewards.
 - Earned rewards should not expire by default.
+- Progression and medal data can be public by default; public API access is acceptable and can support community stats sites.
+- The game client must be able to determine post-match achieved goals and claimable rewards after Eventun evaluates the accepted match batch.
 
 ## Initial Processing Flow
 
 The desired high-level flow is:
 
 1. Gameplay sends existing match, player, combat, loadout, and result events to Eventun.
-2. Match context identifies whether the match is qualified for durable progression tracking.
+2. Match context identifies whether the match is eligible for durable competitive stats.
 3. Gameplay also sends final medal awards to Eventun as part of the successful match event batch.
 4. Eventun stores the raw event and medal facts.
-5. After a qualified successful match, Eventun accumulates player stats and medal counts.
+5. After a competitively eligible successful match, Eventun accumulates player stats and medal counts.
 6. Eventun evaluates achievement, mastery, and challenge progress for participating players.
 7. Eventun records newly completed goals.
 8. Eventun creates claimable rewards for completed goals that have rewards.
@@ -329,8 +368,8 @@ The desired high-level flow is:
 - Player rewards should be claimed through Eventun-owned claimable reward state. V1 local states are `earned`, `claiming`, and `claimed`; claim errors are tracked as fields rather than first-class visible states.
 - Medals are useful as normalized progression events even when a raw Eventun event could also derive the same fact.
 - A "double kill" or similar compound medal will be generated by game/runtime logic.
-- ARC, skins, and titles will eventually have an authoritative ownership or balance system; AccelByte is assumed for AccelByte-backed inventory and entitlement rewards.
-- SKU is the likely canonical item identity for weapon and part progression because AccelByte item ids may change if an item is deleted and recreated.
+- ARC and skins are expected V1 reward examples and should be AccelByte-backed where possible. Titles are a future reward-type example and may be AccelByte-backed if/when implemented.
+- Item identity details are solution scope. The current expectation is that weapon and part progression will likely use SKU and not AccelByte item ids.
 - A player-specific read/inbox state may be useful later if the game needs reliable post-match "new completion" notifications, but it is not a V1 requirement.
 - Raw AccelByte entitlements do not appear to support generic player-side `UNCLAIMED` state. AccelByte Challenge rewards do, but only inside the Challenge service model.
 
@@ -345,7 +384,7 @@ The desired high-level flow is:
 7. Completion should immediately create locally claimable rewards; no normal approval flow is expected.
 8. V1 reward bundle state should be `earned`, `claiming`, and `claimed`, with errors tracked as fields.
 9. Limited-supply rewards are deferred, but the model should not rule them out.
-10. Match context should include whether a match qualifies for progression/stat tracking.
+10. Match context should include a game-authored competitive stats eligibility signal.
 11. Earned rewards should not expire by default.
 12. Daily, weekly, and monthly challenge assignments should be persisted per player for each active time window.
 13. Initial daily, weekly, and monthly challenge pools should be shared across players.
@@ -353,16 +392,16 @@ The desired high-level flow is:
 15. Rerolls are deferred pending design-team direction.
 16. Seasonal challenges are fixed for V1 once the season starts; mid-season definition edits are V2.
 17. Eventun should support career medal totals for game client and future website display.
-18. V1 visibility should focus on the game client; website/public profile exposure can use the same data later if desired.
-19. Initial administration and correction can use SQL until repeated workflows justify dedicated tools.
+18. Progression and medal data can be public by default, with game client and website presentation deciding what to show.
+19. Public stats APIs are acceptable and may help community tools and external stats sites.
+20. The exact post-match completion lookup API is a solution-design concern, not a settled requirements constraint.
+21. V1 rewards should be AccelByte-backed where possible; titles are a future expansion example, not a committed V1 reward type.
+22. Presentation asset storage and delivery should not be prescribed as a requirement.
+23. Initial administration and correction can use SQL until repeated workflows justify dedicated tools.
 
 ## Open Requirements Questions
 
-1. What is the final canonical item identity for weapons and ship parts in Eventun? SKU is likely, but this needs confirmation.
-2. Should completed achievements, masteries, challenges, and medals be public by default, private by default, or visibility-controlled per definition?
-3. Does V1 need any post-match "new completions" API, or is a general claimable-rewards/progress API enough?
-4. What match-context field or rule should identify that a match is not qualified for progression tracking?
-5. Which reward types are AccelByte-backed versus Eventun-owned, especially ARC and titles?
+There are no open requirement questions currently identified. The remaining questions are solution-shape decisions.
 
 ## Deferred Solution Areas
 
@@ -370,6 +409,8 @@ These areas should be designed after the requirements are settled:
 
 - Eventun schema
 - event payload shape for medals
+- item identity and reward reference model, likely SKU-oriented rather than AccelByte item-id-oriented
+- match context field naming and payload shape for competitive stats eligibility
 - stat and medal aggregation strategy
 - requirement expression model
 - challenge assignment model
