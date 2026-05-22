@@ -232,6 +232,8 @@ Decision:
    - 10 double-kill medals with the SMG
    - 1,000 weapon kills
    - 10,000 total kills
+   - Teleported 10 miles with the skip drive
+   - 100 Perfect Warp medals with the Furokashi
 6. Achievement completion may create one or more claimable rewards.
 7. Achievement progress should be derived from Eventun-ingested gameplay events and Eventun-owned aggregate data.
 
@@ -239,10 +241,10 @@ Decision:
 
 1. Eventun must support masteries as an achievement category unless a later requirement requires a separate system.
 2. Masteries must support ship-part and weapon-specific dimensions.
-3. Masteries must support usage-based requirements for heats using a part because parts are selected per heat.
+3. Masteries must support usage-based requirements for laps using a part.
 4. Masteries should support performance-based requirements such as kills or podium finishes with a part or weapon.
-5. Masteries may support match-level usage if it can be derived from heat-level usage without adding major complexity.
-6. Mastery completion may create one or more claimable rewards.
+5. Masteries may support heat-level or match-level usage if it can be derived without adding major complexity.
+6. Mastery completion may create one claimable or automatic reward which may be a bundle (eg. Arc + Battlepass XP)
 
 ### Challenge Requirements
 
@@ -332,7 +334,7 @@ Decision:
 
 - Medals are gameplay-recognition events, not the primary reward surface.
 - Achievements are persistent progression goals.
-- Masteries are achievement-category goals focused on parts, weapons, and sustained skill.
+- Masteries are achievement-category goals focused on parts and weapons.
 - Challenges are time-windowed achievement-category goals.
 - Rewards are attached to achievement, mastery, or challenge completion.
 - Augmented medals replace base medals for the same occurrence.
@@ -401,7 +403,9 @@ The desired high-level flow is:
 
 ## Open Requirements Questions
 
-There are no open requirement questions currently identified. The remaining questions are solution-shape decisions.
+1. Should old challenge data be saved or lost when a new set of challenges
+2. What other historical tracking is required if any
+3. 
 
 ## Deferred Solution Areas
 
