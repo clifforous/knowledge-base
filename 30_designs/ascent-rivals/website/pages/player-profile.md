@@ -247,9 +247,13 @@ Available conceptually:
 - in-game medals
 - in-game badges
 
-Source:
+Current/legacy source:
 
 - AccelByte, using the logged-in player's token where supported
+
+Supersession note:
+
+- The Eventun medals/progression requirements draft proposes moving official gameplay medal facts and progression goals to Eventun. If that project proceeds, official Eventun medal totals should replace this earlier AccelByte-medal assumption for gameplay medals. AccelByte-only badges, trophies, or platform recognitions remain separate unless explicitly migrated.
 
 V1 caution:
 
@@ -648,7 +652,7 @@ These ideas are valuable but should not block V1 if unsupported:
 
 1. V1 should include a match-history overview, but not a match-detail page.
 2. V1 should include course leaderboard placements using player-specific leaderboard data where available.
-3. Medals and badges are real in-game systems owned by AccelByte. Do not fake them from Eventun aggregate stats.
+3. Medals and badges are real in-game systems and must not be faked from incomplete aggregate stats. Earlier profile work assumed AccelByte ownership; the Eventun medals/progression requirements draft supersedes that assumption for future official gameplay-medal tracking if implemented.
 4. V1 strength modules should be limited to best finish and best lap unless richer normalized data becomes available.
 5. Avoid negative or joke-framed stats for now.
 6. The default layout should prioritize identity and career totals first, then course stats. Strength modules are welcome only where the data supports them cleanly.

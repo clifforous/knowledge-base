@@ -32,10 +32,16 @@ Completed in Eventun:
 - `gauntlet_stage_run` is the durable runtime table for one stage shard.
 - One active run per `(gauntlet_id, stage, shard_key)` is enforced in the database.
 - Stage allocation claims or creates a persisted run row before calling AccelByte.
-- AccelByte session attributes include:
+- AccelByte session attributes include only bootstrap/search data:
+  - `GauntletId`
+  - `GauntletStage`
   - `StageRunId`
   - `RunNumber`
   - `StageRunShardKey`
+  - `RaceMode`
+  - `MinCompetitors`
+  - `MaxCompetitors`
+  - `GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE`
 - `gauntlet_stage_run.session_id` stores the AccelByte session id.
 - Allocation can reconcile an AccelByte session back into the DB run row using `StageRunId`.
 - A minute-based sweep expires overdue runs and re-enters the DB-backed allocation path.
@@ -182,19 +188,21 @@ This follows the straightforward cup/championship pattern from racing while pres
 
 ## Dedicated Server Checklist
 
-- On session start, read AccelByte session attributes:
-  - `Gauntlet`
+- On session start, read AccelByte session bootstrap attributes:
   - `GauntletId`
   - `GauntletStage`
   - `StageRunId`
   - `RunNumber`
   - `StageRunShardKey`
-  - `EntryRequirement`
-  - lobby and race rule fields such as `PlayersPerTeam`, `OverflowPolicy`, `AdmissionPriorityRule`, `RosterLockPoint`, `MinCompetitors`, `MaxCompetitors`, `MinLobbySize`, `MaxLobbySize`, `RaceMode`, `Circuit`, and `AllowedTeams`
+  - discovery/rules hints such as `RaceMode`, `MinCompetitors`, and `MaxCompetitors`
 - Treat `StageRunId` as Eventun's durable run id.
 - Treat the AccelByte game session id as `session_id`.
 - Call `AdminService.ClaimGauntletStageRun(stage_run_id, session_id)` before admitting players.
 - Cache the claim response for the life of the run.
+- Use claim response `stage_config` as the authoritative source for match start time, admission policy, lobby-size policy, team/group/bracket policy, and the configured circuit.
+- On the game side, stage-run sessions are detected through `GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE` plus `StageRunId`; the older `Gauntlet=true` session flag is not required for stage-run sessions.
+- The dedicated server should derive the local per-match runtime plan from the claim response, including course, heats, laps, stage race mode, and configured Eventun `match_id` values.
+- If the lobby context already exists before the asynchronous claim response arrives, the dedicated server must schedule the stage auto-start after applying the claimed match start time.
 - For every human competitor join/rejoin, call `AdminService.CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)` before accepting the player.
 - Use Eventun admission output as policy input, not as the final lobby decision.
 - Apply DS-owned seat policy:
