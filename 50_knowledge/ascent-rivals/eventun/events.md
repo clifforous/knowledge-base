@@ -16,6 +16,12 @@ This note documents the event types currently tracked by Eventun and the current
 - `github.com/ikigai-github/eventun/blob/main/internal/eventun/events.go`
 - `github.com/ikigai-github/eventun/blob/main/migration/c2_func_match.sql`
 - `github.com/ikigai-github/eventun/blob/main/internal/eventun/purge_replays.go`
+- Ascent Rivals source: `Source/AscentRivals/Public/Server/Subsystems/HGEventunServerSubsystem.h`
+- Ascent Rivals source: `Source/AscentRivals/Private/Server/Subsystems/HGEventunServerSubsystem.cpp`
+- Ascent Rivals source: `Source/AscentRivals/Private/Server/HGServerScript.cpp`
+- Ascent Rivals source: `Source/AscentRivals/Private/Server/Contexts/HGRaceServerContext.cpp`
+- Ascent Rivals source: `Source/AscentRivals/Private/Server/Subsystems/HGStatsServerSubsystem.cpp`
+- Ascent Rivals source: `Source/AscentRivals/Public/Net/HGEventunEvents.h`
 
 ## Shared Record Shape
 - `time`: event timestamp
@@ -45,6 +51,51 @@ Session
 A qualifier is not a heat.
 
 `activeQualifiers` on a match context payload means the match is bound to one or more gauntlet qualifier windows. It does not mean the match's heats are qualifiers.
+
+## Game-Side Event Collection And Submission
+
+### Ownership
+- `UHGEventunServerSubsystem` owns the game-side Eventun buffer and transport.
+- The buffer is `ActiveRequest`, an in-memory `FAccelByteEventunEventRequest` whose `Events` array is appended during the session.
+- Race and server code record events through `RecordEvent`, `RecordPlayerEvent`, and `RecordParticipantEvent`.
+- The templated overloads serialize Unreal `USTRUCT` payloads to the event `event_data` JSON at collection time.
+- `UHGStatsServerSubsystem` owns local match statistics, medal counters, player result messages, and current AccelByte stat updates. It does not currently submit Eventun events.
+
+### Collection Behavior
+- `RecordEvent` appends one `FAccelByteEventunAEvent` to `ActiveRequest.Events` and fills `EpochMs`, `EventName`, `SessionId`, `MatchId`, and `Heat` from the current server/session state.
+- `RecordPlayerEvent` builds on `RecordEvent` and adds `PlayerId`, progress lap, placement, checkpoint, and ship coordinate when those values are available.
+- `RecordParticipantEvent` builds on `RecordEvent` and fills `PlayerId`, lap, and placement from participant rows. This is used for end-of-heat and end-of-match rows when a live racer entity is not available, such as disconnected or DNF participants.
+- Current events do not carry a dedicated event id. The existing natural event identity is the session, match, heat, event name, event timestamp, player id when present, and payload context.
+- If a future idempotent retry feature adds event ids, the id should be assigned when the event is collected into `ActiveRequest`, not when a submit request is sent. A send-time UUID would change across retries and would not deduplicate an at-least-once resend.
+
+### Primary Call Sites
+- `UHGServerScript` registers `UHGEventunServerSubsystem` at server startup and records `SessionStart`.
+- `UHGServerScript` records `PlayerJoin` and `PlayerLeft` as players enter, leave, or convert from temporary spectator to competitor.
+- `UHGRaceServerContext::RecordMatchStart` records `MatchStart` when a match starts or restarts.
+- Heat startup records `HeatStart` and then one `PlayerHeatStart` per active racer, including the player's loadout snapshot and weight profile.
+- Race progression and combat hooks record segment and combat events such as `PlayerCheckpoint`, `PlayerLap`, `PlayerRespawn`, `PlayerKill`, and `PlayerDied`.
+- Heat end records `PlayerHeatEnd` for active racers and participant rows, then emits `HeatEnd`.
+- Match end records `PlayerMatchEnd` for active racers and participant rows, emits `MatchEnd`, and then decides whether to submit or clear the collected events.
+- Medal award logic currently flows through `UHGRaceServerContext::AwardMedal` into `UHGStatsServerSubsystem::AwardMedal`. That path spawns a `UHGMedalEvent` for the affected player, increments in-memory medal tallies, and records augment tallies through `OnMedalAugmentAdded`; it does not currently append an Eventun medal event.
+
+### Match-End Submission Gate
+- Current gameplay event submission is gated by successful match completion.
+- A match is considered naturally finished when all configured heats finish naturally, with an editor override for stat recording.
+- Single-player training is excluded from event submission.
+- If the match can submit, `SubmitActiveMatchEvents` is called.
+- If the match cannot submit, the game broadcasts a failed Eventun submission state and clears active events for the current match id.
+- On context teardown or restart paths, the race context also clears active Eventun events to avoid leaking stale match data.
+
+### Transport Behavior
+- `SubmitActiveMatchEvents` snapshots the current `ActiveRequest` into a local `MatchRequest`.
+- It then calls `Clear()` before dispatching the async API call. `Clear()` without a match id resets the whole active event buffer.
+- Dedicated servers submit through `AccelByte::GameServerApi::Eventun::ServerServiceEvent`.
+- Non-dedicated sessions use the client Eventun API when available.
+- If no Eventun API is available, the subsystem broadcasts failed match submission state and failed gauntlet match acceptance.
+- On an accepted response, the subsystem broadcasts accepted match submission state and asks Eventun to accept the gauntlet stage-run match when a gauntlet stage run is active.
+- On a rejected response or transport error, the subsystem broadcasts failed match submission state and failed gauntlet match acceptance.
+- Ordinary gameplay event batches are not retained for retry after the active buffer is cleared. The current behavior is best-effort one-time submission for a completed match.
+- Gauntlet stage-run completion is separate from gameplay batch submission. Once Eventun accepts enough submitted matches for a stage run, the stage-run completion request has its own bounded retry behavior.
 
 ## Indexed Payload Fields
 The schema extracts and stores these `event_data` fields for indexing or direct query use:

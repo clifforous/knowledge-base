@@ -30,7 +30,7 @@ Current Eventun behavior:
 - Eventun persists a durable `gauntlet_stage_run` row
 - `stage_run_id` is Eventun's durable run id
 - `session_id` is the AccelByte game session id and server-event session id
-- `match_id` is the match index within that AccelByte/session-event context and can be `0`
+- `match_id` is the zero-based ordered match index within the AccelByte/session-event context
 - Eventun writes only gauntlet stage bootstrap/search data into AccelByte session attributes
 - the AccelByte session remains public for now
 - the game client preflight result is advisory only
@@ -72,11 +72,11 @@ The dedicated server should expect these stage-related attributes in the AccelBy
 - `MaxCompetitors`
 - `GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE`
 
-`GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE` is the stage-session discriminator. `StageRunId` is the Eventun run identity. The `RaceMode`, `MinCompetitors`, and `MaxCompetitors` attributes are capacity/rules hints for early setup and discovery. Eventun's claim response remains authoritative for stage runtime rules.
+`GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE` is the stage-session discriminator. `StageRunId` is the Eventun run identity. The `RaceMode`, `MinCompetitors`, and `MaxCompetitors` attributes are capacity/rules settings for early setup and discovery. For the current implementation, the dedicated server applies race mode from the session settings and uses Eventun's claim response as authoritative for schedule, admission policy, and circuit runtime data.
 
 The dedicated server should not expect stage schedule, admission policy, bracket/group/team policy, lobby-size policy, allowed teams, or circuit data in the AccelByte session attributes.
 
-The dedicated server must call `ClaimGauntletStageRun` and use `stage_config` from the response as the stage run's required runtime plan. Each `stage_config.circuit[]` entry includes its configured `match_id`, course, laps, and heats.
+The dedicated server must call `ClaimGauntletStageRun` and use `stage_config` from the response as the stage run's required runtime plan. Each `stage_config.circuit[]` entry includes course, laps, and heats; its ordered circuit index is the Eventun `match_id`.
 
 The dedicated server should not infer gauntlet stage identity from session name or browsing behavior.
 
@@ -97,7 +97,7 @@ The claim response includes `allow_any_human_player` and `requires_restricted_ad
 
 - the run exists and is active
 - the run is bound to the provided `session_id`
-- the `match_id` is configured in `gauntlet_stage_circuit`
+- the `match_id` is a valid zero-based ordered circuit index
 - trusted server `MatchStart` exists for `session_id + match_id + gauntlet_id + stage`
 - `match_summary(session_id, match_id)` has standings
 
@@ -214,7 +214,7 @@ For invite-only stages:
 - Call `ClaimGauntletStageRun(stage_run_id, session_id)`.
 - Cache the claim response for the life of the run.
 - Apply the claimed `stage_config` before marking the server ready for player connections.
-- Use the configured circuit `match_id` values from the claim response for server events, match acceptance, and accepted-match tracking. The game match index may be used only as a local fallback when no configured `match_id` is present.
+- Use the zero-based ordered circuit index as `match_id` for server events, match acceptance, and accepted-match tracking.
 - Reject the stage if Eventun says the run/session binding is invalid.
 - Use claim response `stage_config.circuit[]` as the required match plan.
 - For each human competitor join/rejoin request, call `CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)`.

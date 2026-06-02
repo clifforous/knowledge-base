@@ -201,7 +201,7 @@ This follows the straightforward cup/championship pattern from racing while pres
 - Cache the claim response for the life of the run.
 - Use claim response `stage_config` as the authoritative source for match start time, admission policy, lobby-size policy, team/group/bracket policy, and the configured circuit.
 - On the game side, stage-run sessions are detected through `GAME_SESSION_REQUEST_TYPE=GAUNTLET_STAGE` plus `StageRunId`; the older `Gauntlet=true` session flag is not required for stage-run sessions.
-- The dedicated server should derive the local per-match runtime plan from the claim response, including course, heats, laps, stage race mode, and configured Eventun `match_id` values.
+- The dedicated server should derive the local per-match runtime plan from the claim response, including course, heats, and laps. Race mode is applied from the AccelByte session `RaceMode` setting for this pass. Use the ordered circuit index as the Eventun `match_id`.
 - If the lobby context already exists before the asynchronous claim response arrives, the dedicated server must schedule the stage auto-start after applying the claimed match start time.
 - For every human competitor join/rejoin, call `AdminService.CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)` before accepting the player.
 - Use Eventun admission output as policy input, not as the final lobby decision.
