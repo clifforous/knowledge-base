@@ -23,7 +23,7 @@ This table separates V1 solution-design scope from future intent. Implementation
 
 | Area | Current classification |
 | --- | --- |
-| Runtime-awarded gameplay medals sent to Eventun | V1 design requirement |
+| Runtime-awarded gameplay medal summaries sent to Eventun | V1 design requirement |
 | Career medal totals backed by Eventun | V1 design requirement |
 | Persistent achievements | V1 design requirement |
 | Masteries as achievement-category goals | V1 design requirement |
@@ -53,7 +53,7 @@ Eventun currently:
 - currently uses Eventun course data such as default lap counts to decide whether some stats and records are comparable, but that data is copied from the game client and can become stale
 - does not yet own a durable medal, achievement, mastery, challenge, reward-claim, or notification/read-state model
 
-Existing Eventun gameplay event identity is sufficient for V1 progression facts. The combination of session id, match number, heat number, event type, and timestamp is guaranteed unique for persisted gameplay event rows; player id and event payload provide player-scoped counting context. The solution design should not introduce separate occurrence ids, heat ids, or match ids solely for medals, achievements, masteries, challenges, or rewards. Events such as `PlayerKill` do not need a separate occurrence identity when the downstream requirement is counting qualifying rows.
+Existing Eventun gameplay event identity is sufficient for V1 progression facts. The combination of session id, match number, heat number, event type, and timestamp is guaranteed unique for persisted gameplay event rows; player id and event payload provide player-scoped counting context. The solution design should not introduce separate occurrence ids, heat ids, or match ids solely for medals, achievements, masteries, challenges, or rewards. Events such as `PlayerKill` do not need a separate occurrence identity when the downstream requirement is counting qualifying rows. Medal progression does not require one Eventun row per medal occurrence; per-player heat summary counts are sufficient for V1.
 
 Ascentun currently:
 
@@ -78,7 +78,7 @@ Until Eventun actually receives and exposes official medal facts, website surfac
 
 ### Medal
 
-A medal is an immediate game-recognition event awarded for a specific gameplay occurrence.
+A medal is an immediate game-recognition event awarded by the game runtime for a specific gameplay occurrence.
 
 Examples:
 
@@ -87,11 +87,15 @@ Examples:
 
 Medals are primarily gameplay feedback and stat/progression inputs. They are not expected to directly grant rewards in the normal case.
 
-The game runtime owns medal-rule evaluation. Eventun should receive final medal awards and store them; it should not become responsible for determining whether a gameplay occurrence qualifies as `Elimination`, `Splatter Kill`, `Double Kill`, or a comparable medal.
+The game runtime owns medal-rule evaluation. Eventun should receive final medal counts and store them; it should not become responsible for determining whether a gameplay occurrence qualifies as `Elimination`, `Splatter Kill`, `Double Kill`, or a comparable medal.
 
-Medals are awarded during heats by the game server. Eventun receives them as part of the successful match event batch at the end of the match. If the match does not complete successfully, the game server does not send the match's gameplay events to Eventun for durable progression tracking.
+Medals are awarded during heats by the game server. Eventun receives aggregated per-player, per-heat medal counts as part of the successful match event batch at the end of the match. If the match does not complete successfully, the game server does not send the match's gameplay events to Eventun for durable progression tracking.
 
-Medal events should preserve augment parent context when the game sends augment medals. For example, the `airborne` augment can apply to a kill medal or to a warp medal, so the event payload should preserve the primary medal name and any attached augment medal names.
+Medal summary payloads should preserve augment parent context when the game sends augment medal counts. For example, the `airborne` augment can apply to a kill medal or to a warp medal, so the event payload should count `airborne` separately for each parent medal context.
+
+Eventun V1 medal progression does not require the timestamp, location, order, or display values for each individual medal occurrence. Those details should stay in the game runtime unless a later replay, support, anti-abuse, or post-match presentation feature creates a concrete need for occurrence-level medal data.
+
+For time-windowed goals, medal counts may be attributed at heat granularity. V1 does not need to split medal counts across period boundaries inside a single heat.
 
 ### Specialized Medal Codes
 
@@ -101,7 +105,7 @@ Example:
 
 - `Splatter Kill` may be awarded for eliminating another player by running them over.
 
-The game runtime decides whether to award a base medal, a more specific primary medal, or augment medals for a gameplay occurrence. Eventun does not need to derive relationship metadata between medal names right now. It should persist and count the final primary medal and attached augment facts sent by the game runtime, using the primary medal name as parent context for attached augments.
+The game runtime decides whether to award a base medal, a more specific primary medal, or augment medals for a gameplay occurrence. Eventun does not need to derive relationship metadata between medal names right now. It should persist and count the final primary medal and attached augment counts sent by the game runtime, using the primary medal name as parent context for attached augments.
 
 If a later achievement, mastery, or challenge needs additional context, such as airborne state, that context should be modeled as a metric dimension only when it is actually needed.
 
@@ -171,6 +175,8 @@ Seasonal challenges are expected to be a fixed set of goals that all players can
 
 The initial challenge pool should be shared by all players. Later versions may segment or personalize by skill, progression, owned inventory, or other eligibility. Even in the initial shared-pool model, challenge assignment should avoid assigning goals that require unowned parts or weapons when ownership data is available.
 
+Item-specific challenges may be deferred from the first implementation slice. If item-specific challenge assignment is deferred, item-specific challenge goals should not be activated into player-facing pools until ownership filtering is available.
+
 Challenge rerolls are a supported future product option, but exact reroll counts, pricing, and UX are not V1 requirements.
 
 Challenges may grant rewards.
@@ -185,6 +191,8 @@ Expected V1 reward examples:
 - skins
 
 For V1, rewards should be treated as AccelByte-backed where possible. Titles are a future-facing example of how reward types could expand beyond skins and ARC; they are not yet a committed implementation requirement.
+
+V1 assumes ARC is the only spendable currency reward. The remaining V1 AccelByte catalog rewards expected for achievements, masteries, and challenges are in-game items such as skins or other grantable gameplay cosmetics. Default account bundles and Season Pass catalog items are not achievement/challenge reward targets.
 
 Rewards are generally not granted directly from medals.
 
@@ -201,9 +209,10 @@ This requirement is related to existing Eventun stat correctness rather than bei
 Examples of special-case contexts include:
 
 - gauntlet finals
-- custom games
 - modified heat lap counts
 - special loadout or starting-part rules
+
+Custom game mode alone should not make a heat special-case for V1. A custom-game heat may still be special-case if that heat uses modified lap counts, special loadout rules, or another non-default gameplay setting.
 
 The signal should be heat-level, not only match-level, because a multi-heat match may have one heat with modified settings while later heats use canonical settings.
 
@@ -293,7 +302,7 @@ Decision:
 8. Eventun must persist player-specific daily, weekly, and monthly challenge assignments for the active time window.
 9. Eventun should ensure a player has active-window assignments before the game client needs to display or progress assigned challenges.
 10. Initial daily, weekly, and monthly challenge pools should be shared across players.
-11. Challenge assignment should be able to filter out challenges that require a player to use an item they do not own.
+11. Challenge assignment should be able to filter out challenges that require a player to use an item they do not own before item-specific challenges are activated into player-facing pools.
 12. Challenge rerolls are a supported future product option, but exact reroll counts, pricing, and UX are not V1 requirements.
 13. Seasonal challenges can be shared across all players for V1.
 14. V1 seasonal definitions should be treated as fixed once the season starts. Mid-season edits, lowered thresholds, replacement challenges, and retroactive completion from definition changes are V2 concerns unless product design explicitly requires them.
@@ -315,34 +324,36 @@ Decision:
 1. Completion of an achievement, mastery, or challenge goal should generally create a reward bundle.
 2. Reward bundles may be player-claimable or automatically fulfilled, depending on the reward definition.
 3. Reward bundles must support ARC and skins as expected V1 reward examples, should be able to support battle pass XP if a battle pass system is adopted, and should remain extensible to future reward types such as titles.
-4. Eventun must record enough local reward history to avoid duplicate grants.
-5. Eventun must be able to call AccelByte APIs to grant AccelByte-owned rewards.
-6. Eventun must keep reward grant attempts auditable and retryable.
-7. Completion should immediately create a reward record when the completed goal has a reward.
-8. The initial design should avoid an approval workflow for normal achievement, mastery, and challenge rewards.
-9. Earned claimable rewards should not expire by default.
-10. Each completed achievement, mastery, or challenge goal should create one reward bundle.
-11. A reward bundle may contain multiple grant entries, for example granting both a part and a skin if the player does not already own the part.
-12. The design must distinguish a true player claim from a "newly granted but unseen" reward presentation.
-13. If Eventun grants AccelByte entitlements immediately, those rewards should be treated as owned, not unclaimed, unless AccelByte confirms a separate pending entitlement mechanism.
-14. V1 should use Eventun-owned reward state rather than raw AccelByte entitlement state for player-facing claimable rewards.
-15. Eventun should grant claimable AccelByte-backed rewards only when the player claims the Eventun reward.
-16. Eventun should mark a claimable local reward claimed only after the external grant succeeds.
-17. Eventun must preserve enough local state to retry failed reward grants without duplicating successful grants.
-18. Claimable reward state must distinguish at least claimable, claim in progress, claimed, and retryable failed-claim outcomes. Exact state names and fields are solution scope.
-19. Claim failures should keep the reward claimable unless the failure proves the reward definition is invalid and requires operator intervention.
-20. Expected claim failures include configuration mismatches between Eventun and AccelByte, such as item id/SKU mistakes, entitlement configuration issues, and possible supply or quantity constraints.
-21. Limited-supply rewards are not a V1 requirement, but the reward model should not make them impossible later.
-22. V1 should assume reward grants are AccelByte-backed where possible.
-23. Titles are a future reward-type example and should not force additional V1 implementation complexity.
-24. Eventun must retain historical reward bundle, claim, and grant-attempt data after rewards are claimed.
-25. Historical reward data should remain available for player history, support, reconciliation with AccelByte, analytics, and future UI surfaces.
-26. If a reward bundle contains an item the player already owns, that duplicate item should not block claiming the bundle or granting the remaining non-duplicate entries.
-27. Duplicate item rewards should generally convert to ARC compensation using a global duplicate-reward percentage of the item's catalog price, where the relevant catalog price is available.
-28. V1 should not require per-item bespoke duplicate reward definitions. More granular duplicate compensation rules can be revisited later if needed.
-29. Goals are expected to normally have rewards, even if the reward is ephemeral such as battle pass XP.
-30. Rewardless goals are not a primary V1 use case; whether to allow them is a solution-design choice.
-31. The default choice between claimable and automatic rewards should be decided during solution design after concrete reward definitions are known.
+4. V1 currency reward behavior may assume ARC is the only supported spendable currency.
+5. V1 non-currency catalog rewards may assume rewardable AccelByte items are grantable in-game items.
+6. Eventun must record enough local reward history to avoid duplicate grants.
+7. Eventun must be able to call AccelByte APIs to grant AccelByte-owned rewards.
+8. Eventun must keep reward grant attempts auditable and retryable.
+9. Completion should immediately create a reward record when the completed goal has a reward.
+10. The initial design should avoid an approval workflow for normal achievement, mastery, and challenge rewards.
+11. Earned claimable rewards should not expire by default.
+12. Each completed achievement, mastery, or challenge goal should create one reward bundle.
+13. A reward bundle may contain multiple grant entries, for example granting both a part and a skin if the player does not already own the part.
+14. The design must distinguish a true player claim from a "newly granted but unseen" reward presentation.
+15. If Eventun grants AccelByte entitlements immediately, those rewards should be treated as owned, not unclaimed, unless AccelByte confirms a separate pending entitlement mechanism.
+16. V1 should use Eventun-owned reward state rather than raw AccelByte entitlement state for player-facing claimable rewards.
+17. Eventun should grant claimable AccelByte-backed rewards only when the player claims the Eventun reward.
+18. Eventun should mark a claimable local reward claimed only after the external grant succeeds.
+19. Eventun must preserve enough local state to retry failed reward grants without duplicating successful grants.
+20. Claimable reward state must distinguish at least claimable, claim in progress, claimed, and retryable failed-claim outcomes. Exact state names and fields are solution scope.
+21. Claim failures should keep the reward claimable unless the failure proves the reward definition is invalid and requires operator intervention.
+22. Expected claim failures include configuration mismatches between Eventun and AccelByte, such as item id/SKU mistakes, entitlement configuration issues, and possible supply or quantity constraints.
+23. Limited-supply rewards are not a V1 requirement, but the reward model should not make them impossible later.
+24. V1 should assume reward grants are AccelByte-backed where possible.
+25. Titles are a future reward-type example and should not force additional V1 implementation complexity.
+26. Eventun must retain historical reward bundle, claim, and grant-attempt data after rewards are claimed.
+27. Historical reward data should remain available for player history, support, reconciliation with AccelByte, analytics, and future UI surfaces.
+28. If a reward bundle contains an item the player already owns, that duplicate item should not block claiming the bundle or granting the remaining non-duplicate entries.
+29. Duplicate item rewards should generally convert to ARC compensation using a global duplicate-reward percentage of the item's catalog price, where the relevant catalog price is available.
+30. V1 should not require per-item bespoke duplicate reward definitions. More granular duplicate compensation rules can be revisited later if needed.
+31. Goals are expected to normally have rewards, even if the reward is ephemeral such as battle pass XP.
+32. Rewardless goals are not a primary V1 use case; whether to allow them is a solution-design choice.
+33. The default choice between claimable and automatic rewards should be decided during solution design after concrete reward definitions are known.
 
 ### Progress Evaluation Requirements
 
@@ -450,7 +461,7 @@ This flow is non-binding and should be validated during solution design:
 15. Initial daily, weekly, and monthly challenge pools should be shared across players.
 16. Daily, weekly, and monthly challenge assignment counts should be configurable.
 17. Daily, weekly, and monthly challenge reset windows should be calendar-based; exact timezone is solution scope.
-18. Challenge assignment should consider owned items when the challenge requires a specific part or weapon.
+18. Challenge assignment should consider owned items when the challenge requires a specific part or weapon. Item-specific challenge activation can be deferred until this ownership-aware path is implemented.
 19. Challenge repeat behavior and cooldown windows should be configurable, with repeat allowed by default unless a cooldown is configured.
 20. Challenge assignment should ignore cooldowns if every otherwise eligible challenge is on cooldown.
 21. Non-currency item unlocks are permanent, so assigned item-specific challenges do not need replacement behavior for item loss.
@@ -463,14 +474,16 @@ This flow is non-binding and should be validated during solution design:
 28. Public stats APIs are acceptable and may help community tools and external stats sites.
 29. Exact progression and reward API shapes are solution-design concerns, not settled requirements constraints.
 30. V1 rewards should be AccelByte-backed where possible; battle pass XP is a supported reward candidate if a battle pass system is adopted, and titles are a future expansion example rather than a committed V1 reward type.
-31. Presentation asset storage and delivery should not be prescribed as a requirement.
-32. Historical challenge assignments, progress, completions, reward bundles, claims, and grant attempts should be retained after active windows close or rewards are claimed.
-33. Operator-triggered retroactive completion should be supported for achievements and masteries when historical data is available.
-34. Simple boolean requirement composition should be supported for achievements where it does not add disproportionate complexity.
-35. Already-owned item rewards should not block reward bundle claims; duplicate item rewards should generally convert to ARC using a global duplicate-reward percentage of catalog price.
-36. V1 should not require per-item bespoke duplicate reward definitions.
-37. Goals are expected to normally have rewards, and reward bundles may be claimable or automatically fulfilled depending on reward definition.
-38. Dedicated administration UI is deferred until repeated workflows justify dedicated tools.
+31. V1 currency reward behavior may assume ARC is the only supported spendable currency.
+32. V1 non-currency AccelByte catalog rewards may assume rewardable items are grantable in-game items.
+33. Presentation asset storage and delivery should not be prescribed as a requirement.
+34. Historical challenge assignments, progress, completions, reward bundles, claims, and grant attempts should be retained after active windows close or rewards are claimed.
+35. Operator-triggered retroactive completion should be supported for achievements and masteries when historical data is available.
+36. Simple boolean requirement composition should be supported for achievements where it does not add disproportionate complexity.
+37. Already-owned item rewards should not block reward bundle claims; duplicate item rewards should generally convert to ARC using a global duplicate-reward percentage of catalog price.
+38. V1 should not require per-item bespoke duplicate reward definitions.
+39. Goals are expected to normally have rewards, and reward bundles may be claimable or automatically fulfilled depending on reward definition.
+40. Dedicated administration UI is deferred until repeated workflows justify dedicated tools.
 
 ## Open Requirements Questions
 

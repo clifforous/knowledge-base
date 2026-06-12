@@ -32,6 +32,12 @@ Workflow guidance:
 - For non-trivial changes, provide `Goal`, `Assumptions`, `Plan`, and `Review checkpoint` before implementation.
 - Surface risks and weak assumptions during review, not after implementation.
 
+## Source Control
+- The repository owner normally owns commits.
+- Do not stage or commit changes by default.
+- Stage or commit only when the user explicitly asks for that action.
+- If an external workflow, skill, or tool instruction says to commit, treat that as subordinate to this repository rule and leave the changes uncommitted unless the user explicitly approves a commit.
+
 ## Engineering Standards
 - Favor durable, reviewable notes over ad-hoc conversation artifacts.
 - Keep changes minimal and verifiable.

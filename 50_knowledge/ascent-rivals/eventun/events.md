@@ -59,7 +59,7 @@ A qualifier is not a heat.
 - The buffer is `ActiveRequest`, an in-memory `FAccelByteEventunEventRequest` whose `Events` array is appended during the session.
 - Race and server code record events through `RecordEvent`, `RecordPlayerEvent`, and `RecordParticipantEvent`.
 - The templated overloads serialize Unreal `USTRUCT` payloads to the event `event_data` JSON at collection time.
-- `UHGStatsServerSubsystem` owns local match statistics, medal counters, player result messages, and current AccelByte stat updates. It does not currently submit Eventun events.
+- `UHGStatsServerSubsystem` owns local match statistics, medal counters, player result messages, and current AccelByte stat updates. Under the new Eventun progression contract, it is expected to supply per-player heat medal summaries for Eventun heat-end payloads. It does not submit Eventun events directly.
 
 ### Collection Behavior
 - `RecordEvent` appends one `FAccelByteEventunAEvent` to `ActiveRequest.Events` and fills `EpochMs`, `EventName`, `SessionId`, `MatchId`, and `Heat` from the current server/session state.
@@ -76,7 +76,7 @@ A qualifier is not a heat.
 - Race progression and combat hooks record segment and combat events such as `PlayerCheckpoint`, `PlayerLap`, `PlayerRespawn`, `PlayerKill`, and `PlayerDied`.
 - Heat end records `PlayerHeatEnd` for active racers and participant rows, then emits `HeatEnd`.
 - Match end records `PlayerMatchEnd` for active racers and participant rows, emits `MatchEnd`, and then decides whether to submit or clear the collected events.
-- Medal award logic currently flows through `UHGRaceServerContext::AwardMedal` into `UHGStatsServerSubsystem::AwardMedal`. That path spawns a `UHGMedalEvent` for the affected player, increments in-memory medal tallies, and records augment tallies through `OnMedalAugmentAdded`; it does not currently append an Eventun medal event.
+- Medal award logic flows through `UHGRaceServerContext::AwardMedal` into `UHGStatsServerSubsystem::AwardMedal`. That path spawns a `UHGMedalEvent` for the affected player and increments in-memory medal tallies. The V1 progression contract should summarize those tallies into `PlayerHeatEnd.event_data.medalCounts` once per player per heat, rather than appending one Eventun row per medal occurrence.
 
 ### Match-End Submission Gate
 - Current gameplay event submission is gated by successful match completion.
@@ -141,6 +141,7 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 - `courseVersion`: course content version (course version cannot change per heat so repeat information from match context payload)
 - `laps`: laps per heat (laps cannot change per heat so repeat information from match context payload)
 - `heatId`: unique identifier for the current heat
+- `canonical`: whether the heat uses default/canonical gameplay settings. For V1, custom game mode alone still counts as canonical. The game sets this to `false` for gauntlet finals, reduced-lap heats, and per-heat/special rules overrides.
 
 ### Player Loadout Payload
 - `loadout`: nested loadout object with `key`, `slots`, `version`, and `augmentSlots`
@@ -199,6 +200,7 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 - `doneTimeMs`: The total time the heat took the pilot in milliseconds
 - `bestLapTimeMs`: The fastest lap for the pilot during the heat
 - `circuitPoints`: Amount of circuit points earned during the heat
+- `medalCounts`: Optional array of per-player heat medal summary entries for Eventun progression. Missing or empty means no medals are counted from the heat row.
 
 ### Match Result Payload
 - `kills`: Number of kills the pilot made during the full match
@@ -211,6 +213,11 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 - `bestLapTimeMs`: The fastest lap recorded by the pilot during the match
 - `circuitPoints`: Amount of circuit points earned during the match
 - `bestFinishTimeMs`: The pilot's best completed heat finish time within the match
+
+### Medal Count Payload
+- `medalName`: primary medal name or augment medal name being counted.
+- `parentMedalName`: optional parent primary medal name. Present when the row counts an augment medal under a specific primary medal context.
+- `count`: positive integer number of times this medal fact occurred for the player in the heat.
 
 ### Replay Payload
 - `replayRecordKey`: replay artifact key used by replay lookup and purge logic
@@ -230,14 +237,14 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 | `SessionStart` | Session Start | Captures runtime environment context for the gameplay session, including client version, server mode, and matchmaking or single-player mode. | `client_event`, `server_event` | Session Context Payload | Observed in both larger dumps; `clientVersion` is queried by replay workflows. |
 | `MatchStart` | Match Start | Captures the full match context, including course, race mode, heat count, and any active gauntlet qualifier bindings. | `client_event`, `server_event` | Match Context Payload | Observed in both larger dumps; server queries use `raceMode`, `courseCode`, `heats`, and `activeQualifiers`. |
 | `MatchEnd` | Match End | Match-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
-| `HeatStart` | Heat Start | Captures the start of a heat and repeats the active course and lap context for that heat. | `client_event`, `server_event` | Heat Context Payload | Observed in both larger dumps. |
+| `HeatStart` | Heat Start | Captures the start of a heat, repeats the active course and lap context for that heat, and carries game-authored canonical heat eligibility. | `client_event`, `server_event` | Heat Context Payload | Observed in both larger dumps; `canonical` added by the game runtime for new events. |
 | `HeatEnd` | Heat End | Heat-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
 | `AscensionStart` | Ascension Start | Marks the transition into the ascension phase as a lifecycle marker with no currently observed payload fields. | `client_event`, `server_event` | Empty Payload | Observed in both larger dumps with empty payloads. |
 | `ReplaySaved` | Replay Saved | Records that a replay artifact was saved for a match. | `client_event`, `server_event` | Replay Payload | Schema-defined; `replayRecordKey` is referenced by match-summary and replay purge logic. |
 | `PlayerMatchStart` | Player Match Start | Marks the point where a player's match participation begins. | `client_event`, `server_event` | Unknown Payload | Schema-defined only; not present in sampled dumps. |
 | `PlayerMatchEnd` | Player Match End | Captures per-player final match results used for standings, career stats, and gauntlet scoring. | `client_event`, `server_event` | Match Result Payload | Observed in both dumps and used heavily by analytics SQL. For accepted gauntlet stage completion, the dedicated server must emit this for every human participant in a normally completed match, including disconnected/DNF players. |
 | `PlayerHeatStart` | Player Heat Start | Captures the player's ship, loadout snapshot, and weight profile at the start of a heat. | `client_event`, `server_event` | Player Loadout Payload | Observed in both larger dumps; server match summary joins this event for loadout details. |
-| `PlayerHeatEnd` | Player Heat End | Captures per-player heat results and placement. | `client_event`, `server_event` | Heat Result Payload | Observed in both dumps and used by match summary heat standings. |
+| `PlayerHeatEnd` | Player Heat End | Captures per-player heat results, placement, and optional heat medal summary counts. | `client_event`, `server_event` | Heat Result Payload | Observed in both dumps and used by match summary heat standings; `medalCounts` is a planned server payload extension for Eventun progression. |
 | `PlayerCheckpoint` | Player Checkpoint | Captures checkpoint-level performance and combat-efficiency telemetry during a heat. | `client_event`, `server_event` | Segment Stats Payload | Observed heavily in both dumps. |
 | `PlayerJoin` | Player Join | Captures a participant entering the session with the display metadata needed to identify them in the match. | `client_event`, `server_event` | Join Identity Payload | Observed in both larger dumps. |
 | `PlayerLeft` | Player Left | Captures a participant leaving the session as a pure lifecycle marker. | `client_event`, `server_event` | Empty Payload | Observed in the larger client dump; still not observed in the reviewed server dump. |

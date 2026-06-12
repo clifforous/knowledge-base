@@ -15,10 +15,11 @@ The design favors the more flexible architecture: registered progression metrics
 ## Decision Summary
 
 - Eventun owns gameplay medal facts, goal progress checking, challenge assignment, goal completion history, and player-facing reward claim state.
-- The game runtime owns medal-rule logic and sends final primary medal awards with any augment medal facts.
+- The game runtime owns medal-rule logic and sends final per-player heat medal count summaries with any augment parent context.
 - Raw Eventun gameplay events remain the source of truth.
 - V1 does not introduce new occurrence ids, heat ids, or match ids for progression. Existing event identity is sufficient: session id, match number, heat number, event type, timestamp, plus player id and payload context.
-- `PlayerMedalAwarded` is added as a typed server event partition under the existing event ingestion path. Its payload includes the primary medal code and any augment medals with parent medal context.
+- Eventun `match_id` values come from the Ascent Rivals runtime match index and are zero-based within a session; validators must reject negative values only.
+- `PlayerHeatEnd.event_data.medalCounts` carries the V1 medal progression payload. Each entry includes a medal code, count, and optional parent medal code for augment counts.
 - `HeatStart` carries one V1 game-authored boolean, `canonical`, used by progression and record policies.
 - Goals use versioned definitions with a validated JSON requirement tree, not normalized requirement rows.
 - Metrics are constrained by a registry. Goal JSON may reference only registered metrics, allowed dimensions, supported matchers, and bounded boolean composition.
@@ -103,7 +104,7 @@ Rules:
 - The server does not retry the same completed match batch.
 - V1 does not add duplicate match-batch protection for normal ingest.
 - Raw event rows are identified by the existing Eventun gameplay event shape.
-- Goal progress checking counts rows and unnested medal facts; it does not require per-kill, per-medal, or per-occurrence ids.
+- Goal progress checking counts rows, summary counts, and unnested medal count facts; it does not require per-kill, per-medal, or per-occurrence ids.
 - If the delivery contract later adds retries, idempotency should be added at the batch or counter-building boundary without changing the gameplay event payload model.
 
 ### Event Identity
@@ -120,6 +121,8 @@ Use existing fields for joins and counting:
 
 Do not add new `occurrenceId`, `matchId`, or `heatId` fields for this feature. If a current payload already contains a runtime `heatId`, it can remain as payload context, but progression joins should use `session_id + match_id + heat`.
 
+Eventun `match_id` values come from the Ascent Rivals runtime match index and are zero-based within a session; validators must reject negative values only. `match_id = 0` is the first match in a session.
+
 ### Heat Context
 
 Extend server `HeatStart.event_data` with a minimal game-authored canonical signal:
@@ -134,47 +137,52 @@ Required V1 field:
 
 - `canonical`: `true` when the game runtime says the heat used default/canonical gameplay settings.
 
+Custom game mode alone should be treated as canonical in V1. A custom-game heat should become non-canonical only when the heat itself uses modified lap counts, special loadout rules, gauntlet-finals behavior, or another non-default gameplay setting.
+
 No other V1 heat-context flags are planned for this feature. Additional descriptive context, such as ruleset key, ruleset version, or special-case reason, should be added only when a concrete gameplay, support, or analytics requirement needs it.
 
 Counting policy decides how the signal is used. The default for progression goals is `canonical_only`. Medal history may expose both canonical and all-completed totals if a client surface needs both.
 
-### Medal Event
+V1 progression implementation should only activate counting policies that have counter-builder support. `canonical_only` is the initial supported policy. `all_completed_heats` and `definition_specific` remain design-supported future policies, but goals using them should remain draft/inactive or fail activation until the corresponding counter builders and validation paths exist.
 
-Add server event `PlayerMedalAwarded`.
+### Medal Summary Payload
+
+Add per-player, per-heat medal summary counts to server `PlayerHeatEnd.event_data`.
 
 Suggested payload:
 
 ```json
 {
-  "medalName": "warp",
-  "augmentMedalNames": ["airborne", "perfect"]
+  "medalCounts": [
+    { "medalName": "warp", "count": 12 },
+    { "medalName": "airborne", "parentMedalName": "warp", "count": 4 },
+    { "medalName": "perfect", "parentMedalName": "warp", "count": 2 },
+    { "medalName": "splatterKill", "count": 3 },
+    { "medalName": "airborne", "parentMedalName": "splatterKill", "count": 1 }
+  ]
 }
 ```
 
 Rules:
 
-- The game sends one `PlayerMedalAwarded` event for each primary medal occurrence.
-- `medalName` is the awarded primary medal.
-- `augmentMedalNames` contains zero or more augment medals attached to the primary medal occurrence.
-- The primary medal is counted once from `medalName`.
-- Each augment is counted once by unnesting `augmentMedalNames`.
-- Parent context for an augment is the top-level `medalName`.
+- The game sends one medal summary per player per completed heat, preferably embedded in that player's `PlayerHeatEnd` row.
+- `medalCounts` contains one entry for each primary medal count and one entry for each augment medal count under a parent medal.
+- `medalName` is the primary medal or augment medal being counted.
+- `count` is the number of times that medal fact occurred for the player in the heat. It must be a positive integer when present.
+- `parentMedalName` is omitted for primary medal counts and required for augment medal counts.
+- Eventun derives `is_augment` from whether `parentMedalName` is present.
 - Parent context is preserved because the same augment can apply to different parent medals. For example, `airborne` can augment both a kill medal and a warp medal.
 - If a specialized primary medal replaces a base primary medal, the game sends only the specialized primary medal fact.
 - Eventun does not derive base-versus-augment relationships from metadata for V1; it stores the parent context implied by the event shape.
 - Eventun does not infer compound medals from `PlayerKill`, `PlayerDied`, timing windows, or other raw events.
 - Weapon, part, course, and heat context are derived through existing event joins where possible.
-- If a future medal requires event-level weapon precision that cannot be derived from heat loadout or an existing event field, add a minimal payload dimension for that specific use case.
-- Counter building should count the primary medal from `medalName` and augment medals from `augmentMedalNames`. Augment counters should preserve the parent `medalName` as `parent_medal_name`.
+- Time-windowed progression attributes medal counts at heat granularity, using the `PlayerHeatEnd` row's heat identity and event time. V1 does not split medal counts across daily, weekly, monthly, or seasonal boundaries inside a single heat.
+- If a future medal requires event-level weapon precision, location, timestamp, or ordering that cannot be derived from heat loadout or existing event fields, add a minimal payload dimension or a dedicated occurrence event for that specific use case.
+- Counter building should normalize each `medalCounts` entry into a medal fact with `medal_count`, then sum `medal_count`. Augment counters should preserve `parentMedalName` as `parent_medal_name`.
 
 The current game `UHGMedalEvent` also carries display values with types such as time, meters, credits, and speed, plus `displaySign` for UI formatting. Those fields are useful for the in-match medal feed, but they are not required for Eventun V1 progression. Add a separate optional display payload later only if a post-match or website surface needs to reproduce detailed medal text from Eventun rather than from the game client.
 
-Storage follows the existing typed partition pattern:
-
-```sql
-CREATE TABLE server_player_medal_awarded
-  PARTITION OF server_event FOR VALUES IN ('PlayerMedalAwarded');
-```
+`PlayerHeatEnd` embedding is the V1 recommendation because it avoids hundreds of extra medal occurrence rows in high-action heats. A separate `PlayerHeatMedalSummary` event remains a viable future refactor if the heat-end payload becomes too large, but it should use the same `medalCounts` array shape and one row per player per heat.
 
 ## Progress Counter Building Model
 
@@ -198,21 +206,23 @@ The solution uses raw events plus maintained counters:
 | `default_counting_policy` | Default policy when a goal omits one. |
 | `status` | `draft`, `active`, or `retired`. |
 
-Initial metrics:
+Initial metric model:
 
-| Metric | Source | Example dimensions |
-| --- | --- | --- |
-| `medal.count` | `server_player_medal_awarded` | `medal_name`, `parent_medal_name`, `is_augment`, `weapon_sku`, `part_sku`, `course_code` |
-| `kill.count` | `server_player_kill` | `weapon_sku`, `method`, `part_sku`, `course_code` |
-| `death.count` | `server_player_died` | `method`, `course_code` |
-| `heat.completed` | `server_player_heat_end` | `part_sku`, `weapon_sku`, `course_code` |
-| `match.completed` | `server_player_match_end` | `course_code`, `podium_finish` |
-| `lap.completed` | `server_player_lap` | `part_sku`, `weapon_sku`, `course_code` |
-| `podium.count` | `server_player_match_end` or `server_player_heat_end` | `part_sku`, `weapon_sku`, `course_code` |
-| `warp.distance` | segment events when stable payload exists | `part_sku`, `course_code` |
-| `stat.sum` | existing summary fields | `stat_key`, `course_code`, `part_sku` |
+| Metric | Source | Example dimensions | V1 status |
+| --- | --- | --- | --- |
+| `medal.count` | `server_player_medal_fact` derived from `server_player_heat_end.event_data.medalCounts` | `medal_name`, `parent_medal_name`, `is_augment`, `weapon_sku`, `part_sku`, `course_code` | Initial active metric. |
+| `kill.count` | `server_player_kill` | `weapon_sku`, `method`, `part_sku`, `course_code` | Initial active metric. |
+| `heat.completed` | `server_player_heat_end` | `part_sku`, `weapon_sku`, `course_code` | Initial active metric. |
+| `match.completed` | `server_player_match_end` | `course_code`, `podium_finish` | Initial active metric. |
+| `podium.count` | `server_player_match_end` or `server_player_heat_end` | `part_sku`, `weapon_sku`, `course_code` | Active only when the counter builder is implemented. |
+| `death.count` | `server_player_died` | `method`, `course_code` | Placeholder until a concrete goal/stat requires it and a counter builder exists. |
+| `lap.completed` | `server_player_lap` | `part_sku`, `weapon_sku`, `course_code` | Placeholder until a concrete goal/stat requires it and a counter builder exists. |
+| `warp.distance` | segment events when stable payload exists | `part_sku`, `course_code` | Future metric. |
+| `stat.sum` | existing summary fields | `stat_key`, `course_code`, `part_sku` | Placeholder until a concrete summary-stat builder is designed. |
 
 Do not add metrics speculatively. Add a metric when a concrete achievement, mastery, challenge, career stat, or UI surface needs it.
+
+Only metrics with implemented counter builders should be marked `active`. Placeholder metrics may exist in design examples or seed files as `draft`, but they should not validate active goals until counter support is present.
 
 ### Counter Table
 
@@ -407,6 +417,7 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 - Selection is deterministic from player id, period, pool, and seed.
 - Item-specific goals should be filtered out when ownership data shows the player does not own the required non-currency item.
 - If ownership lookup is unavailable, prefer non-item-specific challenges before assigning item-specific challenges.
+- Item-specific challenge assignment can be deferred from V1. While deferred, item-specific challenge goals should stay inactive or out of active pools so the player-facing assignment path does not silently omit expected challenge content.
 - Repeat is allowed by default.
 - Cooldowns are honored when configured.
 - If all otherwise eligible goals are on cooldown, ignore cooldowns rather than failing assignment.
@@ -522,9 +533,9 @@ The admin UI should treat "inline rewards" as the default authoring path. An ope
 | `bundle_definition_id` | Parent reward bundle. |
 | `reward_type` | `item`, `currency`, `battlepass_xp`, future `title`, or `custom`. |
 | `namespace` | AccelByte namespace when external. |
-| `item_sku` | Preferred durable item reference. |
+| `item_sku` | Preferred durable item reference for item rewards; V1 ARC currency rewards may also require a configured AccelByte COINS SKU as the fulfillment target. |
 | `item_id` | Optional resolved AccelByte item id cache when an endpoint requires it. SKU remains the durable reference. |
-| `currency_code` | Currency such as `ARC`. |
+| `currency_code` | Logical currency code such as `ARC`. V1 assumes ARC is the only supported currency. |
 | `quantity` | Quantity. |
 | `last_validation_status`, `last_validated_at` | Last known catalog validation result for operator visibility. |
 | `metadata` | Eventun source context and future presentation hints. |
@@ -574,7 +585,9 @@ Eventun should not attempt to become a fully synchronized copy of the AccelByte 
 Reference policy:
 
 - Store SKU as the durable item reference for AccelByte item rewards.
-- Store currency code for AccelByte currency rewards.
+- V1 item rewards are expected to reference AccelByte `INGAMEITEM` catalog entries. Default account bundles and Season Pass catalog entries are not reward targets for achievements, masteries, or challenges.
+- Store currency code for AccelByte currency rewards as the logical reward identity. For V1 ARC grants, also store or resolve the configured AccelByte COINS SKU required by the chosen fulfillment endpoint.
+- V1 assumes ARC is the only supported spendable currency. Additional currencies require explicit product and fulfillment design before activation.
 - Store Battle Pass context and XP quantity for Battle Pass XP rewards.
 - Store optional display snapshots, such as title, item type, price, and image reference, for audit and admin review only.
 - Do not auto-substitute a different reward when an AccelByte catalog item is deleted, disabled, ambiguous, or no longer grantable.
@@ -600,7 +613,7 @@ Admin UI catalog lookup should call Eventun, not AccelByte directly. Eventun can
 | Reward target type | Durable Eventun reference |
 | --- | --- |
 | Item | SKU |
-| Currency | Currency code, such as `ARC` |
+| Currency | Currency code, such as `ARC`, plus configured AccelByte COINS SKU when fulfillment requires SKU |
 | Battle Pass XP | AccelByte Season Pass context plus XP quantity |
 | Future Eventun-owned reward | Eventun reward code |
 
@@ -626,6 +639,8 @@ Grant payload policy:
 
 - Use SKU as Eventun's durable item reference.
 - Resolve item id only when the chosen AccelByte endpoint requires it.
+- For V1 item rewards, validate that the SKU resolves to a grantable AccelByte `INGAMEITEM`.
+- For V1 ARC rewards, use the configured ARC COINS SKU required by AccelByte fulfillment. Do not infer support for additional currencies until they are planned.
 - Use `source` consistently, recommended `REWARD`.
 - Use metadata fields for Eventun bundle id, completion id, goal id, optional operator key, goal version, source kind, and source match context when available.
 - Use a stable transaction id based on the reward bundle, for example `eventun-reward:<bundle_id>`.
@@ -702,7 +717,7 @@ POST /v1/server/events
 
 Changes:
 
-- Accept `PlayerMedalAwarded`.
+- Accept `PlayerHeatEnd.event_data.medalCounts`.
 - Accept `HeatStart.event_data.canonical`.
 - Continue using trusted service authentication.
 - Do not call AccelByte from server event ingest.
@@ -824,9 +839,9 @@ Raw event retention is the limiting factor for future backfill. If old seasons m
 
 These phases are implementation order, not product-scope reduction.
 
-### Phase 1: Medal Events And Canonical Heat Context
+### Phase 1: Medal Summaries And Canonical Heat Context
 
-- Add `PlayerMedalAwarded` event support with primary medal and augment parent context.
+- Add `PlayerHeatEnd.event_data.medalCounts` support with primary medal counts and augment parent context.
 - Add `HeatStart.event_data.canonical`.
 - Add medal definitions.
 - Add medal totals query for player profile/client use.
@@ -868,10 +883,11 @@ These phases are implementation order, not product-scope reduction.
 | --- | --- |
 | Goal model becomes a generic rules engine | Keep JSON schema small, metric registry explicit, and new operators tied to concrete Ascent Rivals goals. |
 | JSON definitions become hard to search | Add extracted indexes or search tables for operator workflows after query needs are known. |
-| Runtime sends incomplete medal data | Require `medalName`, player id, session id, match id, heat, event type, and timestamp through existing event validation. Treat missing `augmentMedalNames` as an empty list. |
+| Runtime sends incomplete medal summary data | Require each `medalCounts` entry to include `medalName` and a positive `count`; require `parentMedalName` for augment counts. Treat missing `medalCounts` as an empty list for legacy or no-medal heat rows. |
 | Weapon-specific medal goals are ambiguous | Use loadout joins where enough; add a minimal medal payload dimension only for concrete ambiguous medals. |
 | Counters drift from raw events | Treat counters as rebuildable, add repair jobs, and expose rebuild operations. |
 | Special-case heats count inconsistently | Use game-authored `canonical` and explicit counting policies. |
+| Heat crosses a challenge period boundary | Attribute heat-level medal summaries by `PlayerHeatEnd` time for V1. Add occurrence-level medal events only if period-boundary precision becomes a real product requirement. |
 | AccelByte grant succeeds but Eventun sees a timeout | Record attempt as `uncertain`, reconcile against fulfillment/ownership before issuing a different transaction id. |
 | Duplicate item rewards block claim | Convert duplicates to ARC when price is available; otherwise skip duplicate item entries without blocking unrelated entries. |
 | Backfill overstates historical coverage | Require backfill reports to name scanned ranges and partitions. |
