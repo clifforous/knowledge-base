@@ -10,6 +10,12 @@ Define a human-reviewed, AI-assisted workflow for improving the Unreal game proj
 
 The first fully specified workflow is the **course/map improvement pass**. Other target areas are included as lightweight shells so future standards and skills can use the same operating model.
 
+## Working Documents
+Supporting working formats live beside this folder rather than inside a nested document tree.
+
+Current working documents:
+- [Course Brief](../course-brief.md)
+
 ## Goals
 - Route vague human prompts into concrete work targets and pass types.
 - Keep AI work bounded to small slices that can be reviewed before mutation.
@@ -90,7 +96,8 @@ For a course, this includes:
 - display name
 - course code
 - level asset path
-- course definition or registry entry
+- course definition primary asset
+- legacy config or registry entry, if still present
 - known aliases and old names
 - related content roots
 - likely vendor-content roots
@@ -176,7 +183,8 @@ Course Brief
 - display_name
 - course_code
 - level_asset_path
-- course_definition_or_registry_entry
+- course_definition_primary_asset
+- legacy_config_or_registry_entry
 - known_aliases
 - screenshots_or_reference_captures
 - related_content_roots
@@ -186,13 +194,25 @@ Course Brief
 
 The alias field is required. Course prompts often use names that differ from the internal level asset. A prompt like `Tefri 7 - Dunes`, `Dunes 7`, `DesertTest_0`, or `Illus - Alluvial Basin` must resolve to the same course facts before the agent acts.
 
+For production-facing courses, `ThumbnailImage`, `HeroImage`, and `MinimapImage` should be treated as required presentation assets unless product direction says otherwise. If any of those fields are missing, stale, or still pointing at legacy config-era assets, flag that as a course identity or presentation hygiene finding.
+
 ### Course Resolution Procedure
-1. Search durable notes for the human-visible course name, planet, course code, and known aliases.
-2. Inspect Unreal course settings, registry entries, and primary asset definitions.
-3. Resolve the level asset path and any course definition or data asset that owns gameplay metadata.
-4. Search for folders and assets that appear course-specific.
-5. Identify vendor-content roots referenced by the course.
-6. Ask for clarification if multiple courses match or the prompt uses an alias that cannot be verified.
+1. Inspect `CourseDefinition` primary assets first. A valid playable course should be discoverable as a `UHGCourseDefinition` primary data asset.
+2. Match the human prompt against course code, planet, display name, level path, and known aliases from the course definition assets.
+3. Use legacy Unreal course settings, registry entries, primary asset settings, and durable notes to cross-check or fill missing fields.
+4. Resolve the level asset path and the course definition asset that owns gameplay metadata.
+5. Search for folders and assets that appear course-specific.
+6. Identify vendor-content roots referenced by the course.
+7. Ask for clarification if no matching valid course definition exists, multiple course definitions match, or the prompt uses an alias that cannot be verified.
+
+### Unreal MCP Notes For Course Identity
+For course identity work, prefer this MCP pattern:
+- use native asset search early to find `CourseDefinition` assets, screenshots, minimaps, and near-match aliases
+- use asset metadata to confirm primary asset type, primary asset name, native class, and package identity
+- use a small Python read helper for authoritative `UHGCourseDefinition` fields such as `Code`, `Level`, `ThumbnailImage`, `HeroImage`, `MinimapImage`, `Planet`, `Name`, `FeatureState`, `Difficulty`, `Laps`, and target times
+- use Python Asset Registry dependency queries with explicit dependency options when native dependency helpers return empty or suspiciously shallow results
+- avoid currently loaded-world object listing for asset discovery; it is useful for world actors, not content registry search
+- after read-only editor inspection, check dirty content and map packages before claiming no mutation occurred
 
 ### Baseline Evidence
 For a course pass, gather only the evidence needed for the requested slice.
@@ -242,24 +262,40 @@ Use these as signals, not automatic failures:
 Any numeric budget must state its target context, such as platform, scalability level, resolution, camera view, and gameplay scenario.
 
 ### Content/Package Hygiene
-Prefer locality for project-owned course content:
+Prefer existing project domain patterns over a new universal folder scheme.
+
+Observed project-owned patterns:
+- course definitions live under `Courses/Definitions`
+- course presentation assets are centralized under `Courses/Screenshots` and `Courses/Minimaps`
+- course levels currently live under map-family or environment folders such as `Courses/Desert`, `Courses/Volcanic`, `Courses/WetDarkRock`, `Courses/Beach`, and `Courses/Sky`
+- ship parts use `Ship/Parts/<slot>/<weight-class>/<part-id>` where practical
+- part-specific runtime assets commonly colocate `*_BP`, `*_MIN_BP`, and `*_SPD` assets with the part
+- weapons commonly use `Weapons/<weapon-name>` for weapon definitions, Blueprints, skins, VFX, widgets, and textures
+- UI content is grouped by UI role under `UserInterface/Routes`, `UserInterface/Widgets`, `UserInterface/Textures`, `UserInterface/Materials`, and related support folders
+- runtime and build-support roots such as `CookLabels`, `PreloadedItems`, `Perf`, `Generated`, and `DataTable` have special ownership and should not be treated as ordinary feature folders
+
+The strongest divergence from the preferred long-term model is course layout. Current course level folders are often internal environment or prototype names rather than canonical player-facing course identity. A future course layout may be better expressed as:
 
 ```text
-Course folder
-- level
-- course definition or local metadata
-- course-specific material instances
-- course-specific textures
-- course-specific meshes or Blueprint wrappers
-- course-specific VFX instances
-- screenshots or thumbnails
+Courses/<Planet>/<Course>/
+- Level
+- Course definition or local metadata
+- Course-specific material instances
+- Course-specific textures
+- Course-specific meshes or Blueprint wrappers
+- Course-specific VFX instances
 ```
+
+Screenshots, thumbnails, and minimaps may remain centralized if that continues to fit player-facing presentation workflows. The guide should not force course media into per-course folders until the team chooses a presentation-asset convention.
+
+Treat this as a migration direction, not a requirement for immediate broad restructuring. Course pass agents should document alias mismatches and propose small safe moves only when the current layout blocks the pass.
 
 Vendor content should usually stay in its original vendor root. When a course uses vendor content, prefer project-owned wrappers, material instances, or data assets that reference vendor assets rather than moving the vendor assets themselves.
 
 Allowed hygiene recommendations:
 - document or add aliases for confusing level names
 - create or update a course identity note
+- propose a canonical course folder only after resolving course identity and dependencies
 - move project-owned orphaned course assets into a course-owned root after dependency review
 - replace broad hard references with narrower course-owned references
 - consolidate duplicate material instances when dependency review shows they are equivalent
@@ -268,6 +304,7 @@ Allowed hygiene recommendations:
 
 Not allowed without explicit broader approval:
 - moving vendor roots
+- mass-migrating current course folders into `Courses/<Planet>/<Course>` as part of a single course pass
 - renaming widely shared assets used by multiple courses
 - deleting assets based only on a single automated unused-assets scan
 - changing shared master materials without reviewing all dependent instances
@@ -288,6 +325,13 @@ V1 validation should check for:
 - map check has no pass-blocking errors
 
 The exact actor and data requirements should be refined from the current Ascent Rivals race/course implementation before these checks become hard validators.
+
+### Course Media Tooling
+Course media appears to have at least two relevant tooling paths:
+- `AHGCourse::CaptureMinimapImage` is an editor-callable course method for generating a minimap image from course splines.
+- `UHGThumbnailGeneratorWidget` and the `ThumbnailGenerator` content map support primary-data-asset thumbnail capture and assignment.
+
+Do not assume those tools fully cover course thumbnail, hero image, and minimap workflows until a focused media-generation pass verifies the intended usage. A course media pass should inspect existing tools first, then propose whether to reuse, extend, or replace them.
 
 ### Course Pass Output
 A completed pass should end with:
@@ -399,6 +443,7 @@ Candidate skills:
 
 ## Open Questions
 - Where should the canonical shared course alias registry live if this workflow moves into the Unreal project?
+- Should future course folders use `Courses/<Planet>/<Course>` as the canonical project-owned layout, or should the project keep central media folders and map-family folders with a stronger alias registry?
 - Which course metadata source should be authoritative when config, primary assets, and documentation disagree?
 - What are the target hardware, resolution, scalability, and frame-time budgets for course performance passes?
 - Which level-validation checks are hard blockers versus warnings?
