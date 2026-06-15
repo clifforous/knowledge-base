@@ -28,6 +28,11 @@ grant as an amount-based server operation and do not show a caller-provided
 transaction id, so Eventun should keep a local reward/grant ledger to prevent
 duplicate XP grants before invoking AccelByte.
 
+Current AccelByte Cloud Save game records include `BattlePassSettings`, which
+stores placement-based bonus XP configuration. See
+[[accelbyte-game-records|AccelByte game records]] for the broader game-record
+ownership map.
+
 Relevant AccelByte docs:
 
 - Season Pass overview: https://docs.accelbyte.io/gaming-services/modules/online/season-pass/

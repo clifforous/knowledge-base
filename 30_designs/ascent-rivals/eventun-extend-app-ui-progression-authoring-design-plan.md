@@ -152,6 +152,7 @@ Use a workbench-style UI with persistent navigation:
 - Make versioning visible. Operators should understand when an edit creates a new version.
 - Make pool membership visible for challenge goals. A challenge without active pool membership is not assignable.
 - Keep reusable reward bundles optional. They are useful for repeated packages, not required for the common single-reward case.
+- Treat AccelByte namespace as Eventun deployment context, not editable authoring data.
 - Use import preview for bulk validation. Never apply CSV changes without an explicit confirmation step.
 
 ## Goals Workbench
@@ -281,6 +282,8 @@ Reward row controls:
 - duplicate policy
 - metadata preview
 
+Reward authoring should not expose an AccelByte namespace field. Catalog targets are resolved and validated against Eventun's configured namespace.
+
 Operators can either:
 
 - add inline reward rows, which Eventun stores as `generated_goal_reward`
@@ -375,6 +378,8 @@ Recommended columns:
 - `reward_1_quantity`
 - `reward_1_metadata_json`
 - repeated reward columns as needed
+
+Do not add reward namespace columns to goal CSVs. Reward targets are implicitly in the AccelByte namespace configured for the Eventun deployment that processes the import.
 
 The frontend can parse CSV into `DefinitionImportGoalRow[]` and call the existing definition import preview/apply APIs. Server-side CSV parsing is not required for the first UI if frontend parsing is deterministic and export uses the same columns.
 

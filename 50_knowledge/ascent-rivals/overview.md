@@ -5,6 +5,7 @@ This folder is the knowledge hub for Ascent: Rivals domain understanding.
 
 ## Core Knowledge Areas
 - [[game-client]]
+- [[accelbyte-game-records]]
 - [[website]]
 - [[eventun/overview|eventun]]
 - [[eventun/events|eventun-events]]

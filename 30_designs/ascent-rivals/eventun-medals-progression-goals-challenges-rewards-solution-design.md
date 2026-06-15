@@ -512,6 +512,12 @@ Rewards are attached to goal definition versions. Each completed goal creates at
 
 The admin UI should treat "inline rewards" as the default authoring path. An operator can add one or more rewards directly while creating an achievement, mastery, or challenge. Eventun still stores those inline rewards as a generated reward bundle definition behind the scenes. Reusable reward bundles remain available for repeated packages, but they should not be required for the common single-reward case.
 
+### AccelByte Namespace Binding
+
+An Eventun deployment is implicitly bound to one AccelByte game namespace by runtime configuration. The development Eventun deployment talks to `genun-ascentrivalsdev`; the production Eventun deployment talks to `genun-ascentrivals`. Player ids, item SKUs, entitlements, wallet balances, and Season Pass state are only meaningful within that configured namespace.
+
+Reward definitions must not select or persist an AccelByte namespace. Catalog lookup, reward validation, fulfillment, wallet, entitlement, and Season Pass calls should use Eventun's configured namespace, such as `AB_NAMESPACE`, rather than a database row value. Any existing reward namespace fields are transitional and should not be used for fulfillment decisions. Supporting one Eventun instance that grants rewards across multiple AccelByte namespaces would require a separate multi-tenant or cross-namespace design.
+
 ### Definition Tables
 
 `reward_bundle_definition`
@@ -532,13 +538,14 @@ The admin UI should treat "inline rewards" as the default authoring path. An ope
 | --- | --- |
 | `bundle_definition_id` | Parent reward bundle. |
 | `reward_type` | `item`, `currency`, `battlepass_xp`, future `title`, or `custom`. |
-| `namespace` | AccelByte namespace when external. |
 | `item_sku` | Preferred durable item reference for item rewards; V1 ARC currency rewards may also require a configured AccelByte COINS SKU as the fulfillment target. |
 | `item_id` | Optional resolved AccelByte item id cache when an endpoint requires it. SKU remains the durable reference. |
 | `currency_code` | Logical currency code such as `ARC`. V1 assumes ARC is the only supported currency. |
 | `quantity` | Quantity. |
 | `last_validation_status`, `last_validated_at` | Last known catalog validation result for operator visibility. |
 | `metadata` | Eventun source context and future presentation hints. |
+
+Reward entry definitions intentionally do not store AccelByte namespace. The namespace is deployment context owned by Eventun runtime configuration.
 
 ### Player Tables
 
@@ -585,6 +592,7 @@ Eventun should not attempt to become a fully synchronized copy of the AccelByte 
 Reference policy:
 
 - Store SKU as the durable item reference for AccelByte item rewards.
+- Do not store namespace as a reward reference. All AccelByte lookups use Eventun's configured namespace.
 - V1 item rewards are expected to reference AccelByte `INGAMEITEM` catalog entries. Default account bundles and Season Pass catalog entries are not reward targets for achievements, masteries, or challenges.
 - Store currency code for AccelByte currency rewards as the logical reward identity. For V1 ARC grants, also store or resolve the configured AccelByte COINS SKU required by the chosen fulfillment endpoint.
 - V1 assumes ARC is the only supported spendable currency. Additional currencies require explicit product and fulfillment design before activation.
@@ -627,6 +635,8 @@ Preferred endpoint:
 PUT /platform/v2/admin/namespaces/{namespace}/users/{userId}/fulfillments/{transactionId}
 ```
 
+The `{namespace}` path segment is populated from Eventun runtime configuration, not from reward definition rows or reward metadata.
+
 Rationale:
 
 - It accepts a caller-provided `transactionId`.
@@ -638,6 +648,7 @@ Rationale:
 Grant payload policy:
 
 - Use SKU as Eventun's durable item reference.
+- Never derive the AccelByte fulfillment namespace from reward entry definitions or reward metadata.
 - Resolve item id only when the chosen AccelByte endpoint requires it.
 - For V1 item rewards, validate that the SKU resolves to a grantable AccelByte `INGAMEITEM`.
 - For V1 ARC rewards, use the configured ARC COINS SKU required by AccelByte fulfillment. Do not infer support for additional currencies until they are planned.
@@ -659,7 +670,7 @@ Grant rules:
 
 - Use `reward_type='battlepass_xp'`.
 - Store the XP amount in `quantity`.
-- Store namespace, season/pass context, source goal, completion id, and reward bundle id in entry metadata.
+- Store season/pass context, source goal, completion id, and reward bundle id in entry metadata. Namespace remains implicit from Eventun runtime configuration.
 - For claimable rewards, Eventun grants the XP when the player claims the reward bundle.
 - For automatic rewards, the automatic reward worker grants the XP.
 - After XP is granted, AccelByte owns the resulting Battle Pass XP, tier progression, and tier reward claim state.
@@ -889,12 +900,13 @@ These phases are implementation order, not product-scope reduction.
 | Special-case heats count inconsistently | Use game-authored `canonical` and explicit counting policies. |
 | Heat crosses a challenge period boundary | Attribute heat-level medal summaries by `PlayerHeatEnd` time for V1. Add occurrence-level medal events only if period-boundary precision becomes a real product requirement. |
 | AccelByte grant succeeds but Eventun sees a timeout | Record attempt as `uncertain`, reconcile against fulfillment/ownership before issuing a different transaction id. |
+| Reward data accidentally implies cross-namespace fulfillment | Keep AccelByte namespace out of reward schema and derive all AccelByte calls from runtime configuration. |
 | Duplicate item rewards block claim | Convert duplicates to ARC when price is available; otherwise skip duplicate item entries without blocking unrelated entries. |
 | Backfill overstates historical coverage | Require backfill reports to name scanned ranges and partitions. |
 
 ## Open Design Decisions
 
-1. Confirm the exact AccelByte endpoint and permissions in the target namespace. Current recommendation is Fulfillment V2 with caller-provided `transactionId` for item/currency fulfillment and Season Pass `GrantUserExp` for Battle Pass XP.
+1. Confirm the exact AccelByte endpoint and permissions for the Eventun deployment's configured namespace. Current recommendation is Fulfillment V2 with caller-provided `transactionId` for item/currency fulfillment and Season Pass `GrantUserExp` for Battle Pass XP.
 2. Confirm the catalog lookup path for SKU-to-item-id and item price retrieval.
 3. Confirm whether public APIs should expose active challenge assignment/progress for other players in V1 or keep that surface self-only despite low sensitivity.
 5. Confirm the first supported content setup path: direct SQL, CSV/JSON import endpoint, minimal admin APIs, or a combination. The solution should support bulk creation before a dedicated UI exists.

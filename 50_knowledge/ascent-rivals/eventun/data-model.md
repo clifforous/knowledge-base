@@ -2,6 +2,7 @@
 
 ## Related
 - [[../overview]]
+- [[../accelbyte-game-records]]
 - [[overview]]
 - [[api]]
 - [[../competition-runtime-terms]]
@@ -34,7 +35,9 @@ Qualifiers are not part of this runtime hierarchy. Qualifiers belong to the comp
 Captures player identity, access context, wallet linkage, team membership, join/invite state, and eligibility constraints.
 
 ### 3. Content and sponsorship domain
-Captures course, sponsor, and media attachments used by competition and presentation surfaces.
+Captures sponsor and media attachments used by competition and presentation surfaces. Eventun may store course references and derived course data for operational queries, but AccelByte Cloud Save `Courses` is the source of truth for official course configuration, including course code, default laps, and release feature state.
+
+Eventun should not treat its local `course` table as authoritative for official course eligibility rules. For stat/progression eligibility, prefer game-authored runtime flags such as heat-level canonical status and, where course metadata is needed, use AccelByte `Courses` data or a controlled cache derived from it.
 
 ### 4. Competition structure domain
 Captures tournament/gauntlet structure, qualifier/stage composition, participant status, and placement outcomes used for rankings and progression.

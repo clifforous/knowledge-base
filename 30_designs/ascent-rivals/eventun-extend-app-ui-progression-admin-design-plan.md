@@ -58,6 +58,8 @@ Template choice:
 
 Use Eventun as the single backend service for the first pass. Even for AccelByte catalog data, prefer Eventun's catalog lookup and reward validation APIs over direct frontend calls to multiple AGS services. Eventun should remain the policy boundary that normalizes catalog targets, validates reward definitions, and shields the UI from catalog implementation details.
 
+Namespace is deployment context, not authoring data. A deployed Eventun instance is configured for one AccelByte game namespace, for example through `AB_NAMESPACE`. The embedded App UI can display the Admin Portal namespace and Eventun target for diagnostics, but reward definitions, imports, and catalog selections should not carry a namespace field. Eventun catalog lookup, validation, and fulfillment APIs use the namespace configured on the Eventun service.
+
 ## Proposed Architecture
 
 ```mermaid
@@ -87,7 +89,8 @@ The first useful App UI should support a narrow progression-operations workflow 
 V1 spike screens:
 
 1. **Connectivity**
-   - Show current namespace and configured Eventun target.
+   - Show current Admin Portal namespace and configured Eventun target.
+   - Treat namespace as display and diagnostic context, not reward authoring input.
    - Call a low-risk Eventun endpoint to verify auth and codegen.
    - Show clear unauthorized/forbidden states.
 
@@ -195,6 +198,7 @@ Auth implementation notes:
 - When `authorization` metadata is absent, inspect incoming gRPC metadata for `cookie`, parse it with Go's `net/http` cookie parser, and extract the `access_token` value.
 - Validate the cookie token through the same AccelByte SDK claim parsing path as a Bearer token.
 - Apply the helper anywhere Eventun derives claims, player id, namespace, or operator identity from the request token.
+- Do not use a token-derived or UI-provided namespace for reward fulfillment. AccelByte reward calls use Eventun's configured namespace.
 - Add focused tests for Bearer-token auth, cookie auth, missing auth, and malformed cookie auth.
 
 If existing APIs are too granular for the UI, add small Eventun facade endpoints rather than moving domain logic into the frontend. Good facade candidates:
@@ -347,7 +351,7 @@ Exit criteria:
 
 Build a small connectivity page:
 
-- Read namespace/context from the App UI SDK.
+- Read namespace/context from the App UI SDK for display and troubleshooting only.
 - Call one Eventun read-only admin endpoint.
 - Render success, unauthorized, forbidden, and unexpected-error states.
 

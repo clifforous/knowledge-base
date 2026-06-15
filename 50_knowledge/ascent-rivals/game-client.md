@@ -2,6 +2,7 @@
 
 ## Related
 - [[overview]]
+- [[accelbyte-game-records]]
 - [[eventun/overview|eventun]]
 - [[eventun/api|eventun-api]]
 - [[eventun/data-model|eventun-data-model]]
