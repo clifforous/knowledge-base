@@ -5,6 +5,7 @@ Date: 2026-05-26
 Primary repository: `github.com/ikigai-github/eventun`
 Related UI repository: `github.com/ikigai-github/ascentun`
 Requirements: `30_designs/ascent-rivals/eventun-medals-progression-goals-challenges-rewards-requirements.md`
+Draft/publish implementation plan: `30_designs/ascent-rivals/eventun-progression-draft-publish-implementation-plan.md`
 
 ## Purpose
 
@@ -20,11 +21,13 @@ The design favors the more flexible architecture: registered progression metrics
 - V1 does not introduce new occurrence ids, heat ids, or match ids for progression. Existing event identity is sufficient: session id, match number, heat number, event type, timestamp, plus player id and payload context.
 - Eventun `match_id` values come from the Ascent Rivals runtime match index and are zero-based within a session; validators must reject negative values only.
 - `PlayerHeatEnd.event_data.medalCounts` carries the V1 medal progression payload. Each entry includes a medal code, count, and optional parent medal code for augment counts.
-- `HeatStart` carries one V1 game-authored boolean, `canonical`, used by progression and record policies.
-- Goals use versioned definitions with a validated JSON requirement tree, not normalized requirement rows.
+- `HeatStart` carries one V1 game-authored boolean currently stored as `canonical`, used by progression and record policies. Operator-facing UI should label this concept as regulation.
+- Goals should move to a draft/published snapshot model with a validated JSON requirement tree, not normalized requirement rows.
+- The current versioned goal-definition implementation is transitional. The target authoring model removes operator-facing goal versions, active windows, and per-membership active toggles.
+- Runtime progress, completion, assignment, and reward records must reference immutable published snapshots so later draft edits do not change historical player outcomes.
 - Metrics are constrained by a registry. Goal JSON may reference only registered metrics, allowed dimensions, supported matchers, and bounded boolean composition.
 - Challenge assignments are persisted per player and period for daily, weekly, and monthly scopes. Seasonal challenges are fixed shared goals.
-- Goal completion creates one reward bundle when the goal has rewards.
+- Goal completion creates one reward bundle when the goal has configured rewards.
 - Claimable rewards are claimed through Eventun. Eventun calls AccelByte only when the player claims the bundle.
 - Automatic rewards use the same reward bundle, entry, and grant-attempt model, but are triggered by an internal worker.
 - AccelByte remains the system of record for fulfilled item ownership and currency balances.
@@ -37,7 +40,8 @@ The design favors the more flexible architecture: registered progression metrics
 - No V1 hidden, prerequisite-gated, or repeatable achievements.
 - No V1 challenge rerolls.
 - No V1 limited-supply reward enforcement.
-- No V1 dedicated admin UI or Extend App UI.
+- No V1 platform achievement synchronization, such as Steam achievements.
+- Initial server-side V1 did not require a dedicated admin UI. Follow-on Extend App UI authoring work is documented separately.
 - No V1 notification inbox.
 - No V1 migration to add synthetic occurrence ids to existing gameplay events.
 
@@ -72,9 +76,9 @@ Eventun owns:
 
 - medal definitions and stored gameplay medal facts
 - progression metric definitions and maintained counters
-- goal definitions, versions, progress snapshots, and completions
-- challenge pools, periods, assignments, and historical assignment state
-- reward definitions, player reward bundles, grant attempts, claim state, retry, and audit
+- draft goal definitions, published goal snapshots, progress snapshots, and completions
+- challenge pools, published pool snapshots, periods, assignments, and historical assignment state
+- draft reward definitions, published reward snapshots, player reward bundles, grant attempts, claim state, retry, and audit
 - backfill, rebuild, and reconciliation tooling
 
 AccelByte owns:
@@ -89,7 +93,7 @@ The game runtime owns:
 
 - medal rule logic
 - whether an occurrence earns a base or specialized medal
-- authoritative heat canonical context
+- authoritative heat regulation context, currently represented in stored event payloads by the legacy field name `canonical`
 - trusted completed match event batch submission
 
 ## Event Ingestion Design
@@ -125,7 +129,7 @@ Eventun `match_id` values come from the Ascent Rivals runtime match index and ar
 
 ### Heat Context
 
-Extend server `HeatStart.event_data` with a minimal game-authored canonical signal:
+Extend server `HeatStart.event_data` with a minimal game-authored regulation signal. The current stored payload field is the legacy/internal name `canonical`; operator-facing UI should render this as regulation.
 
 ```json
 {
@@ -135,15 +139,15 @@ Extend server `HeatStart.event_data` with a minimal game-authored canonical sign
 
 Required V1 field:
 
-- `canonical`: `true` when the game runtime says the heat used default/canonical gameplay settings.
+- `canonical`: `true` when the game runtime says the heat met regulation gameplay requirements.
 
-Custom game mode alone should be treated as canonical in V1. A custom-game heat should become non-canonical only when the heat itself uses modified lap counts, special loadout rules, gauntlet-finals behavior, or another non-default gameplay setting.
+Custom game mode alone should be treated as a regulation heat in V1. A custom-game heat should become non-regulation only when the heat itself uses modified lap counts, special loadout rules, gauntlet-finals behavior, or another non-regulation gameplay setting.
 
 No other V1 heat-context flags are planned for this feature. Additional descriptive context, such as ruleset key, ruleset version, or special-case reason, should be added only when a concrete gameplay, support, or analytics requirement needs it.
 
-Counting policy decides how the signal is used. The default for progression goals is `canonical_only`. Medal history may expose both canonical and all-completed totals if a client surface needs both.
+Counting policy decides how the signal is used. The default for progression goals is stored as `canonical_only` and displayed to operators as `Regulation Only`. Medal history may expose both regulation-only and all-completed totals if a client surface needs both.
 
-V1 progression implementation should only activate counting policies that have counter-builder support. `canonical_only` is the initial supported policy. `all_completed_heats` and `definition_specific` remain design-supported future policies, but goals using them should remain draft/inactive or fail activation until the corresponding counter builders and validation paths exist.
+V1 progression implementation should only publish counting policies that have counter-builder support. `canonical_only` is the initial supported storage value. `all_completed_heats` and `definition_specific` remain design-supported future policies, but goals using them should remain draft or fail publish validation until the corresponding counter builders and validation paths exist.
 
 ### Medal Summary Payload
 
@@ -191,7 +195,7 @@ The solution uses raw events plus maintained counters:
 - Raw event partitions are the audit and backfill source.
 - Registered metrics define supported progression inputs.
 - Progress counter building updates player metric counters for cheap reads and goal progress checks.
-- Counters are rebuildable cache state, not the canonical source of truth.
+- Counters are rebuildable cache state, not the authoritative source of truth.
 
 ### Metric Registry
 
@@ -234,7 +238,7 @@ Only metrics with implemented counter builders should be marked `active`. Placeh
 | `metric_code` | References `progression_metric_definition.code`. |
 | `scope_kind` | `career`, `challenge_period`, `season`, or `custom_window`. |
 | `scope_id` | `career`, `daily:YYYY-MM-DD`, `weekly:YYYY-Www`, `season:<season-key>`, etc. |
-| `counting_policy_code` | `canonical_only`, `all_completed_heats`, or future policy. |
+| `counting_policy_code` | `canonical_only`, `all_completed_heats`, or future policy. `canonical_only` is the current storage value for the operator-facing `Regulation Only` policy. |
 | `dimensions_hash` | Stable hash for indexed lookup. |
 | `dimensions` | JSON dimensions used by the counter. |
 | `integer_value` / `decimal_value` / `boolean_value` | Typed value slots. |
@@ -247,11 +251,11 @@ The primary key should include player, metric, scope, counting policy, and dimen
 
 | Policy | Meaning |
 | --- | --- |
-| `canonical_only` | Count only facts from heats where `HeatStart.event_data.canonical=true`. Default for achievements, masteries, and challenges. |
+| `canonical_only` | Count only facts from heats where `HeatStart.event_data.canonical=true`. Operator-facing label: `Regulation Only`. Default for achievements, masteries, and challenges. |
 | `all_completed_heats` | Count all facts from accepted completed match batches. Useful for broad medal history or explicit casual/custom goals. |
 | `definition_specific` | Reserved for future mode, event, or ruleset-specific policies. |
 
-If `canonical` is missing, new V1 progression should treat the heat as non-canonical unless an operator runs an explicit legacy backfill policy.
+If `canonical` is missing, new V1 progression should treat the heat as non-regulation unless an operator runs an explicit legacy backfill policy.
 
 ## Current Game Medal Parity
 
@@ -274,42 +278,66 @@ The current AccelByte stat model counts augment code alone. Eventun should addit
 
 ## Goal Definition Model
 
-Achievements, masteries, and challenges use the same versioned goal model.
+Achievements, masteries, and challenges share a common goal definition shape, but the lifecycle should be simplified to draft authoring plus immutable published snapshots.
 
-### Core Tables
+The current Eventun implementation has `goal_definition_version`, `current_version`, `activated_at`, `active_from`, and `active_until`. Those tables and fields are transitional. The target model removes operator-facing versions and active windows. When a live definition needs a meaningfully different requirement or reward, operators should publish a new immutable snapshot from the editable draft. If the new content should be treated as a separate achievement or challenge, create a new goal code rather than relying on visible version management.
+
+### Draft Authoring Tables
 
 `goal_definition`
 
 | Field | Purpose |
 | --- | --- |
-| `id` | Generated UUID used as the durable goal identifier. |
-| `operator_key` | Optional human-readable import or admin key. It should be generated by tooling when omitted, not required as manual data entry. |
-| `kind` | `achievement`, `mastery`, or `challenge`. |
-| `category` | Product grouping such as `combat`, `weapon_mastery`, or `daily`. |
-| `status` | `draft`, `active`, `inactive`, or `retired`. |
-| `current_version` | Current active definition version when applicable. |
-
-`goal_definition_version`
-
-| Field | Purpose |
-| --- | --- |
-| `goal_id` | Parent goal. |
-| `version` | Monotonic integer version. |
-| `title`, `description` | Player-facing copy. |
+| `id` | Generated UUID used as the durable draft goal identifier. |
+| `operator_key` | Durable operator-facing unique key for search, import, and human review. UI label: `Code`. It should be generated by tooling when omitted, not required as manual data entry. |
+| `goal_type` | `achievement` or `challenge`. |
+| `title`, `description` | Player-facing copy for the next publish. |
 | `presentation` | Asset keys, rarity, sort order, and optional future media references. |
 | `visibility` | `public`, `private`, or future `hidden`. V1 hidden behavior is not required. |
 | `requirement_expression` | Validated JSON requirement tree. |
 | `counting_policy` | Default policy for metric reads in this goal. |
-| `reward_bundle_definition_id` | Optional linked reward bundle definition. |
-| `active_from`, `active_until` | Optional activation window. |
+| `reward_bundle_definition_id` | Optional linked reusable or generated draft reward bundle. |
+| `archived_at` | Soft archive marker. Archived goals are hidden from normal authoring and cannot be published. |
 
-Active goal versions are immutable. Edits create a new version. Completion records store the version completed.
+`achievement_goal`
 
-Admin tools and imports should be UUID-first. When importing, a blank `id` means create a new draft definition; a populated `id` means update or version the existing draft/definition according to the import operation. `operator_key` exists for generated labels, CSV readability, and operator search, but should not be required manual entry.
+| Field | Purpose |
+| --- | --- |
+| `goal_id` | References an achievement `goal_definition`. |
+| `is_mastery` | Whether this achievement should be labeled and filtered as a mastery. |
+| `category` | Product grouping such as `combat`, `weapon_mastery`, or `career`. |
+
+`challenge_goal`
+
+| Field | Purpose |
+| --- | --- |
+| `goal_id` | References a challenge `goal_definition`. |
+| `category` | Optional authoring/search grouping such as `daily`, `weekly`, or `seasonal`. |
+
+Challenge goals do not need their own active/inactive status. A challenge becomes player-facing only by inclusion in a published challenge pool snapshot.
+
+### Published Goal Snapshots
+
+`published_goal`
+
+| Field | Purpose |
+| --- | --- |
+| `id` | Immutable published goal snapshot id. Runtime progress, completion, assignments, and rewards reference this id. |
+| `source_goal_id` | Draft goal that produced the snapshot. |
+| `publish_revision_id` | Publish operation that produced the snapshot. |
+| `operator_key`, `goal_type`, `is_mastery`, `category` | Copied identity and classification fields. |
+| `title`, `description`, `presentation`, `visibility` | Copied player-facing data. |
+| `requirement_expression`, `counting_policy` | Copied validated completion rules. |
+| `reward_snapshot` | Copied reward data used for this snapshot. V1 stores this as JSONB on `published_goal`; normalized child rows are deferred unless later runtime/support queries justify them. |
+| `published_at` | Time the snapshot became available to runtime. |
+
+Draft rows are editable. Published snapshots are immutable. Player history should never depend on mutable draft rows.
+
+Admin tools and imports should be UUID-first. When importing, a blank `id` means create a new draft definition; a populated `id` means update the draft definition. `operator_key` exists for generated labels, CSV readability, and operator search. The admin UI should label it as `Code`, but backend APIs and CSV may keep the existing `operator_key` field name until the API is renamed.
 
 ### Validated JSON Requirement Tree
 
-Goal requirements are stored as JSON because the natural shape is a small tree, definitions are low-volume configuration, and versioning an immutable document is simpler than copying a graph of normalized rows.
+Goal requirements are stored as JSON because the natural shape is a small tree, definitions are low-volume configuration, and publishing an immutable document snapshot is simpler than copying a graph of normalized rows.
 
 Example:
 
@@ -337,15 +365,14 @@ V1 operators:
 
 V1 should validate the simple form: one root operator with one or more leaf requirements. That supports goals such as "10 splatter kills AND 10 airborne medals" by using root `all`, and "10 splatter kills OR 10 airborne medals" by using root `any`. Mixed nested boolean expressions should remain out of V1 unless a concrete achievement requires them.
 
-V1 matchers:
+V1 authoring matcher support:
 
-- `greater_than_or_equal`
-- `greater_than`
-- `equal`
-- `less_than_or_equal`
-- `less_than`
+- Counter-style numeric metrics use `greater_than_or_equal`.
+- The authoring UI should render this as implicit "at least" and does not need to expose a matcher selector for V1 counter metrics.
+- Runtime or stored data may still contain broader matcher enum values for compatibility, but V1 interactive authoring validation should reject them unless a metric family explicitly supports them.
+- Richer matchers such as `<`, `<=`, and `==` should be added with next-version metric families such as racing time metrics or final-stat requirements, not exposed globally.
 
-Validation before activation:
+Validation before publish:
 
 - `operator` must be supported.
 - Nesting depth must stay within a configured maximum.
@@ -361,7 +388,7 @@ This keeps the flexible design disciplined. Admin/search tooling can later add e
 
 ## Challenge Model
 
-Daily, weekly, monthly, and seasonal challenges are goal definitions with assignment and period state.
+Daily, weekly, monthly, and seasonal challenges are draft challenge goals published through challenge pools. The pool is the publication vehicle. A challenge is not player-facing merely because the draft challenge exists.
 
 ### Tables
 
@@ -369,30 +396,50 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 
 | Field | Purpose |
 | --- | --- |
-| `id` | Generated UUID used as the durable challenge pool identifier. |
+| `id` | Generated UUID used as the durable draft challenge pool identifier. |
 | `operator_key` | Optional human-readable import or admin key, such as `daily_default`. It should be generated by tooling when omitted. |
 | `scope` | `daily`, `weekly`, `monthly`, or `seasonal`. |
-| `status` | `draft`, `active`, or `retired`. |
+| `status` | `draft`, `published`, or `archived`. |
 | `assignment_count` | Number assigned per player for daily/weekly/monthly pools. |
 | `reset_timezone` | Solution default should be UTC unless product chooses otherwise. |
 | `repeat_policy` | Default repeat/cooldown behavior. |
+| `metadata` | Optional non-runtime metadata, such as planned season label or future planned start/end copy. |
 
 `challenge_pool_goal`
 
 | Field | Purpose |
 | --- | --- |
 | `pool_id` | Parent pool. |
-| `goal_version_id` | Challenge goal version. |
+| `goal_id` | Draft challenge goal. |
 | `weight` | Weighted random assignment. |
 | `cooldown_periods` | Period count before the same goal can repeat. |
 | `eligibility` | JSON constraints such as required item SKUs. |
-| `active` | Whether the goal is selectable. |
+
+There is no per-membership active flag in the target model. If a challenge is linked to a draft pool, it is intended content for that pool. Publishing validates all linked challenges and either produces a runtime snapshot or fails with explicit row-level blockers.
+
+`published_challenge_pool`
+
+| Field | Purpose |
+| --- | --- |
+| `id` | Immutable published pool snapshot id. |
+| `source_pool_id` | Draft pool that produced the snapshot. |
+| `publish_revision_id` | Publish operation that produced the snapshot. |
+| `scope`, `assignment_count`, `reset_timezone`, `repeat_policy`, `metadata` | Copied pool configuration used by runtime. |
+| `published_at` | Time the snapshot became available to runtime. |
+
+`published_challenge_pool_goal`
+
+| Field | Purpose |
+| --- | --- |
+| `published_pool_id` | Published pool snapshot. |
+| `published_goal_id` | Published challenge goal snapshot. |
+| `weight`, `cooldown_periods`, `eligibility` | Copied assignment configuration. |
 
 `challenge_period`
 
 | Field | Purpose |
 | --- | --- |
-| `pool_id` | Parent pool. |
+| `published_pool_id` | Published pool snapshot. |
 | `period_key` | Stable key such as `daily:2026-05-26`. |
 | `starts_at`, `ends_at` | Period bounds. |
 | `assignment_seed` | Deterministic selection seed. |
@@ -404,7 +451,8 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 | --- | --- |
 | `player_id` | Assigned player. |
 | `period_id` | Challenge period. |
-| `goal_version_id` | Assigned challenge goal version. |
+| `published_goal_id` | Assigned published challenge goal snapshot. |
+| `published_pool_goal_id` | Optional precise pool membership snapshot used for assignment. |
 | `assignment_reason` | `generated`, `seasonal_shared`, `operator`, future `reroll`. |
 | `eligibility_snapshot` | Ownership and selection context at assignment time. |
 | `status` | `active`, `completed`, `expired`, or future `replaced`. |
@@ -417,7 +465,7 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 - Selection is deterministic from player id, period, pool, and seed.
 - Item-specific goals should be filtered out when ownership data shows the player does not own the required non-currency item.
 - If ownership lookup is unavailable, prefer non-item-specific challenges before assigning item-specific challenges.
-- Item-specific challenge assignment can be deferred from V1. While deferred, item-specific challenge goals should stay inactive or out of active pools so the player-facing assignment path does not silently omit expected challenge content.
+- Item-specific challenge assignment can be deferred from V1. While deferred, pool publish should block or clearly warn on item-specific eligibility so the player-facing assignment path does not silently omit expected challenge content.
 - Repeat is allowed by default.
 - Cooldowns are honored when configured.
 - If all otherwise eligible goals are on cooldown, ignore cooldowns rather than failing assignment.
@@ -430,7 +478,7 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 | Field | Purpose |
 | --- | --- |
 | `player_id` | Player. |
-| `goal_version_id` | Goal version being tracked. |
+| `published_goal_id` | Immutable published goal snapshot being tracked. |
 | `assignment_id` | Present for assigned challenges. |
 | `scope_kind`, `scope_id` | Career, challenge period, season, or custom window. |
 | `status` | `not_started`, `active`, `completed`, or `expired`. |
@@ -443,7 +491,7 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 | Field | Purpose |
 | --- | --- |
 | `player_id` | Player. |
-| `goal_version_id` | Completed goal version. |
+| `published_goal_id` | Completed immutable published goal snapshot. |
 | `assignment_id` | Present for assigned challenge completions. |
 | `scope_kind`, `scope_id` | Completion scope. |
 | `completed_at` | Completion timestamp. |
@@ -453,7 +501,7 @@ Daily, weekly, monthly, and seasonal challenges are goal definitions with assign
 Completion unique key:
 
 - player
-- goal version
+- published goal snapshot
 - assignment id when present
 - scope kind
 - scope id
@@ -508,7 +556,7 @@ This is not gameplay data and does not imply match-batch deduplication. It exist
 
 ## Reward Model
 
-Rewards are attached to goal definition versions. Each completed goal creates at most one player reward bundle.
+Rewards are attached to draft goals for authoring and copied into published goal snapshots at publish time. Each completed published goal creates at most one player reward bundle, and rewardless goals create no reward bundle.
 
 The admin UI should treat "inline rewards" as the default authoring path. An operator can add one or more rewards directly while creating an achievement, mastery, or challenge. Eventun still stores those inline rewards as a generated reward bundle definition behind the scenes. Reusable reward bundles remain available for repeated packages, but they should not be required for the common single-reward case.
 
@@ -529,8 +577,8 @@ Reward definitions must not select or persist an AccelByte namespace. Catalog lo
 | `bundle_kind` | `generated_goal_reward` or `reusable`. |
 | `title` | Optional display label. |
 | `fulfillment_mode` | `claimable` or `automatic`. |
-| `duplicate_policy` | Default `convert_item_to_arc_when_price_available`. |
-| `status` | `draft`, `active`, or `retired`. |
+| `duplicate_policy` | `convert_item_to_arc_when_price_available` or `skip_duplicate`. Default `convert_item_to_arc_when_price_available`. |
+| `archived_at` | Soft archive marker for hiding obsolete reusable bundles from normal authoring. |
 
 `reward_entry_definition`
 
@@ -570,7 +618,7 @@ Reward entry definitions intentionally do not store AccelByte namespace. The nam
 | `reward_type` | Copied from definition. |
 | `item_sku`, `item_id`, `currency_code`, `quantity` | Resolved grant details. |
 | `status` | `pending`, `granting`, `granted`, `skipped_duplicate`, `converted_to_arc`, `failed`, or `blocked_operator`. |
-| `duplicate_compensation_currency`, `duplicate_compensation_quantity` | ARC compensation details when applicable. |
+| `duplicate_compensation_currency`, `duplicate_compensation_quantity` | ARC compensation details when duplicate policy converts a duplicate item. |
 | `external_reference` | AccelByte transaction or entitlement reference. |
 
 `reward_grant_attempt`
@@ -603,18 +651,26 @@ Reference policy:
 
 Validation points:
 
-- Goal or reward-bundle create validates all external reward references before saving an active version.
+- Goal or reward-bundle authoring validates local shape before saving draft data.
 - Definition import validates each reward row and returns row-level errors before apply.
-- Activation validates the reward references attached to the goal version being activated.
+- Publish validates the reward references attached to the goal or pool being published and copies the exact reward data into the published snapshot.
 - Claimable and automatic fulfillment resolve and validate the reward entry again immediately before calling AccelByte.
 - Operator repair can revalidate blocked reward definitions or player reward entries after the AccelByte catalog is fixed.
 
 Invalid catalog outcomes:
 
-- If a draft definition references a missing or invalid AccelByte target, reject activation and keep the definition in draft or import-error state.
+- If a draft definition references a missing or invalid AccelByte target, reject publish and keep the definition in draft or import-error state.
 - If an already-earned player reward references a missing or invalid AccelByte target at claim time, move the affected entry or bundle to `blocked_operator`.
 - Keep the source completion durable even when reward fulfillment is blocked.
 - After an operator repairs the reward definition or AccelByte catalog state, retry fulfillment through the normal grant service.
+
+Published reward policy:
+
+- Reusable reward bundles are an authoring convenience.
+- Inline rewards may still be stored as generated draft reward bundles behind the scenes.
+- Published goal snapshots should copy the reward entries, fulfillment mode, duplicate policy, and relevant audit/display metadata into `published_goal.reward_snapshot` JSONB.
+- Player reward bundles and entries are created from copied entries in the published reward snapshot, not by reading mutable draft reward definitions.
+- Draft reward bundles do not need `active` or `inactive` status in the target model. Use `archived_at` to hide obsolete reusable bundles from normal authoring.
 
 Admin UI catalog lookup should call Eventun, not AccelByte directly. Eventun can present normalized reward targets from live AccelByte queries or a short-lived cache:
 
@@ -653,7 +709,7 @@ Grant payload policy:
 - For V1 item rewards, validate that the SKU resolves to a grantable AccelByte `INGAMEITEM`.
 - For V1 ARC rewards, use the configured ARC COINS SKU required by AccelByte fulfillment. Do not infer support for additional currencies until they are planned.
 - Use `source` consistently, recommended `REWARD`.
-- Use metadata fields for Eventun bundle id, completion id, goal id, optional operator key, goal version, source kind, and source match context when available.
+- Use metadata fields for Eventun bundle id, completion id, source goal id, published goal id, optional operator key, source kind, and source match context when available.
 - Use a stable transaction id based on the reward bundle, for example `eventun-reward:<bundle_id>`.
 
 ### Battle Pass XP Rewards
@@ -699,8 +755,9 @@ Rules:
 - `claimable` and retryable `grant_failed` bundles can be claimed.
 - Eventun checks ownership for durable item entries before grant when possible.
 - Duplicate durable items do not block the bundle.
-- Duplicate item entries convert to ARC using a global duplicate compensation percentage of catalog price when price is available.
-- If price is unavailable, the duplicate entry is skipped and recorded.
+- With `convert_item_to_arc_when_price_available`, duplicate item entries convert to ARC using a global duplicate compensation percentage of catalog price when price is available.
+- With `skip_duplicate`, duplicate item entries award nothing and are recorded as skipped.
+- If conversion is configured but price is unavailable, the duplicate entry is skipped and recorded.
 - Mark the bundle claimed only after grantable entries are granted, converted, or validly skipped.
 - If AccelByte returns an uncertain timeout, record `uncertain` and reconcile before retrying with a different transaction id.
 
@@ -729,7 +786,7 @@ POST /v1/server/events
 Changes:
 
 - Accept `PlayerHeatEnd.event_data.medalCounts`.
-- Accept `HeatStart.event_data.canonical`.
+- Accept `HeatStart.event_data.canonical` and label it as regulation in operator/client-facing surfaces.
 - Continue using trusted service authentication.
 - Do not call AccelByte from server event ingest.
 
@@ -770,11 +827,13 @@ POST /v1/admin/progression/definition-imports
 GET  /v1/admin/progression/definition-imports/{import_id}
 POST /v1/admin/progression/definition-imports/{import_id}/apply
 POST /v1/admin/progression/goals
-POST /v1/admin/progression/goals/{goal_id}/versions
-POST /v1/admin/progression/goals/{goal_id}/versions/{version}/activate
+PUT  /v1/admin/progression/goals/{goal_id}
+POST /v1/admin/progression/goals/{goal_id}/publish
 POST /v1/admin/progression/medals
 POST /v1/admin/progression/medals/bulk
 POST /v1/admin/challenges/pools
+PUT  /v1/admin/challenges/pools/{pool_id}
+POST /v1/admin/challenges/pools/{pool_id}/publish
 POST /v1/admin/challenges/periods/generate
 GET  /v1/admin/rewards/catalog-targets
 POST /v1/admin/rewards/validate
@@ -787,9 +846,11 @@ POST /v1/admin/progression/backfills
 GET  /v1/admin/progression/backfills/{backfill_id}
 ```
 
-Definition import should support CSV and JSON payloads for bulk medal, goal, challenge-pool, and reward setup. The import flow should validate rows, return row-level errors, support dry-run preview, and apply changes only after explicit operator confirmation. Applying an import should create new goal versions for changed active definitions rather than mutating active versions in place.
+Current implemented version-oriented APIs may remain during migration, but the target admin API should expose draft edit and publish operations rather than version activation operations.
 
-Admin UI can come later when repeated workflows justify an Ascentun or AccelByte Extend App surface. When it exists, the UI should fetch normalized reward targets from Eventun, not AccelByte directly, and should hide generated single-goal reward bundles behind an inline reward editor.
+Definition import should support CSV and JSON payloads for bulk medal, goal, challenge-pool, and reward setup. The import flow should validate rows, return row-level errors, support dry-run preview, and apply changes only after explicit operator confirmation. Applying an import should stage draft changes; publishing should be a separate explicit operation that validates and snapshots all affected runtime data.
+
+The admin UI should fetch normalized reward targets from Eventun, not AccelByte directly, and should hide generated single-goal reward bundles behind an inline reward editor.
 
 ## Retroactive Goal Checking And Backfill
 
@@ -799,7 +860,7 @@ Operator-triggered retroactive goal checking is required for achievements and ma
 
 | Field | Purpose |
 | --- | --- |
-| `goal_version_ids` | Goal versions to check. |
+| `published_goal_ids` | Published goal snapshots to check. |
 | `player_ids` | Optional targeted player list. |
 | `starts_at`, `ends_at` | Historical scan range. |
 | `dry_run` | Preview without writes. |
@@ -821,13 +882,13 @@ Backfill rules:
 ### Definition Lifecycle
 
 - Draft definitions can be edited.
-- Active versions are immutable.
-- Changes create a new version.
-- Retired definitions remain readable for history.
-- Active challenge period definitions should not be changed in place.
-- V1 seasonal challenges are fixed after season start.
+- Published snapshots are immutable.
+- Draft changes do not affect player-facing runtime until explicitly published.
+- Archived definitions remain readable for history and support inspection, but are hidden from normal authoring and cannot be published.
+- Active challenge periods should reference published pool snapshots and should not be changed in place.
+- V1 seasonal challenge snapshots are fixed after season start.
 - Bulk imports should be first-class enough for testing and content setup, even before a dedicated UI exists.
-- Bulk import preview should show creates, updates, unchanged rows, validation failures, and new goal versions that would be produced.
+- Bulk import preview should show creates, updates, unchanged rows, validation failures, and publish blockers. Import apply should stage draft changes rather than silently publishing them.
 
 ### Rebuild And Repair
 
@@ -850,10 +911,10 @@ Raw event retention is the limiting factor for future backfill. If old seasons m
 
 These phases are implementation order, not product-scope reduction.
 
-### Phase 1: Medal Summaries And Canonical Heat Context
+### Phase 1: Medal Summaries And Regulation Heat Context
 
 - Add `PlayerHeatEnd.event_data.medalCounts` support with primary medal counts and augment parent context.
-- Add `HeatStart.event_data.canonical`.
+- Add `HeatStart.event_data.canonical` as the current storage field for regulation heat context.
 - Add medal definitions.
 - Add medal totals query for player profile/client use.
 - Keep joins based on existing event identity.
@@ -888,6 +949,21 @@ These phases are implementation order, not product-scope reduction.
 - Add support inspection surfaces.
 - Decide whether direct SQL remains acceptable or a minimal admin UI is needed.
 
+### Phase 6: Simplified Draft/Publish Lifecycle Refactor
+
+This phase adjusts the implemented V1 model toward the simpler operator model described above. It is a refactor of lifecycle and authoring semantics, not a reduction in product scope.
+
+- Add published snapshot tables for goals, rewards, challenge pools, and challenge-pool memberships.
+- Backfill published snapshots from the current active/current-version data.
+- Move runtime assignment, progress, completion, and reward creation reads to published snapshot ids.
+- Replace operator-facing goal version activation with draft edit plus publish operations.
+- Remove or hide goal active windows from authoring. Challenge timing should come from pool periods, not individual goals.
+- Remove per-membership active toggles from challenge pools. A linked challenge is intended pool content; publish should block with explicit reasons when linked content is not assignable.
+- Collapse mastery into achievement metadata with `is_mastery`.
+- Treat challenge availability as solely determined by inclusion in a published challenge pool snapshot.
+- Keep reusable reward bundles as authoring convenience only; published goal snapshots should copy exact reward details.
+- Retire or compatibility-wrap `goal_definition_version`, `current_version`, `activated_at`, `active_from`, `active_until`, and `challenge_pool_goal.active` after runtime no longer depends on them.
+
 ## Risks And Mitigations
 
 | Risk | Mitigation |
@@ -897,11 +973,11 @@ These phases are implementation order, not product-scope reduction.
 | Runtime sends incomplete medal summary data | Require each `medalCounts` entry to include `medalName` and a positive `count`; require `parentMedalName` for augment counts. Treat missing `medalCounts` as an empty list for legacy or no-medal heat rows. |
 | Weapon-specific medal goals are ambiguous | Use loadout joins where enough; add a minimal medal payload dimension only for concrete ambiguous medals. |
 | Counters drift from raw events | Treat counters as rebuildable, add repair jobs, and expose rebuild operations. |
-| Special-case heats count inconsistently | Use game-authored `canonical` and explicit counting policies. |
+| Special-case heats count inconsistently | Use game-authored regulation context, currently stored as `HeatStart.event_data.canonical`, and explicit counting policies. |
 | Heat crosses a challenge period boundary | Attribute heat-level medal summaries by `PlayerHeatEnd` time for V1. Add occurrence-level medal events only if period-boundary precision becomes a real product requirement. |
 | AccelByte grant succeeds but Eventun sees a timeout | Record attempt as `uncertain`, reconcile against fulfillment/ownership before issuing a different transaction id. |
 | Reward data accidentally implies cross-namespace fulfillment | Keep AccelByte namespace out of reward schema and derive all AccelByte calls from runtime configuration. |
-| Duplicate item rewards block claim | Convert duplicates to ARC when price is available; otherwise skip duplicate item entries without blocking unrelated entries. |
+| Duplicate item rewards block claim | Apply the configured duplicate policy. Convert duplicates to ARC when configured and price is available; otherwise skip duplicate item entries without blocking unrelated entries. |
 | Backfill overstates historical coverage | Require backfill reports to name scanned ranges and partitions. |
 
 ## Open Design Decisions
@@ -914,6 +990,7 @@ These phases are implementation order, not product-scope reduction.
 ## Sources
 
 - Requirements draft: `30_designs/ascent-rivals/eventun-medals-progression-goals-challenges-rewards-requirements.md`
+- Next-phase ideation notes: `30_designs/ascent-rivals/eventun-progression-next-phase-ideation-notes.md`
 - Eventun event notes: `50_knowledge/ascent-rivals/eventun/events.md`
 - Eventun data model notes: `50_knowledge/ascent-rivals/eventun/data-model.md`
 - Eventun API notes: `50_knowledge/ascent-rivals/eventun/api.md`

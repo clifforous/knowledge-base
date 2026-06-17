@@ -418,7 +418,7 @@ The pass must define the system boundary before proposing changes.
 - Use source control-aware operations for asset moves and renames.
 - When changing behavior, update the relevant durable knowledge or standards note in the same pass.
 
-## Future Skill Set
+git ## Future Skill Set
 The workflow should eventually be split into small skills instead of one large prompt.
 
 Candidate skills:

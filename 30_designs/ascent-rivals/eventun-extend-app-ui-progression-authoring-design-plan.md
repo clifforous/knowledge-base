@@ -9,6 +9,7 @@ Related designs:
 - `30_designs/ascent-rivals/eventun-medals-progression-goals-challenges-rewards-requirements.md`
 - `30_designs/ascent-rivals/eventun-medals-progression-goals-challenges-rewards-solution-design.md`
 - `30_designs/ascent-rivals/eventun-extend-app-ui-progression-admin-design-plan.md`
+- `30_designs/ascent-rivals/eventun-progression-next-phase-ideation-notes.md`
 
 ## Purpose
 
@@ -42,7 +43,7 @@ This document is a follow-on to the initial Extend App UI spike. It changes the 
 
 The Eventun progression solution already defines:
 
-- Versioned goals for achievements, masteries, and challenges.
+- Versioned goals for achievements, masteries, and challenges in the current implementation, with a target migration toward draft authoring plus immutable published snapshots.
 - A validated JSON requirement tree with one root `all` or `any` operator and leaf requirements.
 - Inline rewards as the default admin authoring path, stored as generated reward bundle definitions.
 - Reusable reward bundles for repeated reward packages.
@@ -72,37 +73,58 @@ The current backend admin API has useful pieces:
 - `ListPlayerRewardBundles`
 - `RetryRewardBundle`
 
-Known API gaps for a proper operator UI:
+The current/expected implementation surface has expanded beyond the early plan and may include:
 
-- Admin-grade progression goal list/detail APIs are missing. `ListProgressionGoals` exists on the client service and is not sufficient for drafts, inactive goals, versions, rewards, and pool membership context.
-- Challenge pool administration APIs are missing.
-- Challenge pool goal administration APIs are missing.
-- A no-write validation endpoint for goal drafts would reduce noisy saved import previews during interactive editing.
-- Status transition APIs for inactive/retired goals and pools should be explicit rather than relying on SQL.
+- `ListAdminProgressionGoals`
+- `GetAdminProgressionGoal`
+- `ValidateGoalDraft`
+- `ValidateGoalVersion` as a transitional API
+- `UpdateGoalDefinition`
+- `SetGoalDefinitionStatus` as a transitional API
+- challenge pool CRUD/status/membership APIs
+- challenge pool import preview/apply APIs
+- `ListAdminCourses`
+
+Remaining API expectations for a proper operator UI:
+
+- Use admin-grade progression goal list/detail APIs rather than client `ListProgressionGoals` for drafts, published snapshots, archived goals, rewards, and pool membership context.
+- Use explicit challenge pool administration APIs rather than direct SQL for ordinary operator flows.
+- Use no-write validation before creating draft goal rows.
+- Use explicit status transition APIs for inactive/retired goals and pools rather than relying on SQL.
 
 ## Product Model
 
 ### Goal
 
-A goal is one achievement, mastery, or challenge definition. The UI should present these as one shared model with kind-specific filters and defaults.
+A goal is one draft achievement or challenge definition. The UI should present achievements and challenges as one shared authoring model where useful, but challenge runtime availability is determined only by published challenge pools.
+
+Operator-facing terminology:
+
+- The UI should label `operator_key` as **Code**. Backend APIs and CSV import/export keep the field name `operator_key`.
+- `operator_key` is the durable operator-facing unique key for search, import, and human review. The UUID `id` remains the technical primary identity.
+- Goal tag/category is hidden in the editor for now. UI-created goals should default backend `category` to `general`.
+- Goal description is hidden in the editor for now. Backend and CSV import/export may still carry description fields.
 
 Goal lifecycle:
 
-- `draft`: editable metadata and draft versions.
-- `active`: current version is live; edits create a new version.
-- `inactive`: not currently live; edits still create versions unless backend rules allow draft-only changes.
-- `retired`: read-only except support inspection.
+- `draft`: editable authoring state.
+- `published`: an immutable published snapshot exists for runtime.
+- `archived`: hidden from normal authoring and publish flows; still readable for support/history.
+
+`Unpublished changes` should be a derived UI badge, not a stored status. It means the editable draft differs from the latest published snapshot.
+
+Achievements and masteries should share the same achievement authoring model. Mastery is a boolean or label on an achievement, not a separate lifecycle system.
 
 ### Challenge
 
-A challenge is a goal with `kind='challenge'`. It becomes assignable only when an active goal version is linked into an active challenge pool.
+A challenge is a goal with `goal_type='challenge'`. It becomes assignable only by inclusion in a published challenge pool snapshot.
 
 The UI must therefore distinguish:
 
-- challenge goal definition
-- active goal version
-- challenge pool membership
-- player assignment generated from that pool membership
+- draft challenge goal definition
+- challenge pool draft membership
+- published challenge pool membership snapshot
+- player assignment generated from that published pool membership
 
 ### Reward
 
@@ -113,6 +135,7 @@ Rules:
 - Operators should work with SKU, currency code, and normalized Eventun reward targets.
 - Eventun validates reward entries against local rules and AccelByte catalog state.
 - The frontend does not store AccelByte secrets and does not call AccelByte catalog APIs directly.
+- A goal may intentionally have no reward. The UI should make "No reward linked" explicit rather than treating it as an incomplete draft.
 
 ## Information Architecture
 
@@ -120,13 +143,13 @@ Use a workbench-style UI with persistent navigation:
 
 1. **Goals**
    - Combined table for achievements, masteries, and challenges.
-   - Filters by kind, category, status, metric, SKU, reward type, pool membership, and text.
-   - Detail drawer for create/edit/version workflows.
+   - Filters by kind, status, metric, SKU, reward type, pool membership, and text. Category filters can return when category/tag editing is exposed.
+   - Detail drawer for create/edit/publish workflows.
    - Bulk actions and CSV export.
 
 2. **Challenge Pools**
    - Table of daily, weekly, monthly, and seasonal pools.
-   - Pool detail drawer with linked challenge goal versions.
+   - Pool detail drawer with linked challenge goals.
    - Pool health and assignability warnings.
 
 3. **Rewards**
@@ -149,8 +172,10 @@ Use a workbench-style UI with persistent navigation:
 - Avoid forcing operators through one wizard per challenge.
 - Use tables, drawers, tabs, tags, filters, and inline validation in the AccelByte Admin Portal style.
 - Keep primary table density high enough for scanning dozens of goals.
-- Make versioning visible. Operators should understand when an edit creates a new version.
-- Make pool membership visible for challenge goals. A challenge without active pool membership is not assignable.
+- Hide implementation versioning from normal authoring. Operators should understand draft, published, unpublished changes, archived, and publish blockers.
+- Make pool membership visible for challenge goals. A challenge without published pool membership is not assignable.
+- Keep draft/import/edit workflows permissive. Operators should be able to stage incomplete content without manually aligning every related status first.
+- Treat publish operations as the strict validation boundary. Runtime invariants should be enforced before player assignment, not by making ordinary editing brittle.
 - Keep reusable reward bundles optional. They are useful for repeated packages, not required for the common single-reward case.
 - Treat AccelByte namespace as Eventun deployment context, not editable authoring data.
 - Use import preview for bulk validation. Never apply CSV changes without an explicit confirmation step.
@@ -162,23 +187,24 @@ Use a workbench-style UI with persistent navigation:
 Minimum columns:
 
 - `kind`
-- `category`
 - `title`
 - `status`
-- `current_version`
+- `published_state`
 - `visibility`
 - `requirement_summary`
 - `reward_summary`
 - `challenge_pool_summary`
-- `active_from`
-- `active_until`
 - `updated_at`
+
+If the current transitional API still returns active-window fields, the UI should avoid emphasizing them and should display empty windows as `Always` until Phase 12 removes them from authoring.
 
 Optional hidden/export columns:
 
 - `goal_id`
 - `version_id`
 - `operator_key`
+- `category`
+- `description`
 - `counting_policy`
 - `presentation_json`
 - `requirement_json`
@@ -188,14 +214,15 @@ Optional hidden/export columns:
 
 - kind: achievement, mastery, challenge
 - status: draft, active, inactive, retired
-- category
+- category, when category/tag controls are enabled later
 - visibility
 - metric code
 - dimension key/value, especially SKU and medal name
 - reward type
 - reward SKU/currency
 - challenge pool
-- text search across title, operator key, and description
+- text search across title, Code, and description where backend supports it
+- UI text should prefer `Code` over `operator key`; backend fields may remain `operator_key`.
 
 ### Detail Drawer
 
@@ -203,21 +230,23 @@ Use a drawer rather than a full page so the operator keeps table context.
 
 Sections:
 
-- Identity: kind, category, operator key, status.
-- Presentation: title, description, visibility, asset/presentation metadata.
+- Identity: kind, Code, status. Code maps to the backend `operator_key` field until the backend contract is renamed. Category/tag remains hidden for now and defaults to `general` for UI-created goals.
+- Presentation: title and visibility. Description and richer asset/presentation metadata remain hidden for now.
 - Requirement builder.
 - Rewards.
 - Challenge pool memberships for challenge goals.
-- Version history.
+- Latest published snapshot and publish history.
 - Validation results.
 
 ### Editing Rules
 
-- New goal: create goal, create draft version, optionally activate.
-- Draft goal: allow changing draft-only metadata and creating/replacing draft versions according to backend rules.
-- Active or inactive goal: edits create a new version. The previous active version remains historical.
-- Retired goal: read-only in this UI.
-- Activating a version must run backend requirement and reward validation.
+- New goal: validate draft input without writing, create draft goal, then publish only when the operator requests it.
+- Draft goal: allow changing draft metadata, requirement, presentation, and reward configuration.
+- Published goal: edits update the draft copy and create an `Unpublished changes` state until the operator publishes again.
+- Archived goal: read-only in this UI except support inspection.
+- Publishing must run backend requirement and reward validation and create an immutable snapshot.
+- If save fails after creating a draft goal, retain the created draft goal id so the operator can retry instead of creating duplicate draft goals.
+- Active-window controls are removed from the target authoring model. Challenge timing belongs to challenge pools and periods.
 
 ## Requirement Builder
 
@@ -228,7 +257,7 @@ Controls:
 - Root operator: segmented control with `All` and `Any`.
 - Requirement rows:
   - metric
-  - matcher
+  - implicit matcher for V1 counter metrics
   - target
   - dynamic dimensions
   - remove/duplicate row actions
@@ -236,10 +265,21 @@ Controls:
 Metric behavior:
 
 - Load active metrics from `ListProgressionMetrics`.
+- Current authorable metrics are counter-style metrics such as `medal.count`, `kill.count`, `heat.completed`, `match.completed`, and `podium.count`.
+- V1 authoring treats numeric counter requirements as implicit `>=`. The UI should not expose `<`, `<=`, `==`, or other numeric matchers until a metric family explicitly supports them.
+- Lap-time and finish-time metrics should stay deferred until the next metric family supports implicit `<=` or explicit under-time semantics.
+- Boolean metrics, if exposed, should use true/false controls rather than generic matcher labels.
+- Counting policy should display `Regulation Only` for the current storage value `canonical_only`.
+- `Always` may be displayed as a disabled future option until the backend counter builder supports the all-completed-heats path.
 - Dimension controls are generated from `allowed_dimensions`.
+- Course dimensions (`course_code`) should resolve selector options from the AccelByte Cloud Save game record `Courses`, not Eventun's database-backed `course` table alias.
 - Dimension values use stable identifiers, preferably SKU for items and medal names for medals.
+- `weapon_sku` selectors should be catalog-backed and filtered to `/Gameplay/Weapon`.
+- `part_sku` selectors should be catalog-backed and filtered to non-weapon gameplay part categories such as `/Gameplay/<Part Type>`.
+- Cosmetic catalog categories such as `/Cosmetic/*` should not populate gameplay dimension selectors.
+- `medal.count` selectors should be driven by Eventun medal definition admin data synced from the game medal definitions, not by distinct names already observed in player event rows.
 - Target input type follows metric `value_type`.
-- Matcher options are constrained by metric `value_type`.
+- `medal.count` should not expose `parent_medal_name` or `is_augment` in the first UI slice. Those remain backend/game-tracking details unless a concrete authoring workflow needs them.
 
 Generated JSON shape:
 
@@ -274,35 +314,62 @@ Inline reward rows should be embedded in the goal drawer.
 
 Reward row controls:
 
-- reward type: item, currency, battlepass XP, future custom
+- reward type: item or currency for the current UI slice
 - catalog target search for item rewards
-- currency code for ARC
+- currency selector labeled `Currency`, with ARC as the only current option
 - quantity
 - fulfillment mode: claimable or automatic
-- duplicate policy
-- metadata preview
+- duplicate policy: convert duplicate item to ARC when possible, or award nothing for the duplicate item
 
 Reward authoring should not expose an AccelByte namespace field. Catalog targets are resolved and validated against Eventun's configured namespace.
 
+Currency reward authoring should not ask operators for an AccelByte catalog target or item SKU. The backend should know or derive the ARC catalog target needed for fulfillment.
+
+`battlepass_xp` remains a backend/future reward shape and should stay hidden in the UI until fulfillment and publish support are complete. Reward metadata remains backend/future-use data and should not be exposed as an editable preview in the current UI.
+
+The `Award nothing` duplicate policy maps to backend value `skip_duplicate`. Existing databases must have the reward duplicate-policy migration applied before operators can safely use this option.
+
 Operators can either:
 
+- choose no reward
 - add inline reward rows, which Eventun stores as `generated_goal_reward`
 - attach an existing reusable reward bundle
+
+Inline reward bundle title should remain hidden for now. Eventun can generate or internalize a title unless reusable bundle authoring later needs an operator-visible label.
 
 Validation:
 
 - Validate inline rewards before save.
-- Validate linked reusable bundles before activation.
+- Validate linked reusable bundles before publish.
 - Show missing SKU, non-grantable item, inactive catalog target, and invalid quantity at row level.
 
 ## Challenge Pool Management
+
+### Authoring Model
+
+Challenge pool authoring should use a staged-then-publish model.
+
+Draft/import/edit flows should be permissive:
+
+- allow pool metadata to be staged before every linked challenge is publish-ready
+- allow draft challenge goals in the goal picker
+- validate shape and references early, but avoid blockers that require operators to manually align hidden lifecycle state during normal editing
+
+Activation/publish is the strict boundary:
+
+- published pool memberships are runtime snapshots and must point at published challenge goal snapshots
+- publish validation should check goal shape, requirement validity, reward validity, challenge pool membership health, and assignment eligibility
+- a backend publish operation should atomically snapshot the pool, linked challenge goals, and linked reward data
+- if any linked object cannot be made valid, publish should fail without partial state changes and return clear blockers
+
+This avoids exposing hidden status coupling as manual operator work.
 
 ### Pool List
 
 Columns:
 
 - scope: daily, weekly, monthly, seasonal
-- operator key
+- Code
 - status
 - assignment count
 - reset timezone
@@ -315,30 +382,35 @@ Columns:
 
 Pool fields:
 
-- operator key
+- Code
 - scope
 - assignment count
 - reset timezone
 - repeat policy
 - status
 
+Status rule:
+
+- Published challenge pool snapshots are immutable.
+- Draft pools remain editable until published.
+- Archived pools are hidden from normal authoring and cannot be published.
+- Draft-only fields such as Code/backend `operator_key` and scope should not change in ways that make existing published snapshots ambiguous; create a new pool when the meaning changes materially.
+
 Pool goal table:
 
 - goal title
 - goal id
-- version
 - category
 - weight
 - cooldown periods
 - eligibility summary
-- active flag
-- validation state
+- publish validation state
 
 Pool health checks:
 
-- Active daily/weekly/monthly pools should have at least `assignment_count` active selectable goals.
-- Seasonal pools may have `assignment_count=0` and use all active pool goals.
-- Inactive, retired, missing, or invalid goal versions should be flagged.
+- Published daily/weekly/monthly pools should have at least `assignment_count` assignable linked challenges.
+- Seasonal pools may have `assignment_count=0` and use all linked published challenges.
+- Missing, archived, invalid, or unpublished linked challenges should be flagged before publish.
 - Item-specific eligibility should be flagged as unsupported for assignment until ownership-aware assignment is active.
 - If every otherwise eligible challenge is on cooldown, assignment logic falls back by ignoring cooldown. The UI should still show the cooldown configuration.
 
@@ -359,8 +431,6 @@ Recommended columns:
 - `description`
 - `visibility`
 - `counting_policy`
-- `active_from`
-- `active_until`
 - `presentation_json`
 - `requirement_operator`
 - `requirement_1_metric`
@@ -379,9 +449,20 @@ Recommended columns:
 - `reward_1_metadata_json`
 - repeated reward columns as needed
 
+Rows without reward columns represent intentional no-reward goals. The import preview should make this visible so operators can distinguish "no reward" from malformed reward input.
+
+For V1 counter-style authoring, `requirement_1_matcher` should default to `greater_than_or_equal` when omitted. Import preview should reject unsupported matcher values for author-created counter rows even if the backend preserves broader matcher compatibility for old/runtime data.
+
 Do not add reward namespace columns to goal CSVs. Reward targets are implicitly in the AccelByte namespace configured for the Eventun deployment that processes the import.
 
 The frontend can parse CSV into `DefinitionImportGoalRow[]` and call the existing definition import preview/apply APIs. Server-side CSV parsing is not required for the first UI if frontend parsing is deterministic and export uses the same columns.
+
+CSV behavior requirements:
+
+- Editing or clearing CSV input must invalidate parsed rows and preview state.
+- Numeric parsing must be strict integer parsing, not `parseInt`-style partial parsing.
+- Export must page through cursors instead of silently truncating at the first page of results.
+- Goal CSV import should stage draft content. Strict publish-ready validation should happen when publishing a goal or challenge pool, not row by row during staging.
 
 ### Challenge Pool CSV
 
@@ -394,13 +475,20 @@ Recommended columns:
 - `assignment_count`
 - `reset_timezone`
 - `repeat_policy`
-- `goal_version_id`
+- `goal_id`
 - `weight`
 - `cooldown_periods`
 - `eligibility_json`
-- `active`
 
-Challenge pool CSV requires new Eventun admin APIs or a dedicated import endpoint because the current definition import model only handles goal rows.
+Challenge pool CSV requires Eventun admin APIs or a dedicated import endpoint because the definition import model only handles goal rows.
+
+Challenge pool import behavior:
+
+- Challenge pool CSV import should stage pool and membership changes. It should not require every referenced challenge to already be publish-ready.
+- Import apply should not publish the pool automatically. Operators should use the same publish pool operation after reviewing staged changes.
+- A successful challenge pool import apply should not be repeatedly applicable without a new preview.
+- Failed previews should not expose non-durable generated IDs as if they can be reused.
+- Rows for the same pool should be grouped and applied predictably.
 
 ### Bulk Edit
 
@@ -412,8 +500,8 @@ Bulk edit should operate on selected grid rows and generate the same internal pa
 - set counting policy
 - attach reward bundle
 - add inline reward
-- add selected challenge versions to a pool
-- set pool goal weight/cooldown/active flag
+- add selected challenge goals to a pool
+- set pool goal weight/cooldown
 
 ## Backend API Design
 
@@ -426,9 +514,10 @@ Proposed RPCs:
 ```proto
 rpc ListAdminProgressionGoals(ListAdminProgressionGoalsRequest) returns (ListAdminProgressionGoalsResponse);
 rpc GetAdminProgressionGoal(GetAdminProgressionGoalRequest) returns (GetAdminProgressionGoalResponse);
+rpc ValidateGoalDraft(ValidateGoalDraftRequest) returns (ValidateGoalDraftResponse);
 rpc UpdateGoalDefinition(UpdateGoalDefinitionRequest) returns (UpdateGoalDefinitionResponse);
-rpc SetGoalDefinitionStatus(SetGoalDefinitionStatusRequest) returns (SetGoalDefinitionStatusResponse);
-rpc ValidateGoalVersion(ValidateGoalVersionRequest) returns (ValidateGoalVersionResponse);
+rpc PublishGoal(PublishGoalRequest) returns (PublishGoalResponse);
+rpc ArchiveGoal(ArchiveGoalRequest) returns (ArchiveGoalResponse);
 ```
 
 `ListAdminProgressionGoals` should support filters, search, pagination, and enough summary fields to render the workbench without N+1 detail requests.
@@ -436,23 +525,20 @@ rpc ValidateGoalVersion(ValidateGoalVersionRequest) returns (ValidateGoalVersion
 `GetAdminProgressionGoal` should return:
 
 - goal definition
-- all versions
-- current version
+- latest published snapshot, if any
 - linked reward bundle summaries
 - challenge pool memberships
 - validation warnings
 
-`UpdateGoalDefinition` should allow draft-safe metadata edits. It must not mutate active immutable version data.
+`UpdateGoalDefinition` should edit draft authoring data. It must not mutate published snapshot data.
 
-`SetGoalDefinitionStatus` should enforce valid transitions:
+`PublishGoal` should validate draft goal shape, requirement expression, reward references, and any relevant achievement/mastery metadata. It should atomically create an immutable published snapshot or return explicit publish blockers.
 
-- draft to retired
-- active to inactive
-- inactive to active through explicit version activation, not blind status change
-- inactive to retired
-- retired remains read-only
+`ArchiveGoal` should hide the draft goal from normal authoring and prevent future publish operations. Published snapshots remain readable for history.
 
-`ValidateGoalVersion` should validate requirement and reward input without creating a saved import record.
+`ValidateGoalDraft` should validate new-goal metadata before a draft goal row is created. This keeps the new-goal path no-write until the draft identity itself is valid.
+
+Existing version-oriented APIs such as `ValidateGoalVersion` and `CreateGoalVersion` are transitional. The simplified lifecycle phase should compatibility-wrap or retire them after runtime moves to published snapshots.
 
 ### Challenge Pool APIs
 
@@ -468,22 +554,32 @@ rpc UpdateChallengePool(UpdateChallengePoolRequest) returns (UpdateChallengePool
 rpc SetChallengePoolStatus(SetChallengePoolStatusRequest) returns (SetChallengePoolStatusResponse);
 rpc UpsertChallengePoolGoal(UpsertChallengePoolGoalRequest) returns (UpsertChallengePoolGoalResponse);
 rpc RemoveChallengePoolGoal(RemoveChallengePoolGoalRequest) returns (RemoveChallengePoolGoalResponse);
+rpc ValidateChallengePoolPublish(ValidateChallengePoolPublishRequest) returns (ValidateChallengePoolPublishResponse);
+rpc PublishChallengePool(PublishChallengePoolRequest) returns (PublishChallengePoolResponse);
 rpc PreviewChallengePoolImport(PreviewChallengePoolImportRequest) returns (PreviewChallengePoolImportResponse);
 rpc ApplyChallengePoolImport(ApplyChallengePoolImportRequest) returns (ApplyChallengePoolImportResponse);
 ```
 
-Challenge pool APIs should validate:
+Challenge pool edit APIs should validate shape and references:
 
 - pool scope is supported
 - assignment count is non-negative
-- daily, weekly, and monthly active pools have meaningful assignment count
-- linked goal version exists
-- linked goal is `kind='challenge'`
-- linked version belongs to a non-retired goal
+- daily, weekly, and monthly published pools have meaningful assignment count
+- linked goal exists
+- linked goal is a challenge
+- linked goal is not archived
 - weight is positive
 - cooldown is non-negative
 - eligibility JSON stays within V1-supported shape
-- active item-specific eligibility is blocked or warned until ownership-aware assignment is enabled
+- published snapshots are immutable
+
+Challenge pool publish APIs should enforce player-facing runtime invariants:
+
+- published pools have enough assignable linked challenges for `assignment_count`
+- every pool membership can produce or reference a valid published challenge goal snapshot
+- rewards linked to challenge goals are valid
+- item-specific eligibility is blocked or warned until ownership-aware assignment is enabled
+- publish creates all pool, goal, and reward snapshots atomically or applies none
 
 ### Reward APIs
 
@@ -499,6 +595,54 @@ Potential additions:
 
 - Add search/pagination fields to `ListRewardBundleDefinitions` if reusable bundles become numerous.
 - Add update/status transition APIs for reusable bundles if operators need to revise draft bundles from the UI.
+
+Catalog lookup behavior:
+
+- Eventun reward catalog lookup should use AccelByte Platform admin item search, currently `/platform/admin/namespaces/{namespace}/items/search`.
+- Namespace is supplied by Eventun runtime configuration, not authoring input.
+- The lookup currently relies on default/published store behavior.
+- Search requests should send required `language` and `keyword` values and avoid empty searches.
+
+Catalog-backed gameplay selectors:
+
+- `weapon_sku` selector options should come from `/Gameplay/Weapon`.
+- `part_sku` selector options should come from non-weapon `/Gameplay/<Part Type>` categories.
+- `/Cosmetic/*` categories should be ignored for gameplay requirement dimensions.
+- Currency reward authoring should show ARC as a currency option rather than requiring operators to select an ARC catalog item.
+
+### Medal Definition APIs
+
+`medal.count` authoring should use Eventun medal definition admin data instead of distinct medal names observed in player event rows.
+
+Recommended admin capabilities:
+
+- list medal definitions for selector population
+- create/update/deactivate medal definitions when the game medal data table changes
+- distinguish base medals from augment medal codes
+- preserve optional parent/base medal context for backend counting and validation without exposing `parent_medal_name` or `is_augment` in the first goal-authoring UI
+
+The preferred source for the initial medal definition list is the game client medal and augment data tables, not historical Eventun events.
+
+### Course APIs
+
+Add or use `ListAdminCourses` for authoring selectors.
+
+Rules:
+
+- Course selector source of truth is AccelByte Cloud Save game record `Courses`.
+- UI should display course code plus `FeatureState`.
+- CSV import/export should continue to use raw `course_code`.
+- Eventun's database `course` table is legacy/alias data and should not be treated as the source of truth.
+
+### Admin/Auth Behavior
+
+Admin role and token failures should map precisely:
+
+- expired or invalid token: unauthenticated
+- transient IAM/admin lookup failures: unavailable
+- real non-admin user: permission denied
+
+This distinction matters because intermittent local testing or page reload failures should not be misreported as permanent "not admin" authorization failures.
 
 ## Frontend Architecture
 
@@ -572,10 +716,10 @@ Files:
 Tasks:
 
 - Add admin list/detail messages and RPCs.
-- Implement list filters for kind, status, category, text, metric, reward type, and pool id where practical.
+- Implement list filters for goal type, published/archive state, category, text, metric, reward type, and pool id where practical.
 - Include summary fields needed by the table.
-- Include versions and pool memberships in detail responses.
-- Add tests for drafts, active goals, inactive goals, retired goals, and challenge pool membership summaries.
+- Include latest published snapshot and pool memberships in detail responses.
+- Add tests for draft, published, archived, and challenge pool membership summaries.
 - Regenerate Go and Swagger output.
 
 Verification:
@@ -600,18 +744,18 @@ Files:
 
 Tasks:
 
-- Add no-write `ValidateGoalVersion`.
+- Add no-write draft validation.
 - Add draft-safe `UpdateGoalDefinition`.
-- Add explicit `SetGoalDefinitionStatus`.
-- Ensure active version data remains immutable.
-- Ensure active edits produce new versions through existing `CreateGoalVersion`.
+- Add explicit publish/archive operations.
+- Ensure published snapshot data remains immutable.
+- Ensure draft edits do not affect published runtime state until publish.
 - Return row/path validation errors in the same style as definition import.
 
 Verification:
 
 ```bash
 cd /home/cgarvis/projects/genun/eventun
-go test ./internal/eventun -run 'ValidateGoalVersion|UpdateGoalDefinition|SetGoalDefinitionStatus|CreateGoalVersion'
+go test ./internal/eventun -run 'ValidateGoal|UpdateGoalDefinition|PublishGoal|ArchiveGoal'
 bun run gen
 ```
 
@@ -631,8 +775,10 @@ Tasks:
 
 - Add pool list/detail/create/update/status APIs.
 - Add pool-goal upsert/remove APIs.
-- Validate active pool goal links against active challenge goal versions.
-- Return pool health fields for insufficient active candidates and invalid memberships.
+- Allow draft challenge goals to be staged into pools.
+- Validate pool goal links against challenge draft goals.
+- Add publish validation and publish pool APIs that enforce runtime invariants and snapshot linked content atomically.
+- Return pool health fields for insufficient candidates and invalid memberships.
 - Do not add new DDL unless implementation reveals a missing index or constraint.
 
 Verification:
@@ -656,8 +802,9 @@ Tasks:
 
 - Add preview/apply APIs for pool CSV rows after frontend column shape is stable.
 - Store preview results if durable audit is useful; otherwise return validation preview without persistence.
-- Apply pool and pool-goal changes transactionally.
+- Apply pool and pool-goal changes transactionally as staged edits, not automatic publish.
 - Reuse the same validators as direct pool APIs.
+- Route strict publish-ready validation through the publish pool API after import review.
 
 Verification:
 
@@ -709,7 +856,7 @@ Tasks:
 - List goals through the new admin list API.
 - Add filters for kind, status, category, and text.
 - Show requirement, reward, and pool summaries.
-- Open detail drawer with version history and read-only metadata.
+- Open detail drawer with draft metadata, latest published snapshot, and history/status context.
 - Show empty, loading, unauthorized, forbidden, and error states.
 
 Verification:
@@ -733,11 +880,14 @@ Tasks:
 
 - Load active progression metrics.
 - Build one-root `all`/`any` requirement expressions.
-- Render dynamic dimension inputs from metric `allowed_dimensions`.
+- Restrict the first UI slice to counter metrics with implicit `>=`.
+- Render only supported dynamic dimension inputs from metric `allowed_dimensions`.
+- Hide medal-specific backend fields such as `parent_medal_name` and `is_augment`.
+- Use medal definition admin data for `medal.count` selectors.
 - Validate input locally for missing required fields.
 - Call backend no-write validation.
-- Save new goals and new versions.
-- Make active-goal edits clearly create a new version.
+- Save new goals and draft edits.
+- Make published-goal edits clearly remain draft-only until publish.
 
 Verification:
 
@@ -760,7 +910,9 @@ Tasks:
 
 - Add inline reward rows to goal editing.
 - Query Eventun catalog targets.
-- Support item, ARC currency, and battlepass XP shapes supported by the backend.
+- Support item rewards and ARC currency rewards in the current UI slice.
+- Keep battlepass XP hidden until fulfillment and publish behavior is ready for operators.
+- Do not require operators to choose an AccelByte catalog target for ARC currency rewards.
 - Validate reward rows before save.
 - Allow selecting an existing reusable reward bundle instead of inline rewards.
 
@@ -785,10 +937,11 @@ Tasks:
 
 - List pools with health indicators.
 - Create and edit pool metadata.
-- Add active challenge goal versions to pools.
-- Edit weight, cooldown, eligibility, and active flag.
+- Add draft challenge goals to pools.
+- Edit weight, cooldown, and eligibility.
 - Remove pool goals.
 - Show assignment-count warnings and unsupported eligibility warnings.
+- Add a publish pool action that runs strict backend validation and shows blockers.
 
 Verification:
 
@@ -813,11 +966,16 @@ Files:
 Tasks:
 
 - Export selected goals to goal CSV.
+- Page through admin list cursors for export so exported CSV is not silently truncated at the first result page.
 - Parse goal CSV into `DefinitionImportGoalRow[]`.
+- Use strict numeric parsing for integer fields.
+- Clear parsed rows and preview state when CSV input is edited or cleared.
 - Preview goal imports through existing Eventun definition import APIs.
-- Apply valid imports with explicit confirmation.
+- Apply valid goal imports with explicit confirmation as staged draft content where appropriate.
 - Export challenge pool rows.
 - Preview/apply challenge pool CSV through the new challenge pool import APIs.
+- Treat challenge pool import as staging. Do not require publish-ready linked goals row by row and do not publish automatically.
+- Prevent repeat apply after a successful challenge pool import apply unless the operator creates a new preview.
 - Add bulk table actions that generate the same import/update payloads.
 
 Verification:
@@ -834,13 +992,13 @@ Manual verification in a development namespace:
 
 - Create a reusable reward bundle.
 - Create an achievement with structured requirement rows and inline reward.
-- Activate the achievement.
+- Publish the achievement.
 - Create a challenge goal.
-- Add the challenge version to a daily pool.
+- Add the challenge goal to a daily pool.
 - Export goals to CSV.
-- Modify a CSV row and import it as a new version.
+- Modify a CSV row and import it as a draft edit.
 - Preview and apply the import.
-- Confirm active challenge assignment still works through the game/client-facing API.
+- Publish the daily pool and confirm challenge assignment still works through the game/client-facing API.
 
 Backend verification:
 
@@ -857,19 +1015,55 @@ npm run build
 npm run lint
 ```
 
+### Phase 12: Draft/Publish Lifecycle Simplification
+
+This phase migrates the authoring app and supporting APIs away from operator-facing goal versions, active windows, and pool-membership active flags.
+
+Backend tasks:
+
+- Add immutable published snapshot tables for goals, rewards, challenge pools, and challenge-pool memberships.
+- Backfill snapshots from current active/current-version data.
+- Move runtime assignment, progress, completion, and reward creation APIs to published snapshot ids.
+- Add draft edit, publish, and archive APIs for goals and challenge pools.
+- Publish goals by validating draft requirement, reward, presentation, and achievement/mastery metadata, then snapshotting the result.
+- Publish challenge pools by validating linked challenge drafts, linked rewards, eligibility, and assignment count, then snapshotting the pool and linked challenge goals atomically.
+- Compatibility-wrap or retire `goal_definition_version`, goal active-window fields, version activation APIs, and `challenge_pool_goal.active`.
+
+Frontend tasks:
+
+- Replace version and activation UI with draft, published, unpublished changes, archived, and publish-blocker states.
+- Remove active-window controls from goal editing.
+- Remove per-membership active toggles from challenge-pool editing.
+- Show publish blockers directly in goal and pool detail views without requiring operators to query separate diagnostics.
+- Treat mastery as an achievement flag/filter.
+- Treat challenge availability as solely determined by inclusion in a published challenge pool snapshot.
+- Keep reusable reward bundles as authoring convenience while showing that published snapshots freeze reward details.
+
+Review checkpoint:
+
+- Validate the new authoring model with a daily pool update, a seasonal pool planning flow, an achievement edit, a mastery edit, a no-reward achievement, and an inline reward change.
+
 ## Review Checkpoints
 
 - After Phase 1 and Phase 2, review API shape before implementing pool APIs.
 - After Phase 3, review challenge pool semantics against the assignment worker.
 - After Phase 5, review frontend structure before building feature pages.
 - After Phase 7, review requirement builder UX with sample achievement/challenge definitions.
-- After Phase 9, review whether pool health warnings match design expectations.
+- After Phase 9, review whether staged pool memberships, publish blockers, and pool health warnings match design expectations.
 - After Phase 10, review CSV column shape with likely seasonal setup data.
+- Before Phase 12 implementation, review the published snapshot schema and migration/backfill strategy against existing player progress, completion, challenge assignment, and reward tables.
+
+## Cleanup Follow-Ups
+
+- Remove the Eventun database `course` table and related seed/alias plumbing. The source of truth for authoring and runtime course metadata should be the AccelByte Cloud Save game record `Courses`.
+- Replace the existing non-admin `Courses` endpoint implementation with the same Cloud Save-backed course source used by `ListAdminCourses`, or otherwise retire the non-admin endpoint if no client still needs it.
+- Keep CSV and persisted progression requirement dimensions using raw `course_code`; only selector display and validation should depend on the Cloud Save course list.
 
 ## Open Decisions
 
 - Exact admin permission resource strings for each new API.
-- Whether `ValidateGoalVersion` should also validate challenge pool eligibility context when the goal is already linked to pools.
+- Whether draft goal validation should also validate challenge pool eligibility context when the goal is already linked to pools.
 - Whether challenge pool import previews should be stored durably like definition imports or returned as stateless previews.
+- Exact published snapshot schema for later publish phases; V1 reward details are copied into `published_goal.reward_snapshot` JSONB, with normalized child rows deferred unless runtime/support queries justify them.
 - Whether reusable reward bundle draft editing is required in the first production UI slice.
 - Whether bulk edit should apply immediately through update APIs or always route through import preview/apply.

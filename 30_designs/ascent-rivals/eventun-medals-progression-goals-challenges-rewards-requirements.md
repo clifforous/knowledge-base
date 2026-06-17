@@ -27,7 +27,7 @@ This table separates V1 solution-design scope from future intent. Implementation
 | Career medal totals backed by Eventun | V1 design requirement |
 | Persistent achievements | V1 design requirement |
 | Masteries as achievement-category goals | V1 design requirement |
-| Reward bundles for completed goals, including claimable and automatic rewards | V1 design requirement |
+| Reward bundles for completed goals that have configured rewards, including claimable and automatic rewards | V1 design requirement |
 | AccelByte fulfillment for AccelByte-backed rewards | V1 design requirement |
 | Daily, weekly, and monthly challenges | V1 design requirement |
 | Seasonal challenges | V1 design requirement |
@@ -36,9 +36,11 @@ This table separates V1 solution-design scope from future intent. Implementation
 | Active challenge assignment visibility | Public visibility acceptable; first-party UI may show only the current player's challenges |
 | Claimable reward visibility | Private by default; low sensitivity if exposed later |
 | Battle pass XP rewards | Supported design candidate if AccelByte Season Pass or another battle pass owner is adopted; exact implementation scope is solution/product scope |
-| Titles, limited-supply rewards, challenge rerolls, segmented challenge pools, prerequisite-gated achievements, repeatable achievements, hidden achievements | Deferred or future expansion |
+| Achievement gallery/profile presentation, achievement images, platform achievements, titles, limited-supply rewards, challenge rerolls, segmented challenge pools, prerequisite-gated achievements, repeatable achievements, hidden achievements | Deferred or future expansion |
 | Dedicated admin UI and AccelByte Extend App UI | Deferred product surface; not required for initial operation |
 | Presentation asset storage and delivery | Solution scope |
+
+Post-V1 review items are collected in `30_designs/ascent-rivals/eventun-progression-next-phase-ideation-notes.md`.
 
 ## Existing Context
 
@@ -128,7 +130,7 @@ Examples:
 - `Weapon Killer`: get 1,000 weapon kills
 - `Career Eliminator`: get 10,000 total kills
 
-Achievements may grant rewards.
+Achievements may grant rewards. Some achievements may intentionally have no grantable reward beyond the completion itself.
 
 Achievement, mastery, and challenge definitions may need presentation metadata, such as a 2D image or icon. Asset storage and delivery are solution-design details, not product requirements.
 
@@ -183,7 +185,7 @@ Challenges may grant rewards.
 
 ### Reward
 
-A reward is granted when a player completes an achievement, mastery, or challenge goal.
+A reward may be granted when a player completes an achievement, mastery, or challenge goal.
 
 Expected V1 reward examples:
 
@@ -200,11 +202,13 @@ Reward fulfillment should use AccelByte APIs where AccelByte owns the rewardable
 
 Rewards should not expire after a player earns them. Time windows constrain earning challenge progress, not post-completion reward availability.
 
-### Canonical Heat Context
+Some goals may have no reward bundle. This is expected for achievements where the achievement completion is itself the durable player-facing award. A later achievement presentation pass may add richer achievement display metadata, images, or platform achievement synchronization without changing the completed-goal history requirement.
 
-Canonical heat context is game-authored event context that tells Eventun whether a heat used default/canonical gameplay settings or a special-case configuration.
+### Regulation Heat Context
 
-This requirement is related to existing Eventun stat correctness rather than being specific to medals, achievements, masteries, challenges, or rewards. Eventun currently uses copied course defaults, such as lap counts, to decide whether some stats and records are comparable. That can become stale. The game runtime has the authoritative context for whether a heat used canonical defaults.
+Regulation heat context is game-authored event context that tells Eventun whether a heat met regulation gameplay requirements or used a special-case configuration.
+
+This requirement is related to existing Eventun stat correctness rather than being specific to medals, achievements, masteries, challenges, or rewards. Eventun currently uses copied course defaults, such as lap counts, to decide whether some stats and records are comparable. That can become stale. The game runtime has the authoritative context for whether a heat met regulation requirements.
 
 Examples of special-case contexts include:
 
@@ -214,14 +218,14 @@ Examples of special-case contexts include:
 
 Custom game mode alone should not make a heat special-case for V1. A custom-game heat may still be special-case if that heat uses modified lap counts, special loadout rules, or another non-default gameplay setting.
 
-The signal should be heat-level, not only match-level, because a multi-heat match may have one heat with modified settings while later heats use canonical settings.
+The signal should be heat-level, not only match-level, because a multi-heat match may have one heat with modified settings while later heats meet regulation requirements.
 
 For this draft:
 
 - Completed match means the game server sent a final successful event batch to Eventun.
-- Canonical heat means a heat that the game runtime reports as using default/canonical settings.
-- Special-case heat means a heat that the game runtime reports as modified or non-canonical.
-- Which aggregate functions, SQL views, medals, achievements, masteries, challenges, records, or leaderboards count canonical versus special-case heats is solution-design and stat-policy scope.
+- Regulation heat means a heat that the game runtime reports as meeting regulation requirements.
+- Special-case heat means a heat that the game runtime reports as modified or non-regulation.
+- Which aggregate functions, SQL views, medals, achievements, masteries, challenges, records, or leaderboards count regulation versus special-case heats is solution-design and stat-policy scope.
 
 The exact event, field name, payload shape, and downstream counting policy are implementation and solution-design details.
 
@@ -257,7 +261,7 @@ Decision:
 3. Eventun must support medals as inputs to achievements, masteries, and challenges.
 4. Eventun should not treat medals as reward-granting entities by default.
 5. Eventun must treat medal awards from the game runtime as final medal facts rather than re-deriving medal eligibility from raw combat events.
-6. Medal persistence and progression should have access to game-authored canonical/special-case heat context when solution design decides which facts should count.
+6. Medal persistence and progression should have access to game-authored regulation/special-case heat context when solution design decides which facts should count.
 7. Medal events should preserve primary medal context for attached augment medals so the same augment can be counted globally or within a specific parent medal context.
 
 ### Achievement Requirements
@@ -321,7 +325,7 @@ Decision:
 
 ### Reward Requirements
 
-1. Completion of an achievement, mastery, or challenge goal should generally create a reward bundle.
+1. Completion of an achievement, mastery, or challenge goal should create a reward bundle only when the goal has a configured reward.
 2. Reward bundles may be player-claimable or automatically fulfilled, depending on the reward definition.
 3. Reward bundles must support ARC and skins as expected V1 reward examples, should be able to support battle pass XP if a battle pass system is adopted, and should remain extensible to future reward types such as titles.
 4. V1 currency reward behavior may assume ARC is the only supported spendable currency.
@@ -332,7 +336,7 @@ Decision:
 9. Completion should immediately create a reward record when the completed goal has a reward.
 10. The initial design should avoid an approval workflow for normal achievement, mastery, and challenge rewards.
 11. Earned claimable rewards should not expire by default.
-12. Each completed achievement, mastery, or challenge goal should create one reward bundle.
+12. Each completed achievement, mastery, or challenge goal should create at most one reward bundle.
 13. A reward bundle may contain multiple grant entries, for example granting both a part and a skin if the player does not already own the part.
 14. The design must distinguish a true player claim from a "newly granted but unseen" reward presentation.
 15. If Eventun grants AccelByte entitlements immediately, those rewards should be treated as owned, not unclaimed, unless AccelByte confirms a separate pending entitlement mechanism.
@@ -349,10 +353,10 @@ Decision:
 26. Eventun must retain historical reward bundle, claim, and grant-attempt data after rewards are claimed.
 27. Historical reward data should remain available for player history, support, reconciliation with AccelByte, analytics, and future UI surfaces.
 28. If a reward bundle contains an item the player already owns, that duplicate item should not block claiming the bundle or granting the remaining non-duplicate entries.
-29. Duplicate item rewards should generally convert to ARC compensation using a global duplicate-reward percentage of the item's catalog price, where the relevant catalog price is available.
-30. V1 should not require per-item bespoke duplicate reward definitions. More granular duplicate compensation rules can be revisited later if needed.
-31. Goals are expected to normally have rewards, even if the reward is ephemeral such as battle pass XP.
-32. Rewardless goals are not a primary V1 use case; whether to allow them is a solution-design choice.
+29. Duplicate item rewards may convert to ARC compensation using a global duplicate-reward percentage of the item's catalog price, where the relevant catalog price is available.
+30. Duplicate item rewards may alternatively award nothing for that duplicate item.
+31. V1 should not require per-item bespoke duplicate reward definitions. More granular duplicate compensation rules can be revisited later if needed.
+32. Goals may be rewardless when the completion itself is the player-facing award.
 33. The default choice between claimable and automatic rewards should be decided during solution design after concrete reward definitions are known.
 
 ### Progress Evaluation Requirements
@@ -362,9 +366,9 @@ Decision:
 3. Eventun should record newly completed goals and reward records.
 4. Eventun must support operator-triggered retroactive completion for newly created or changed achievements and masteries when sufficient historical source data exists.
 5. Completed goal history should be retained even if the underlying achievement, mastery, or challenge definition is later inactive, retired, or replaced.
-6. Gameplay events should provide Eventun with heat-level context that distinguishes canonical/default heats from special-case heats.
-7. Eventun should rely on the game-authored canonical/special-case context rather than inferring comparability from copied course defaults where the game can provide the authoritative answer.
-8. Which aggregate functions, views, records, medals, achievements, masteries, challenges, and leaderboards count canonical versus special-case heats should be decided during solution design.
+6. Gameplay events should provide Eventun with heat-level context that distinguishes regulation heats from special-case heats.
+7. Eventun should rely on the game-authored regulation/special-case context rather than inferring comparability from copied course defaults where the game can provide the authoritative answer.
+8. Which aggregate functions, views, records, medals, achievements, masteries, challenges, and leaderboards count regulation versus special-case heats should be decided during solution design.
 9. The solution design should decide whether retroactive completion runs from derived event facts, maintained counters, or another model.
 10. The solution design should define the historical range available for retroactive evaluation, including how archived or partitioned event history is handled.
 11. V1 progression should use existing Eventun gameplay event identity and should not require new occurrence ids or surrogate heat or match ids to count, join, or evaluate gameplay facts.
@@ -407,7 +411,7 @@ Decision:
 - Rewards are attached to achievement, mastery, or challenge completion.
 - The game runtime owns medal-rule logic.
 - Eventun stores medal facts and derives progression from those facts.
-- Gameplay events should include game-authored heat context that lets Eventun distinguish canonical/default heats from special-case heats.
+- Gameplay events should include game-authored heat context that lets Eventun distinguish regulation heats from special-case heats.
 - Eventun owns progression evaluation.
 - AccelByte owns fulfillment for AccelByte-backed rewards.
 - Earned rewards should not expire by default.
@@ -419,10 +423,10 @@ Decision:
 This flow is non-binding and should be validated during solution design:
 
 1. Gameplay sends existing match, player, combat, loadout, and result events to Eventun.
-2. Heat context identifies whether each heat is canonical/default or special-case.
+2. Heat context identifies whether each heat is regulation or special-case.
 3. Gameplay also sends final medal awards to Eventun as part of the successful match event batch.
 4. Eventun stores the raw event and medal facts.
-5. Eventun uses canonical/special-case heat context according to the counting policy defined in solution design.
+5. Eventun uses regulation/special-case heat context according to the counting policy defined in solution design.
 6. Eventun evaluates achievement, mastery, and challenge progress for participating players.
 7. Eventun records newly completed goals.
 8. Eventun creates reward records for completed goals that have rewards.
@@ -455,7 +459,7 @@ This flow is non-binding and should be validated during solution design:
 9. Each completed goal should create one reward bundle, and the bundle may contain multiple grant entries.
 10. Reward bundles may be player-claimable or automatically fulfilled; no normal approval flow is expected.
 11. Limited-supply rewards are deferred, but the model should not rule them out.
-12. Gameplay events should include game-authored heat-level canonical/special-case context.
+12. Gameplay events should include game-authored heat-level regulation/special-case context.
 13. Earned rewards should not expire by default.
 14. Daily, weekly, and monthly challenge assignments should be persisted per player for each active time window.
 15. Initial daily, weekly, and monthly challenge pools should be shared across players.
@@ -480,14 +484,14 @@ This flow is non-binding and should be validated during solution design:
 34. Historical challenge assignments, progress, completions, reward bundles, claims, and grant attempts should be retained after active windows close or rewards are claimed.
 35. Operator-triggered retroactive completion should be supported for achievements and masteries when historical data is available.
 36. Simple boolean requirement composition should be supported for achievements where it does not add disproportionate complexity.
-37. Already-owned item rewards should not block reward bundle claims; duplicate item rewards should generally convert to ARC using a global duplicate-reward percentage of catalog price.
+37. Already-owned item rewards should not block reward bundle claims; duplicate item rewards may convert to ARC using a global duplicate-reward percentage of catalog price or may award nothing according to the configured duplicate policy.
 38. V1 should not require per-item bespoke duplicate reward definitions.
-39. Goals are expected to normally have rewards, and reward bundles may be claimable or automatically fulfilled depending on reward definition.
+39. Goals may have no reward, one claimable reward bundle, or one automatically fulfilled reward bundle depending on the goal definition.
 40. Dedicated administration UI is deferred until repeated workflows justify dedicated tools.
 
 ## Open Requirements Questions
 
-No open product requirements are currently identified. Remaining UX, API, storage, and implementation decisions are deferred to solution design.
+No open V1 product requirements are currently identified. Post-V1 product ideas and review questions are tracked in `30_designs/ascent-rivals/eventun-progression-next-phase-ideation-notes.md`.
 
 ## Deferred Solution Areas
 
@@ -498,7 +502,7 @@ These areas should be designed after the requirements are settled:
 - derived tables, views, materialized views, and recalculation cadence
 - event payload shape for medals
 - item identity and reward reference model, likely SKU-oriented rather than AccelByte item-id-oriented
-- heat-level canonical/special-case context event shape and downstream counting policy
+- heat-level regulation/special-case context event shape and downstream counting policy
 - stat and medal aggregation strategy
 - requirement expression model
 - challenge assignment model

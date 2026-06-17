@@ -43,7 +43,7 @@ Current known contents:
 - feature state, where `Prod` means the course is officially released
 - other course configuration
 
-`Courses` is the source of truth for official course configuration. The Eventun `course` table is not the canonical owner for official courses or default lap counts. As Eventun becomes more integrated with AccelByte, Eventun-side logic that needs official course configuration should prefer this AccelByte game record or a controlled cache derived from it.
+`Courses` is the source of truth for official course configuration. The Eventun `course` table is not the authoritative owner for official courses or default lap counts. As Eventun becomes more integrated with AccelByte, Eventun-side logic that needs official course configuration should prefer this AccelByte game record or a controlled cache derived from it.
 
 ### `ProgressionSettings`
 
@@ -85,4 +85,4 @@ Add details for these records when their current use is confirmed.
 
 - AccelByte Cloud Save game records are authoritative for the configuration listed above unless a later design explicitly moves ownership elsewhere.
 - Eventun should not rely on its own `course` table as the source of truth for official course default laps or release state.
-- The game client and dedicated server are expected to know whether a played heat is canonical or special-case at runtime. Eventun should use game-authored event fields for stat eligibility when available instead of reverse-engineering eligibility from stale local course data.
+- The game client and dedicated server are expected to know whether a played heat is regulation or special-case at runtime. Eventun should use game-authored event fields for stat eligibility when available instead of reverse-engineering eligibility from stale local course data.

@@ -37,7 +37,7 @@ Captures player identity, access context, wallet linkage, team membership, join/
 ### 3. Content and sponsorship domain
 Captures sponsor and media attachments used by competition and presentation surfaces. Eventun may store course references and derived course data for operational queries, but AccelByte Cloud Save `Courses` is the source of truth for official course configuration, including course code, default laps, and release feature state.
 
-Eventun should not treat its local `course` table as authoritative for official course eligibility rules. For stat/progression eligibility, prefer game-authored runtime flags such as heat-level canonical status and, where course metadata is needed, use AccelByte `Courses` data or a controlled cache derived from it.
+Eventun should not treat its local `course` table as authoritative for official course eligibility rules. For stat/progression eligibility, prefer game-authored runtime flags such as heat-level regulation status and, where course metadata is needed, use AccelByte `Courses` data or a controlled cache derived from it.
 
 ### 4. Competition structure domain
 Captures tournament/gauntlet structure, qualifier/stage composition, participant status, and placement outcomes used for rankings and progression.
@@ -65,6 +65,27 @@ Captures token metadata needed for entitlement and social eligibility checks.
 
 ### 6. Prize and accounting-bridge domain
 Captures funding intent, distribution intent, outcomes, payout planning, receipt progression, and claim state as the operational bridge into [[../accountun]] and [[../midnight]].
+
+### 7. Progression and rewards domain
+Captures gameplay medal definitions, progression metrics, draft goal definitions, published goal snapshots, challenge pools, published pool snapshots, player assignments, completed goals, reward bundles, reward entries, and reward grant attempts.
+
+Progression authoring should distinguish staged operator work from player-facing runtime invariants:
+
+- draft/import/edit flows may stage incomplete goals, reward definitions, pools, and memberships
+- published snapshots are the runtime invariant for player-facing progression, challenge assignment, and reward creation
+- challenge availability should be determined by inclusion in a published challenge pool snapshot
+- publish operations should validate requirements, reward validity, membership health, and assignment eligibility before any player assignment can use the pool
+- publish should atomically create immutable snapshots or fail with explicit blockers; no partial publish should occur
+
+Medal definitions should be treated as an authored catalog, not inferred only from observed event rows. The preferred source for the initial Eventun medal definition set is the game client's medal and medal-augment data tables. Eventun may still use observed event data to detect drift or unknown emitted codes.
+
+Progression selectors should use source-of-truth data:
+
+- course selectors should use AccelByte Cloud Save `Courses`, not the legacy Eventun `course` table
+- gameplay part and weapon SKU selectors should use AccelByte catalog gameplay categories
+- cosmetic catalog categories should not populate gameplay requirement dimensions
+- reward authoring should use Eventun's configured AccelByte namespace; namespace should not be stored as operator-authored reward data
+- ARC is the current fixed currency option for currency rewards, and Eventun should know or derive the AccelByte catalog target needed to fulfill it
 
 ## Ownership Boundary
 - Eventun owns operational competition records and queryable competition state.

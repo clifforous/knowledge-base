@@ -123,7 +123,7 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 - `singlePlayerMode`: local mode label such as `Scrimmage`
 
 ### Match Context Payload
-- `courseCode`: canonical course identifier
+- `courseCode`: stable course identifier
 - `uniqueCourseCode`: course key used by the session
 - `courseVersion`: course content version
 - `laps`: laps per heat
@@ -136,12 +136,12 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `session_id`, `match_id`, `gauntletId`, and `stage`. Multi-match stages accept each required match summary separately before completing the aggregate stage run.
 
 ### Heat Context Payload
-- `courseCode`: canonical course identifier (course code cannot change per heat so repeat information from match context payload)
+- `courseCode`: stable course identifier (course code cannot change per heat so repeat information from match context payload)
 - `uniqueCourseCode`: course key used by the session (unique course code cannot change per heat so repeat information from match context payload)
 - `courseVersion`: course content version (course version cannot change per heat so repeat information from match context payload)
 - `laps`: laps per heat (laps cannot change per heat so repeat information from match context payload)
 - `heatId`: unique identifier for the current heat
-- `canonical`: whether the heat uses default/canonical gameplay settings. For V1, custom game mode alone still counts as canonical. The game sets this to `false` for gauntlet finals, reduced-lap heats, and per-heat/special rules overrides.
+- `canonical`: current stored payload field for whether the heat meets regulation gameplay requirements. For V1, custom game mode alone still counts as regulation. The game sets this to `false` for gauntlet finals, reduced-lap heats, and per-heat/special rules overrides. Operator-facing UI should label this concept as `Regulation`.
 
 ### Player Loadout Payload
 - `loadout`: nested loadout object with `key`, `slots`, `version`, and `augmentSlots`
@@ -237,7 +237,7 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 | `SessionStart` | Session Start | Captures runtime environment context for the gameplay session, including client version, server mode, and matchmaking or single-player mode. | `client_event`, `server_event` | Session Context Payload | Observed in both larger dumps; `clientVersion` is queried by replay workflows. |
 | `MatchStart` | Match Start | Captures the full match context, including course, race mode, heat count, and any active gauntlet qualifier bindings. | `client_event`, `server_event` | Match Context Payload | Observed in both larger dumps; server queries use `raceMode`, `courseCode`, `heats`, and `activeQualifiers`. |
 | `MatchEnd` | Match End | Match-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
-| `HeatStart` | Heat Start | Captures the start of a heat, repeats the active course and lap context for that heat, and carries game-authored canonical heat eligibility. | `client_event`, `server_event` | Heat Context Payload | Observed in both larger dumps; `canonical` added by the game runtime for new events. |
+| `HeatStart` | Heat Start | Captures the start of a heat, repeats the active course and lap context for that heat, and carries game-authored regulation heat eligibility. | `client_event`, `server_event` | Heat Context Payload | Observed in both larger dumps; `canonical` is the current stored payload field for the regulation signal. |
 | `HeatEnd` | Heat End | Heat-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
 | `AscensionStart` | Ascension Start | Marks the transition into the ascension phase as a lifecycle marker with no currently observed payload fields. | `client_event`, `server_event` | Empty Payload | Observed in both larger dumps with empty payloads. |
 | `ReplaySaved` | Replay Saved | Records that a replay artifact was saved for a match. | `client_event`, `server_event` | Replay Payload | Schema-defined; `replayRecordKey` is referenced by match-summary and replay purge logic. |
