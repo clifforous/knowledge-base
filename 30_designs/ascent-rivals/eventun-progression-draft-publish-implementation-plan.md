@@ -148,7 +148,9 @@ Rules:
 Add nullable compatibility columns before runtime switches need them:
 
 - `player_goal_progress.published_goal_id`
+- `player_goal_progress.source_goal_id`
 - `player_goal_completion.published_goal_id`
+- `player_goal_completion.source_goal_id`
 - `player_reward_bundle.published_goal_id`
 - `player_challenge_assignment.published_pool_id`, if direct assignment-to-pool lookup remains useful
 - `player_challenge_assignment.published_pool_goal_id`
@@ -281,11 +283,13 @@ Goal checking:
 
 - Load candidates from `published_goal`.
 - Evaluate copied `requirement_expression`.
-- Write progress against `published_goal_id`.
+- Store the exact snapshot in `published_goal_id`.
+- Use `source_goal_id` as the non-repeatable progress identity so republishing the same authored goal does not make prior progress disappear.
 
 Completions:
 
-- Unique completion keys should include player, `published_goal_id`, scope, and assignment where relevant.
+- Unique completion keys should include player, `source_goal_id`, scope, and assignment where relevant.
+- Store `published_goal_id` on the completion for historical display and reward snapshot lookup.
 - Store completion snapshots from the published goal and counter values.
 
 Challenge assignment:
@@ -489,6 +493,7 @@ When reviewing Phase 2, check:
 
 - The implementation does not switch runtime behavior.
 - Latest snapshot queries choose the correct source row and deterministic ordering.
+- Challenge pool membership state compares against a published goal snapshot matching the linked draft content, not merely the latest snapshot for the source goal.
 - Goal published state compares all meaningful draft fields.
 - Goal published state detects reward entry changes, not just reward bundle id changes.
 - Pool published state detects membership set and membership config changes.

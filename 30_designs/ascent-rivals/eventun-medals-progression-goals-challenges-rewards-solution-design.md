@@ -322,7 +322,7 @@ Challenge goals do not need their own active/inactive status. A challenge become
 
 | Field | Purpose |
 | --- | --- |
-| `id` | Immutable published goal snapshot id. Runtime progress, completion, assignments, and rewards reference this id. |
+| `id` | Immutable published goal snapshot id. Runtime assignments and reward bundles reference this id so they can explain the exact snapshot used. |
 | `source_goal_id` | Draft goal that produced the snapshot. |
 | `publish_revision_id` | Publish operation that produced the snapshot. |
 | `operator_key`, `goal_type`, `is_mastery`, `category` | Copied identity and classification fields. |
@@ -332,6 +332,8 @@ Challenge goals do not need their own active/inactive status. A challenge become
 | `published_at` | Time the snapshot became available to runtime. |
 
 Draft rows are editable. Published snapshots are immutable. Player history should never depend on mutable draft rows.
+
+Runtime rows that need the exact historical definition should store `published_goal_id`. Runtime uniqueness for non-repeatable progress and completion should also use `source_goal_id` so republishing the same authored achievement or mastery does not create a duplicate completion or reward opportunity. A new player-facing achievement or challenge identity should be modeled as a new source goal, not only as a new published snapshot.
 
 Admin tools and imports should be UUID-first. When importing, a blank `id` means create a new draft definition; a populated `id` means update the draft definition. `operator_key` exists for generated labels, CSV readability, and operator search. The admin UI should label it as `Code`, but backend APIs and CSV may keep the existing `operator_key` field name until the API is renamed.
 
@@ -478,7 +480,8 @@ There is no per-membership active flag in the target model. If a challenge is li
 | Field | Purpose |
 | --- | --- |
 | `player_id` | Player. |
-| `published_goal_id` | Immutable published goal snapshot being tracked. |
+| `published_goal_id` | Latest or assigned immutable published goal snapshot used for display, audit, and reward context. |
+| `source_goal_id` | Authored goal identity used for non-repeatable progress uniqueness across republished snapshots. |
 | `assignment_id` | Present for assigned challenges. |
 | `scope_kind`, `scope_id` | Career, challenge period, season, or custom window. |
 | `status` | `not_started`, `active`, `completed`, or `expired`. |
@@ -491,7 +494,8 @@ There is no per-membership active flag in the target model. If a challenge is li
 | Field | Purpose |
 | --- | --- |
 | `player_id` | Player. |
-| `published_goal_id` | Completed immutable published goal snapshot. |
+| `published_goal_id` | Completed immutable published goal snapshot used for historical display and reward snapshot lookup. |
+| `source_goal_id` | Authored goal identity used for completion uniqueness across republished snapshots. |
 | `assignment_id` | Present for assigned challenge completions. |
 | `scope_kind`, `scope_id` | Completion scope. |
 | `completed_at` | Completion timestamp. |
@@ -501,12 +505,12 @@ There is no per-membership active flag in the target model. If a challenge is li
 Completion unique key:
 
 - player
-- published goal snapshot
+- source goal id
 - assignment id when present
 - scope kind
 - scope id
 
-The unique key prevents duplicate completion and reward creation during goal-check retry or backfill.
+The unique key prevents duplicate completion and reward creation during goal-check retry, backfill, or republishing the same authored non-repeatable goal. Challenge assignment rows still carry the assigned `published_goal_id` so a player can complete the exact challenge snapshot they were assigned.
 
 ## Goal Progress Check Flow
 

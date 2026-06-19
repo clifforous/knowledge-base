@@ -73,6 +73,7 @@ Progression authoring should distinguish staged operator work from player-facing
 
 - draft/import/edit flows may stage incomplete goals, reward definitions, pools, and memberships
 - published snapshots are the runtime invariant for player-facing progression, challenge assignment, and reward creation
+- player progress and completion rows should store the published snapshot used for history while using source goal identity to prevent duplicate non-repeatable completions across republished snapshots
 - challenge availability should be determined by inclusion in a published challenge pool snapshot
 - publish operations should validate requirements, reward validity, membership health, and assignment eligibility before any player assignment can use the pool
 - publish should atomically create immutable snapshots or fail with explicit blockers; no partial publish should occur
