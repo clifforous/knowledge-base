@@ -42,6 +42,11 @@ Supports privileged controls for:
 ## Integration Boundary
 Eventun orchestrates competition flow and delegates accounting transition execution to [[../accountun]].
 
+## API Compatibility
+- Eventun consumers use generated HTTP gateway APIs rather than direct protobuf/gRPC transport.
+- Removed protobuf fields do not need `reserved` declarations unless Eventun later exposes direct protobuf/gRPC clients.
+- Treat protobuf definitions as the source for generated gateway shapes, not as a long-lived wire contract for external direct protobuf callers.
+
 ## Current Notes
 - Gauntlet stage AccelByte sessions are currently public for simplicity.
 - Public session visibility is not authorization.
