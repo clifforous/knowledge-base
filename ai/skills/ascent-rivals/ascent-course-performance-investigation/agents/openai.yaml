@@ -1,0 +1,4 @@
+version: 1
+display_name: Ascent Course Performance Investigation
+short_description: Investigates one Ascent Rivals course performance concern with evidence-first bottleneck classification.
+default_prompt: Investigate this Ascent Rivals course performance concern read-only, resolve course identity first, classify the bottleneck, and recommend the next small evidence-backed slice.

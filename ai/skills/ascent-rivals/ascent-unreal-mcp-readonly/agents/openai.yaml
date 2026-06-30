@@ -1,0 +1,4 @@
+version: 1
+display_name: Ascent Unreal MCP Readonly
+short_description: Guides safe read-only Unreal MCP inspection for Ascent Rivals assets, maps, dependencies, and course data.
+default_prompt: Inspect this Ascent Rivals Unreal target read-only through MCP/editor tooling and report facts, assumptions, unresolved questions, and dirty-package status.

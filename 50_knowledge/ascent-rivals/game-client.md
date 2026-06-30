@@ -21,6 +21,11 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - in-game UI routes and interaction flows
 - stats tracking and end-of-match progression handling
 
+## Player Identity UI Terminology
+- **Nameplate**: the in-game label shown when viewing another player's name during live gameplay.
+- **Player card**: the player identity presentation shown outside live gameplay, including the main menu and career screen.
+- Do not use `player card` for the in-session name label, and do not use `nameplate` for the main-menu or career-screen identity surface.
+
 ## Service Relationship
 - Consumes competition domain state represented by [[eventun/overview|eventun]].
 - Uses service-owned persistent state for competition/accounting concerns instead of treating client runtime as the source of truth.

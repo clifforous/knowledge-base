@@ -98,6 +98,7 @@ V1 spike screens:
    - List normalized reward targets from Eventun.
    - Support filtering by reward type and SKU/name.
    - Show invalid or unavailable catalog targets clearly.
+   - Do not require catalog lookup for Battle Pass XP rewards; those use an XP amount and Season Pass fulfillment.
 
 3. **Reward Bundle Definitions**
    - List reward bundle definitions and activation status.
@@ -370,10 +371,11 @@ Implement reward-oriented screens first:
 - Create one reward bundle definition.
 - Validate a draft bundle against Eventun's reward validation endpoint.
 - Show activation or validation errors without losing form state.
+- Support Battle Pass XP reward rows with a positive XP amount and no catalog target.
 
 Exit criteria:
 
-- An operator can create a test reward bundle using SKU-based catalog targets.
+- An operator can create a test reward bundle using SKU-based catalog targets or Battle Pass XP amount rows.
 - Invalid SKUs or unavailable targets are surfaced before activation.
 - The frontend does not bypass Eventun validation.
 

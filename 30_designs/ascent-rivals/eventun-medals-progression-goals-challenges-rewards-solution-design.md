@@ -599,6 +599,8 @@ Reward definitions must not select or persist an AccelByte namespace. Catalog lo
 
 Reward entry definitions intentionally do not store AccelByte namespace. The namespace is deployment context owned by Eventun runtime configuration.
 
+For `battlepass_xp` entries, `quantity` is the XP amount. `item_sku`, `item_id`, `currency_code`, and catalog target fields should be empty because Battle Pass XP is fulfilled through AccelByte Season Pass, not the Platform catalog.
+
 ### Player Tables
 
 `player_reward_bundle`
@@ -648,7 +650,7 @@ Reference policy:
 - V1 item rewards are expected to reference AccelByte `INGAMEITEM` catalog entries. Default account bundles and Season Pass catalog entries are not reward targets for achievements, masteries, or challenges.
 - Store currency code for AccelByte currency rewards as the logical reward identity. For V1 ARC grants, also store or resolve the configured AccelByte COINS SKU required by the chosen fulfillment endpoint.
 - V1 assumes ARC is the only supported spendable currency. Additional currencies require explicit product and fulfillment design before activation.
-- Store Battle Pass context and XP quantity for Battle Pass XP rewards.
+- Store Battle Pass XP amount in `quantity`. Do not require catalog lookup, item SKU, item id, currency code, or catalog target for Battle Pass XP rewards.
 - Store optional display snapshots, such as title, item type, price, and image reference, for audit and admin review only.
 - Do not auto-substitute a different reward when an AccelByte catalog item is deleted, disabled, ambiguous, or no longer grantable.
 - Resolve AccelByte item id from SKU only when the selected AccelByte grant endpoint requires item id.
@@ -718,25 +720,68 @@ Grant payload policy:
 
 ### Battle Pass XP Rewards
 
-If Ascent Rivals uses AccelByte Season Pass as the battle pass owner, Eventun challenge, achievement, and mastery reward bundles can include Battle Pass XP as an external reward entry.
+Eventun V1 supports Battle Pass XP as a first-class reward entry type for challenge, achievement, and mastery reward bundles.
 
 This reward type is not fulfilled through Platform item/currency fulfillment. It should use AccelByte Season Pass server XP grant:
 
 ```text
-GrantUserExp / GrantUserExpOp
+POST /seasonpass/admin/namespaces/{namespace}/users/{userId}/seasons/current/exp
+```
+
+Go SDK surface:
+
+```text
+seasonpass.TierService.GrantUserExpShort
+```
+
+Expected request body:
+
+```json
+{
+  "exp": 100,
+  "source": "SWEAT",
+  "tags": ["eventun", "goal:<source_goal_id>", "goal_code:<code>", "completion:<completion_id>"]
+}
 ```
 
 Grant rules:
 
 - Use `reward_type='battlepass_xp'`.
 - Store the XP amount in `quantity`.
-- Store season/pass context, source goal, completion id, and reward bundle id in entry metadata. Namespace remains implicit from Eventun runtime configuration.
+- Do not require `item_sku`, `item_id`, `currency_code`, or catalog target.
+- Use Eventun runtime configuration, such as `AB_NAMESPACE`, for the AccelByte namespace.
+- Grant to the current published AccelByte Season Pass at fulfillment time by default.
+- Use `source='SWEAT'` for gameplay-earned achievement and challenge rewards.
+- Do not use `source='PAID_FOR'` for Eventun gameplay progression rewards unless a future product decision explicitly requires purchased tier or XP grant behavior.
+- Generate default tags from Eventun context, such as `eventun`, `goal:<source_goal_id>`, `goal_code:<code>`, and `completion:<completion_id>`. Optional metadata may add more tags later.
 - For claimable rewards, Eventun grants the XP when the player claims the reward bundle.
 - For automatic rewards, the automatic reward worker grants the XP.
+- A single reward bundle may contain mixed entries. Item and ARC entries use Platform fulfillment, while `battlepass_xp` entries call Season Pass `GrantUserExpShort`.
+- Mark a `battlepass_xp` player reward entry granted only after the Season Pass call succeeds.
+- If the Season Pass call fails, mark that entry failed and leave the reward bundle in the normal retry or support flow.
+- Retry should re-call the Season Pass XP grant only for failed or otherwise ungranted `battlepass_xp` entries.
 - After XP is granted, AccelByte owns the resulting Battle Pass XP, tier progression, and tier reward claim state.
 - AccelByte Season Pass tier rewards are claimed through AccelByte Season Pass APIs unless a later design intentionally mirrors them into Eventun.
 
-Current AccelByte docs show the external XP grant as an amount-based Season Pass server operation and do not show a caller-provided transaction id comparable to Platform Fulfillment V2. Eventun must therefore use its local reward bundle and grant-attempt ledger to prevent duplicate Battle Pass XP grants before invoking AccelByte. On uncertain timeout, Eventun should reconcile against AccelByte player season state or require operator review before retrying if duplicate XP would be harmful.
+Publish validation should allow `battlepass_xp` only when:
+
+- `quantity` is positive.
+- the fulfillment mode is compatible with Eventun reward claiming or automatic fulfillment.
+- Eventun has Season Pass fulfillment configured and enabled.
+- a current published Season Pass exists, if that can be cheaply validated during publish.
+- any no-current-season fallback is valid, such as no reward for that entry or ARC replacement.
+
+Battle Pass XP is season-scoped to the current published AccelByte Season Pass by default. If no current season exists at fulfillment time, Eventun should apply the configured fallback for that Battle Pass XP entry. V1 supported fallback behaviors are:
+
+- skip the Battle Pass XP entry and record that no reward was granted for that entry
+- grant ARC replacement if the reward definition supplies a valid ARC fallback amount or rule
+- fail clearly and remain retryable if no fallback is configured
+
+Tying Battle Pass XP to a specific Season Pass is a future extension. It is not required for V1 because a seasonal challenge already constrains when the goal can be completed. If season-pinned Battle Pass XP is later added, the authored reward entry should carry the explicit season reference and fulfillment should refuse to apply it to a different current season.
+
+Current AccelByte docs show the external XP grant as an amount-based Season Pass server operation and do not show a caller-provided transaction id comparable to Platform Fulfillment V2. Eventun must therefore use its local reward entry status, reward bundle status, and grant-attempt ledger to prevent duplicate Battle Pass XP grants before invoking AccelByte. On uncertain timeout, Eventun should reconcile against AccelByte player season state or require operator review before retrying if duplicate XP would be harmful.
+
+This reward type is different from regular account or game XP. Regular XP should be modeled later as a Statistics stat increment or account-progression reward type, not as Season Pass XP.
 
 ### Claimable Flow
 
@@ -986,7 +1031,7 @@ This phase adjusts the implemented V1 model toward the simpler operator model de
 
 ## Open Design Decisions
 
-1. Confirm the exact AccelByte endpoint and permissions for the Eventun deployment's configured namespace. Current recommendation is Fulfillment V2 with caller-provided `transactionId` for item/currency fulfillment and Season Pass `GrantUserExp` for Battle Pass XP.
+1. Confirm the exact AccelByte permissions for the Eventun deployment's configured namespace. Current recommendation is Fulfillment V2 with caller-provided `transactionId` for item/currency fulfillment and Season Pass `GrantUserExpShort` for Battle Pass XP.
 2. Confirm the catalog lookup path for SKU-to-item-id and item price retrieval.
 3. Confirm whether public APIs should expose active challenge assignment/progress for other players in V1 or keep that surface self-only despite low sensitivity.
 5. Confirm the first supported content setup path: direct SQL, CSV/JSON import endpoint, minimal admin APIs, or a combination. The solution should support bulk creation before a dedicated UI exists.

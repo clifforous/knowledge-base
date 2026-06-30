@@ -95,12 +95,14 @@ Expected JSON content:
 - duplicate policy
 - ordered `entries` array
 - for each entry: source reward entry id, reward type, item SKU, item id only if required for fulfillment or audit, currency code, quantity, and metadata
+- for `battlepass_xp` entries: XP amount in `quantity`, optional metadata/tags, and no required item SKU, item id, currency code, or catalog target
 
 Rules:
 
 - Do not store AccelByte namespace as authored reward data. Fulfillment uses the configured Eventun `AB_NAMESPACE`.
 - Reward creation after goal completion should read copied entries from `published_goal.reward_snapshot`, not mutable `reward_entry_definition`.
 - Reusable reward bundles remain an authoring convenience; published goals copy exact reward details.
+- Battle Pass XP reward entries are fulfilled through AccelByte Season Pass, not Platform item/currency fulfillment. Fulfillment should use the configured namespace and the current published Season Pass.
 
 ### `published_challenge_pool`
 

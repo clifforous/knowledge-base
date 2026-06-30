@@ -163,7 +163,7 @@ Deferred or not-yet-settled reward ideas:
 - titles
 - limited-supply rewards
 - premium currency or additional currencies beyond ARC
-- battle pass XP versus season XP naming and ownership
+- regular account/game XP as a future reward type distinct from Battle Pass XP
 - more granular duplicate compensation
 - reward presentation when a duplicate item is skipped
 
@@ -206,7 +206,51 @@ Review questions:
 - Should hidden achievements hide requirements, progress, rewards, or only presentation?
 - Should repeatable achievements share the same completion table or use a separate repeat-instance model?
 
-### 9. Requirement Matcher And Final-Stat Semantics
+### 9. Achievement Backfill Preview And Apply
+
+Potential V2+ feature: add an admin/support workflow to retroactively evaluate published achievements against existing progression counters before mutating player state.
+
+Preview should show, per player and achievement:
+
+- current progress
+- whether the achievement would complete
+- whether the achievement is already completed
+- the reward snapshot that would be used
+- existing completion and reward history relevant to duplicate protection
+
+Apply should let an operator choose per achievement whether to:
+
+- create only the completion
+- create the completion and reward records
+- skip reward creation
+- auto-grant a normally claimable reward for this backfill run
+- leave claimable rewards in their normal claimable state
+
+Apply must be audited with:
+
+- operator id
+- timestamp
+- selected options
+- affected players and achievements
+- created completion ids
+- created reward bundle ids
+- failures
+
+Constraints and default assumptions:
+
+- Preview is non-mutating.
+- Duplicate protection remains based on player, source goal, and scope.
+- Reward creation remains one bundle per completion.
+- Retroactive rewards use the currently published reward snapshot by default.
+- Historical reward snapshot selection is deferred unless a future design explicitly adds it.
+
+Review questions:
+
+- Should the first version support all published achievements or only a selected achievement list?
+- Should masteries use the same backfill workflow, or remain achievement-only until there is a concrete support need?
+- Should backfill apply support a dry-run export for external review before operator confirmation?
+
+### 10. Requirement Matcher And Final-Stat Semantics
 
 The current V1 progression model is built around additive counters. Numeric requirements should therefore behave like implicit "at least" checks unless a later design adds richer metric semantics.
 
@@ -301,7 +345,7 @@ Review questions:
 - Should average goals be represented as first-class aggregate metric leaves with `minimum_sample_count`?
 - Should V2 migrate existing JSON requirement leaves, or add new requirement leaf kinds for final-stat and aggregate goals?
 
-### 10. Non-Regulation And Client-Event Progression Sources
+### 11. Non-Regulation And Client-Event Progression Sources
 
 Some next-version achievements should be allowed to count non-regulation play. This should be explicit at the goal, metric, or counting-policy level rather than assumed from the current `Regulation Only` / `canonical_only` policy.
 
@@ -330,7 +374,7 @@ Review questions:
 - Do time-trial and career-mode time achievements need separate metric codes from server-match time metrics?
 - Should non-regulation counting use existing all-completed policy concepts or a more explicit policy name?
 
-### 11. Event And Counter Expansion
+### 12. Event And Counter Expansion
 
 Deferred technical ideas:
 
@@ -347,7 +391,7 @@ Review questions:
 - Which player-facing surfaces actually need occurrence-level medal detail?
 - Should broad career stats expose both regulation-only and all-completed totals?
 
-### 12. Notification And Read-State
+### 13. Notification And Read-State
 
 V1 does not include an Eventun notification inbox. Later player-facing achievement and reward surfaces may need some way to avoid repeatedly showing old unlocks.
 
@@ -370,9 +414,10 @@ Review questions:
 3. Achievement image and presentation metadata requirements.
 4. Localization review for player-facing progression, challenge, medal, and reward fields.
 5. Platform achievement synchronization, starting with Steam.
-6. Reward expansion decisions, especially duplicate skip messaging and battle pass XP ownership.
-7. Racing time goals: finish-time and lap-time achievements/challenges.
-8. Client-event and non-regulation progression policy for time-trial and career-mode achievements.
-9. Broader requirement matcher and final-stat semantics, driven by concrete example achievements.
-10. Challenge expansion decisions, especially rerolls and ownership-filtered item-specific challenges.
-11. Technical reliability work, such as event ids or at-least-once batch delivery, only if V1 progression usage exposes a real need.
+6. Reward expansion decisions, especially duplicate skip messaging and regular account/game XP ownership.
+7. Achievement backfill preview/apply workflow and retroactive reward policy.
+8. Racing time goals: finish-time and lap-time achievements/challenges.
+9. Client-event and non-regulation progression policy for time-trial and career-mode achievements.
+10. Broader requirement matcher and final-stat semantics, driven by concrete example achievements.
+11. Challenge expansion decisions, especially rerolls and ownership-filtered item-specific challenges.
+12. Technical reliability work, such as event ids or at-least-once batch delivery, only if V1 progression usage exposes a real need.

@@ -1,0 +1,4 @@
+version: 1
+display_name: Ascent Course Resolver
+short_description: Resolves Ascent Rivals course prompts into canonical course identity, aliases, and level relationships.
+default_prompt: Resolve this Ascent Rivals course prompt into facts, assumptions, unresolved questions, aliases, level relationships, and recommended next work.

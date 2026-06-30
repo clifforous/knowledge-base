@@ -1,0 +1,4 @@
+version: 1
+display_name: Ascent Course Brief
+short_description: Creates or updates reusable Ascent Rivals course briefs from resolver, MCP, performance, validation, or hygiene evidence.
+default_prompt: Create or update an Ascent Rivals course brief from the available evidence, separating facts, assumptions, unresolved questions, and next work.

@@ -13,20 +13,30 @@ match-result authority runs server-side and the client is display-only.
 This document describes a custom Ascent-owned server-side Battle Pass XP ledger
 and progression model. It is not simply a wrapper around AccelByte Season Pass.
 
-Current AccelByte Season Pass documentation also supports a platform-owned pass
+Current AccelByte Season Pass documentation supports a platform-owned pass
 model: the game can query the current season and player season state, a server
 API can grant XP to a user, XP can advance tiers, and the client can claim season
-pass rewards. If Ascent Rivals chooses AccelByte Season Pass as the source of
-truth, the local tables in this document should either be replaced by AccelByte
-Season Pass state or narrowed to an Eventun audit/idempotency ledger that records
-why Eventun granted XP before calling AccelByte.
+pass rewards. Eventun V1 progression rewards should use AccelByte Season Pass
+for Battle Pass XP rather than the custom local battle-pass tables described
+later in this document.
 
-Eventun challenge rewards can reasonably award Battle Pass XP under that model.
-The reward fulfillment path should call the AccelByte Season Pass XP grant API,
-not the Platform item/currency fulfillment API. Current public docs show XP
-grant as an amount-based server operation and do not show a caller-provided
-transaction id, so Eventun should keep a local reward/grant ledger to prevent
-duplicate XP grants before invoking AccelByte.
+Eventun achievement, mastery, and challenge rewards can award Battle Pass XP
+through the AccelByte Season Pass XP grant API, not the Platform item/currency
+fulfillment API. Current public docs show XP grant as an amount-based server
+operation and do not show a caller-provided transaction id, so Eventun should
+keep a local reward/grant ledger to prevent duplicate XP grants before invoking
+AccelByte.
+
+Eventun Battle Pass XP rewards should grant to the current published Season Pass
+by default. If no current season exists, the reward should use an explicit
+fallback policy, such as skipping that XP entry or granting ARC replacement. A
+future design may allow a reward to target a specific Season Pass, but that is
+not required for V1 because seasonal challenges already constrain when their
+goals can be completed.
+
+Battle Pass XP is different from regular account or game XP. Regular XP should
+be modeled separately later, likely as a Statistics stat increment or
+account-progression reward type.
 
 Current AccelByte Cloud Save game records include `BattlePassSettings`, which
 stores placement-based bonus XP configuration. See

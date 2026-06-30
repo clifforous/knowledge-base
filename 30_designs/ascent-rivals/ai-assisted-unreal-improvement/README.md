@@ -10,11 +10,14 @@ Define a human-reviewed, AI-assisted workflow for improving the Unreal game proj
 
 The first fully specified workflow is the **course/map improvement pass**. Other target areas are included as lightweight shells so future standards and skills can use the same operating model.
 
-## Working Documents
-Supporting working formats live beside this folder rather than inside a nested document tree.
+## Portable Packet
+This folder is the portable AI-assisted improvement packet. Keep the workflow standard, working formats, and durable course catalog together so the folder can later move into the Ascent Rivals project without reconstructing cross-repository links.
 
-Current working documents:
-- [Course Brief](../course-brief.md)
+Current documents:
+- [Course Brief](course-brief.md)
+- [Course Catalog](course-catalog.md)
+
+Repository-local draft skills currently live under `ai/skills/ascent-rivals/`. If this packet moves into the game project, move those skills with it or adapt them into the target AI tooling location.
 
 ## Goals
 - Route vague human prompts into concrete work targets and pass types.
@@ -98,7 +101,7 @@ For a course, this includes:
 - level asset path
 - course definition primary asset
 - legacy config or registry entry, if still present
-- known aliases and old names
+- known aliases, old names, and alias classifications
 - related content roots
 - likely vendor-content roots
 
@@ -186,6 +189,8 @@ Course Brief
 - course_definition_primary_asset
 - legacy_config_or_registry_entry
 - known_aliases
+- alias_classifications
+- level_relationships
 - screenshots_or_reference_captures
 - related_content_roots
 - vendor_content_exceptions
@@ -194,6 +199,8 @@ Course Brief
 
 The alias field is required. Course prompts often use names that differ from the internal level asset. A prompt like `Tefri 7 - Dunes`, `Dunes 7`, `DesertTest_0`, or `Illus - Alluvial Basin` must resolve to the same course facts before the agent acts.
 
+Aliases are not all equally authoritative. Classify each alias or near match as canonical, corroborating, stale, prototype, or unresolved so a current course definition is not confused with an old config entry, localization remnant, developer prototype, or map package name.
+
 For production-facing courses, `ThumbnailImage`, `HeroImage`, and `MinimapImage` should be treated as required presentation assets unless product direction says otherwise. If any of those fields are missing, stale, or still pointing at legacy config-era assets, flag that as a course identity or presentation hygiene finding.
 
 ### Course Resolution Procedure
@@ -201,18 +208,61 @@ For production-facing courses, `ThumbnailImage`, `HeroImage`, and `MinimapImage`
 2. Match the human prompt against course code, planet, display name, level path, and known aliases from the course definition assets.
 3. Use legacy Unreal course settings, registry entries, primary asset settings, and durable notes to cross-check or fill missing fields.
 4. Resolve the level asset path and the course definition asset that owns gameplay metadata.
-5. Search for folders and assets that appear course-specific.
-6. Identify vendor-content roots referenced by the course.
-7. Ask for clarification if no matching valid course definition exists, multiple course definitions match, or the prompt uses an alias that cannot be verified.
+5. Inspect level relationships for the resolved level: streaming sublevels, world partition/external actor structure, related map variants, reverse/reflection/night/event copies, and maps that appear to derive from or depend on the canonical course level.
+6. Search for folders and assets that appear course-specific.
+7. Identify vendor-content roots referenced by the course.
+8. Ask for clarification if no matching valid course definition exists, multiple course definitions match, or the prompt uses an alias that cannot be verified.
+
+Level relationship discovery belongs in the course resolver, not in a separate first-priority skill. The resolver should report these relationships so later performance, validation, and hygiene passes know whether they are working on the base course, a sublevel, or a derived course variant.
+
+### Alias Classification
+Course identity work should classify every alias and near match by source quality.
+
+Use these classifications:
+- `canonical`: current `CourseDefinition` primary asset identity and fields, including `Code`, `Planet`, `Name`, and the current `Level` reference
+- `corroborating`: current map actor references, localization source paths, screenshot or minimap names, cook/package map lists, or UI/source references that support the canonical identity
+- `stale`: legacy config rows, localization entries, screenshots, minimaps, or asset paths that refer to missing, renamed, or superseded course definitions or levels
+- `prototype`: `/Game/Developers/**`, whitebox, AlphaCourses, experiment, or other non-production content that shares a name or theme with the course
+- `unresolved`: human prompt text or asset matches that cannot yet be tied to a current valid course definition
+
+Rules:
+- Preserve exact Unreal package and asset names in evidence, even when they contain typos or old naming. Do not silently "correct" a package path in documentation or proposed work.
+- Normalize player-facing names only when the current course definition, localization source, or approved design note supports the normalized name.
+- Treat internal level names as aliases until the course definition confirms the level reference. A map package can be the backing level without being the canonical course identity.
+- Treat sublevels and derived map variants as relationships to document, not as proof of canonical course identity. A sublevel may be shared implementation detail; a derived map may have its own course definition.
+- Treat localization as supporting evidence for display text and historical aliases, not as proof that the referenced asset still exists.
+- Treat binary `.uasset` string matches as useful hints, not as complete property reads. Numeric fields such as laps, target times, difficulty, and feature state should come from editor inspection, Unreal MCP Python helpers, source-controlled text data, or be marked unresolved.
+- Treat binary `.uasset` string matches for object paths, text values, and enum names as provisional evidence unless editor property inspection confirms the property mapping. String order in a package does not prove which field owns a value.
 
 ### Unreal MCP Notes For Course Identity
 For course identity work, prefer this MCP pattern:
 - use native asset search early to find `CourseDefinition` assets, screenshots, minimaps, and near-match aliases
 - use asset metadata to confirm primary asset type, primary asset name, native class, and package identity
-- use a small Python read helper for authoritative `UHGCourseDefinition` fields such as `Code`, `Level`, `ThumbnailImage`, `HeroImage`, `MinimapImage`, `Planet`, `Name`, `FeatureState`, `Difficulty`, `Laps`, and target times
-- use Python Asset Registry dependency queries with explicit dependency options when native dependency helpers return empty or suspiciously shallow results
+- use a small Unreal Editor Python helper through MCP for authoritative `UHGCourseDefinition` fields such as `Code`, `Level`, `ThumbnailImage`, `HeroImage`, `MinimapImage`, `Planet`, `Name`, `FeatureState`, `Difficulty`, `Laps`, and target times
+- use Unreal Editor Python Asset Registry dependency queries through MCP with explicit dependency options when native dependency helpers return empty or suspiciously shallow results
 - avoid currently loaded-world object listing for asset discovery; it is useful for world actors, not content registry search
 - after read-only editor inspection, check dirty content and map packages before claiming no mutation occurred
+
+These Python references are Unreal Editor/MCP execution paths, not requirements for developers to install system Python or for repository-local skills to ship code.
+
+Unreal MCP availability is thread/workspace specific. Live MCP-backed tests should run from an Ascent Rivals project thread where the `mcp__unreal_engine` tool namespace is exposed. Knowledge-base threads can maintain these docs and skills, but should not be assumed to have editor access.
+
+Keep MCP queries bounded. Prefer exact asset searches, near-exact alias searches, and selected property reads over broad `/Game` scans or loading every course definition. A broad scan that times out can destabilize the MCP transport and prevent a dirty-package check.
+
+If MCP transport fails after a timeout, run at most one status retry. If the retry fails, stop MCP calls, report the transport failure, and mark any remaining editor checks unresolved.
+
+If `inspect_object` returns a package or generic metadata for a custom data asset, do not treat it as an authoritative property read. Use the Unreal Editor Python property helper path instead.
+
+### MCP-Unavailable Fallback
+If the Unreal editor is running but MCP tools are not exposed to the current agent session:
+1. State that MCP/editor property inspection is unavailable.
+2. If the requested task depends on live editor evidence, ask the human whether to pause for MCP/editor availability or continue with provisional non-MCP evidence.
+3. Use source-controlled text directly when it is faster, cleaner, and more authoritative than MCP, such as C++ source, config, localization files, or existing KB docs.
+4. Use source, config, localization, package lists, filesystem paths, and binary string-table scans only as provisional evidence for Unreal asset properties that normally require editor reads.
+5. Do not infer absence of assets from missing MCP results.
+6. Mark editor-owned properties unresolved when they require property reads, dependency queries, texture settings, or dirty package state.
+7. Distinguish `confirmed by editor/MCP`, `corroborated by source-controlled text`, and `hinted by binary string scan` in the evidence summary.
+8. Do not claim a dirty package check was completed unless editor tooling actually reported dirty packages.
 
 ### Baseline Evidence
 For a course pass, gather only the evidence needed for the requested slice.
@@ -418,20 +468,23 @@ The pass must define the system boundary before proposing changes.
 - Use source control-aware operations for asset moves and renames.
 - When changing behavior, update the relevant durable knowledge or standards note in the same pass.
 
-git ## Future Skill Set
+## Future Skill Set
 The workflow should eventually be split into small skills instead of one large prompt.
 
-Candidate skills:
+Current draft skills:
+- `ascent-course-resolver`: resolve course identity, aliases, media, content roots, and level relationships.
+- `ascent-unreal-mcp-readonly`: enforce safe read-only Unreal MCP inspection and evidence reporting.
+- `ascent-course-brief`: create or update a reusable course brief from resolver, MCP, performance, validation, or hygiene evidence.
+- `ascent-course-performance-investigation`: investigate one course performance concern and classify likely bottleneck before recommending fixes.
+- `ascent-course-content-hygiene`: review one course for aliases, stale references, dependency roots, vendor exceptions, and approval-gated cleanup slices.
+
+Candidate next skills:
 - `ascent-prompt-router`: classify prompt into Target Brief and Pass Type.
-- `ascent-course-pass`: resolve a course, gather baseline evidence, and produce a review packet.
-- `ascent-course-performance`: run a course-specific performance investigation.
-- `ascent-content-hygiene`: inspect dependencies, naming, locality, and texture/material budgets.
 - `ascent-level-validation`: validate playable course requirements.
 - `ascent-player-view-analysis`: inspect camera, cockpit/ship surface, and driver-visible VFX concerns.
 - `ascent-external-ship-view-analysis`: inspect third-person and spectator ship readability.
-- `ascent-ui-pass`: inspect HUD/menu routes, screenshots, layout, and Slate/UMG performance concerns.
-- `ascent-server-runtime-analysis`: inspect dedicated server logs, traces, and subsystem costs.
-- `ascent-unreal-mcp-operator`: enforce safe Unreal MCP inspection, mutation, and verification behavior.
+- `ascent-ui-readability-and-performance`: inspect HUD/menu routes, screenshots, layout, and Slate/UMG performance concerns.
+- `ascent-server-runtime-investigation`: inspect dedicated server logs, traces, and subsystem costs.
 
 ## External References
 - Epic Games, [Data Validation](https://dev.epicgames.com/documentation/unreal-engine/data-validation-in-unreal-engine): validates assets with custom rules, including naming, budget, and dependency checks; supports command-line validation.

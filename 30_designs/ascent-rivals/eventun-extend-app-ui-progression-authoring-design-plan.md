@@ -314,9 +314,10 @@ Inline reward rows should be embedded in the goal drawer.
 
 Reward row controls:
 
-- reward type: item or currency for the current UI slice
+- reward type: item, currency, or Battle Pass XP
 - catalog target search for item rewards
 - currency selector labeled `Currency`, with ARC as the only current option
+- XP amount for Battle Pass XP rewards
 - quantity
 - fulfillment mode: claimable or automatic
 - duplicate policy: convert duplicate item to ARC when possible, or award nothing for the duplicate item
@@ -325,7 +326,9 @@ Reward authoring should not expose an AccelByte namespace field. Catalog targets
 
 Currency reward authoring should not ask operators for an AccelByte catalog target or item SKU. The backend should know or derive the ARC catalog target needed for fulfillment.
 
-`battlepass_xp` remains a backend/future reward shape and should stay hidden in the UI until fulfillment and publish support are complete. Reward metadata remains backend/future-use data and should not be exposed as an editable preview in the current UI.
+Battle Pass XP authoring should not use catalog search. Operators should only choose the `battlepass_xp` reward type and enter a positive XP amount. Eventun should generate Season Pass grant source/tags from runtime context during fulfillment. Reward metadata remains backend/future-use data and should not be exposed as an editable preview in the current UI.
+
+Battle Pass XP should apply to the current published Season Pass by default. If no current season exists, the authoring flow should support or clearly display the configured fallback behavior, such as awarding nothing for that entry or granting ARC replacement. Explicit season-pinned Battle Pass XP is deferred until there is a concrete use case.
 
 The `Award nothing` duplicate policy maps to backend value `skip_duplicate`. Existing databases must have the reward duplicate-policy migration applied before operators can safely use this option.
 
@@ -910,9 +913,9 @@ Tasks:
 
 - Add inline reward rows to goal editing.
 - Query Eventun catalog targets.
-- Support item rewards and ARC currency rewards in the current UI slice.
-- Keep battlepass XP hidden until fulfillment and publish behavior is ready for operators.
+- Support item rewards, ARC currency rewards, and Battle Pass XP rewards in the current UI slice.
 - Do not require operators to choose an AccelByte catalog target for ARC currency rewards.
+- Do not require catalog search or catalog target selection for Battle Pass XP rewards; collect only a positive XP amount.
 - Validate reward rows before save.
 - Allow selecting an existing reusable reward bundle instead of inline rewards.
 
