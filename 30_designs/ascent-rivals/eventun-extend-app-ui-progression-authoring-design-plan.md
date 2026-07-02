@@ -22,8 +22,8 @@ This document is a follow-on to the initial Extend App UI spike. It changes the 
 - Create achievements, masteries, and challenge goal definitions.
 - Edit existing goals through draft mutation or new immutable versions, depending on goal status.
 - Manage daily, weekly, monthly, and seasonal challenge pools.
-- Add and validate inline rewards while authoring goals.
-- Optionally manage reusable reward bundles.
+- Add and validate direct rewards while authoring goals.
+- Optionally manage reusable reward packages.
 - Support low-click bulk workflows for seasonal challenge setup and adjustment.
 - Support CSV import/export as a first-class authoring workflow.
 - Add Eventun backend admin APIs where the current API surface is not shaped for operator UI workflows.
@@ -45,8 +45,8 @@ The Eventun progression solution already defines:
 
 - Versioned goals for achievements, masteries, and challenges in the current implementation, with a target migration toward draft authoring plus immutable published snapshots.
 - A validated JSON requirement tree with one root `all` or `any` operator and leaf requirements.
-- Inline rewards as the default admin authoring path, stored as generated reward bundle definitions.
-- Reusable reward bundles for repeated reward packages.
+- Direct rewards as the default admin authoring path, stored internally as generated single-goal reward bundle definitions.
+- Reusable reward packages for rewards shared by multiple goals.
 - Challenge pools, pool goals, periods, assignments, weights, cooldowns, and eligibility.
 - Definition import preview/apply APIs using `DefinitionImportGoalRow`.
 
@@ -100,9 +100,11 @@ A goal is one draft achievement or challenge definition. The UI should present a
 
 Operator-facing terminology:
 
-- The UI should label `operator_key` as **Code**. Backend APIs and CSV import/export keep the field name `operator_key`.
-- `operator_key` is the durable operator-facing unique key for search, import, and human review. The UUID `id` remains the technical primary identity.
-- Goal tag/category is hidden in the editor for now. UI-created goals should default backend `category` to `general`.
+- The UUID `id` / CSV `goal_id` is the durable identity for edits, imports, history, and API updates.
+- `operator_key` / `code` is an optional human-readable reference. It is useful for logs, CSV readability, generated labels, and advanced operator lookup, but it should not be required for ordinary authoring.
+- The UI may label `operator_key` as **Code** where it is exposed, but it should be treated as an advanced/reference field rather than a primary authoring field.
+- Tooling should generate a unique code when omitted, usually from title, row key, or another stable local hint.
+- Goal tag/category is visible in the editor and goals table. Tag maps to the current backend `category` field unless a separate multi-tag model is added later.
 - Goal description is hidden in the editor for now. Backend and CSV import/export may still carry description fields.
 
 Goal lifecycle:
@@ -128,7 +130,7 @@ The UI must therefore distinguish:
 
 ### Reward
 
-Inline rewards are the normal authoring path. The UI may also attach an existing reusable reward bundle.
+Direct rewards are the normal authoring path. The UI may also attach an existing reusable reward package.
 
 Rules:
 
@@ -143,7 +145,7 @@ Use a workbench-style UI with persistent navigation:
 
 1. **Goals**
    - Combined table for achievements, masteries, and challenges.
-   - Filters by kind, status, metric, SKU, reward type, pool membership, and text. Category filters can return when category/tag editing is exposed.
+   - Filters by kind, status, tag, metric, SKU, reward type, pool membership, and text.
    - Detail drawer for create/edit/publish workflows.
    - Bulk actions and CSV export.
 
@@ -176,9 +178,14 @@ Use a workbench-style UI with persistent navigation:
 - Make pool membership visible for challenge goals. A challenge without published pool membership is not assignable.
 - Keep draft/import/edit workflows permissive. Operators should be able to stage incomplete content without manually aligning every related status first.
 - Treat publish operations as the strict validation boundary. Runtime invariants should be enforced before player assignment, not by making ordinary editing brittle.
-- Keep reusable reward bundles optional. They are useful for repeated packages, not required for the common single-reward case.
+- Keep reusable reward packages optional. They are useful for repeated packages, not required for the common single-reward case.
+- Use operator-facing reward terminology consistently:
+  - **Direct reward**: reward rows edited on the goal itself. Eventun may store this as a generated single-goal reward bundle, but the UI should not present it as a reusable bundle.
+  - **Reusable reward package**: an explicitly reusable package selected by name or id because multiple goals should share it.
 - Treat AccelByte namespace as Eventun deployment context, not editable authoring data.
 - Use import preview for bulk validation. Never apply CSV changes without an explicit confirmation step.
+- Treat CSV export/import as a round-trip workflow: operators should be able to export all goals, edit rows in a spreadsheet or with AI assistance, add rows, preview changes, and apply staged draft updates.
+- Treat goal `title` and `description` as the only V1 localized goal fields. The default row fields remain English/default copy; localized variants may be handled through a dedicated localization import/export or an advanced editor instead of expanding the main goals table with many locale columns.
 
 ## Goals Workbench
 
@@ -191,6 +198,7 @@ Minimum columns:
 - `status`
 - `published_state`
 - `visibility`
+- `tag`
 - `requirement_summary`
 - `reward_summary`
 - `challenge_pool_summary`
@@ -203,7 +211,7 @@ Optional hidden/export columns:
 - `goal_id`
 - `version_id`
 - `operator_key`
-- `category`
+- `category` or `tag`
 - `description`
 - `counting_policy`
 - `presentation_json`
@@ -214,15 +222,28 @@ Optional hidden/export columns:
 
 - kind: achievement, mastery, challenge
 - status: draft, active, inactive, retired
-- category, when category/tag controls are enabled later
+- tag
 - visibility
 - metric code
 - dimension key/value, especially SKU and medal name
 - reward type
 - reward SKU/currency
 - challenge pool
-- text search across title, Code, and description where backend supports it
+- text search across title, tag, requirement content, reward summary, pool membership, Code/reference, and description where available
 - UI text should prefer `Code` over `operator key`; backend fields may remain `operator_key`.
+
+### Search Model
+
+The goals list should support broad fuzzy search because operators will commonly search by gameplay content rather than exact title. For example, searching `SMG` should find goals whose requirement JSON includes `weapon_sku=SMG` even if the title does not contain `SMG`.
+
+Initial implementation direction:
+
+- The admin list API should still support pagination for normal table loading and export safety.
+- The UI may fetch all goal summary rows by paging through the admin list and cache them client-side for fuzzy search. This is acceptable while the expected goal count is small to moderate, such as under 10,000 goals.
+- Search should be debounced and should operate on a derived search document per goal, not only raw JSON text.
+- The derived search document should include title, description, tag/category, kind, mastery flag, Code/reference, requirement metric codes, requirement dimension keys and values, resolved medal names, weapon SKUs/names, part SKUs/names, course codes/names, reward type, reward SKU/currency, Battle Pass XP amount, and challenge pool names/codes.
+- Requirement JSON should remain the source data, but the UI can extract searchable tokens from it and join display labels from already-loaded selector/catalog metadata.
+- If the goal count grows enough that client-side search becomes slow, add server-side search or an extracted search table/index. Server-side search should preserve the same semantics rather than falling back to title/code-only search.
 
 ### Detail Drawer
 
@@ -230,7 +251,7 @@ Use a drawer rather than a full page so the operator keeps table context.
 
 Sections:
 
-- Identity: kind, Code, status. Code maps to the backend `operator_key` field until the backend contract is renamed. Category/tag remains hidden for now and defaults to `general` for UI-created goals.
+- Identity: kind, Code, status, and tag. Code maps to the backend `operator_key` field until the backend contract is renamed. Tag maps to the current backend category field unless a separate multi-tag model is added later.
 - Presentation: title and visibility. Description and richer asset/presentation metadata remain hidden for now.
 - Requirement builder.
 - Rewards.
@@ -247,6 +268,7 @@ Sections:
 - Publishing must run backend requirement and reward validation and create an immutable snapshot.
 - If save fails after creating a draft goal, retain the created draft goal id so the operator can retry instead of creating duplicate draft goals.
 - Active-window controls are removed from the target authoring model. Challenge timing belongs to challenge pools and periods.
+- Challenge goals may be linked to one or more draft challenge pools directly from the goal drawer. This is a staged membership edit only; it does not publish the pool.
 
 ## Requirement Builder
 
@@ -310,7 +332,7 @@ V1 constraints:
 
 ## Reward Authoring
 
-Inline reward rows should be embedded in the goal drawer.
+Direct reward rows should be embedded in the goal drawer.
 
 Reward row controls:
 
@@ -335,14 +357,14 @@ The `Award nothing` duplicate policy maps to backend value `skip_duplicate`. Exi
 Operators can either:
 
 - choose no reward
-- add inline reward rows, which Eventun stores as `generated_goal_reward`
-- attach an existing reusable reward bundle
+- add direct reward rows, which Eventun stores internally as `generated_goal_reward`
+- attach an existing reusable reward package
 
-Inline reward bundle title should remain hidden for now. Eventun can generate or internalize a title unless reusable bundle authoring later needs an operator-visible label.
+Direct reward storage titles should remain hidden. Eventun can generate or internalize a title unless reusable reward package authoring later needs an operator-visible label.
 
 Validation:
 
-- Validate inline rewards before save.
+- Validate direct rewards before save.
 - Validate linked reusable bundles before publish.
 - Show missing SKU, non-grantable item, inactive catalog target, and invalid quantity at row level.
 
@@ -427,36 +449,83 @@ Recommended columns:
 
 - `row_key`
 - `goal_id`
-- `operator_key`
+- `code`
 - `kind`
+- `is_mastery`
+- `tag`
 - `category`
 - `title`
 - `description`
 - `visibility`
 - `counting_policy`
 - `presentation_json`
+- `requirement_expression_json`
 - `requirement_operator`
 - `requirement_1_metric`
 - `requirement_1_matcher`
 - `requirement_1_target`
 - `requirement_1_dimensions_json`
 - repeated requirement columns as needed
+- `reward_mode`
 - `reward_bundle_definition_id`
 - `reward_fulfillment_mode`
 - `reward_bundle_title`
 - `reward_duplicate_policy`
 - `reward_1_type`
 - `reward_1_item_sku`
+- `reward_1_item_id`
 - `reward_1_currency_code`
 - `reward_1_quantity`
 - `reward_1_metadata_json`
 - repeated reward columns as needed
+- `challenge_pool_codes`
+- `challenge_pool_memberships_json`
 
-Rows without reward columns represent intentional no-reward goals. The import preview should make this visible so operators can distinguish "no reward" from malformed reward input.
+Goal CSV should not include per-locale title/description columns. Localization uses a separate CSV workflow because translation work happens at a different point in the content pipeline and can add many locale-specific columns or rows. Keeping it separate makes the main goal CSV easier to use for creating and tuning achievements, masteries, challenges, requirements, and rewards.
+
+`code` is the operator-facing label for the backend `operator_key` concept. It is optional in CSV and should be generated when omitted. `tag` is the operator-facing label for the current backend category field. If both `tag` and `category` appear during a transition, `tag` should be treated as the preferred editable column and `category` should be retained only for backward compatibility.
+
+Goal CSV identity and update behavior:
+
+- A non-empty `goal_id` means update that existing draft goal. The import preview should show the row as an update, unchanged row, or validation failure.
+- A blank `goal_id` means create a new draft goal.
+- A blank `code` on create means generate a unique code from title, row key, or another stable local hint.
+- A populated `code` on create is a requested reference, not the durable identity. If it conflicts with an existing goal, preview should either generate a unique replacement code and show that outcome or return a clear row-level blocker if automatic replacement is not implemented.
+- Updating an existing row should not warn that its own `code` already exists. Code conflicts should only be reported when the row tries to change its code to one owned by a different goal.
+- `row_key` is a spreadsheet/import convenience for preview messages and AI-assisted editing. It must not be the durable identity for updates.
+- Export should include `goal_id` for existing goals and should allow operators to clear `goal_id` intentionally when duplicating a row into a new goal.
+
+Requirement export behavior:
+
+- Export should include `requirement_expression_json` as the canonical lossless requirement representation.
+- Export may also include flattened `requirement_N_*` columns for common counter requirements so operators can do simple spreadsheet edits.
+- Import should prefer `requirement_expression_json` when it is non-empty. If it is empty, import may build the expression from flattened requirement columns.
+- When both JSON and flattened columns are present and disagree, preview should report the conflict rather than silently choosing a different rule than the operator expects.
+
+Reward export and import behavior:
+
+- Export must make rewards self-describing. It is not enough to export only `reward_bundle_definition_id` when the attached bundle is a generated direct reward.
+- `reward_mode` should be one of `none`, `inline`, or `bundle`. This is a technical CSV/API field: UI and import preview should label `inline` as **Direct reward** and `bundle` as **Reusable reward package**.
+- `reward_mode=none` means the goal intentionally has no reward. Reward entry columns should be ignored or warned on preview.
+- `reward_mode=bundle` means attach the reusable reward package identified by `reward_bundle_definition_id`.
+- `reward_mode=inline` means use the `reward_N_*` columns to create or replace the goal's direct reward. Eventun may create a generated single-goal reward bundle internally, but any generated `reward_bundle_definition_id` from a previous export should be ignored for apply because generated bundle ids are implementation detail.
+- For round-trip editing, operators must be able to export a goal, modify the `reward_N_*` columns on a `reward_mode=inline` row, and import it back to replace that goal's direct reward. The populated `goal_id` identifies the goal being updated; the generated reward bundle id is not the editable reward identity.
+- For backward compatibility, if `reward_mode` is omitted, import may infer `bundle` from `reward_bundle_definition_id`, `inline` from populated reward entry columns, or `none` when neither is present. New exports should always include `reward_mode`.
+- Older CSVs that contain only a generated `reward_bundle_definition_id` can be imported in the same environment, but they are not self-describing. New exports should use `reward_mode=inline` plus reward entry columns for direct rewards.
+- Rows without reward columns or with `reward_mode=none` represent intentional no-reward goals. The import preview should make this visible so operators can distinguish "no reward" from malformed reward input.
+- Battle Pass XP direct rewards should export as `reward_N_type=battlepass_xp`, blank `reward_N_item_sku`, blank `reward_N_item_id`, blank `reward_N_currency_code`, `reward_N_quantity` as the XP amount, and `reward_N_metadata_json` as `{}` unless later metadata is required.
+- ARC rewards should export as `reward_N_type=currency`, `reward_N_currency_code=ARC`, and the configured backend catalog target only when the current API still requires it. Operators should not have to manually discover the ARC catalog SKU.
 
 For V1 counter-style authoring, `requirement_1_matcher` should default to `greater_than_or_equal` when omitted. Import preview should reject unsupported matcher values for author-created counter rows even if the backend preserves broader matcher compatibility for old/runtime data.
 
 Do not add reward namespace columns to goal CSVs. Reward targets are implicitly in the AccelByte namespace configured for the Eventun deployment that processes the import.
+
+Challenge pool membership from goal CSV:
+
+- `challenge_pool_codes` may contain a delimiter-separated list of pool codes to stage memberships for challenge goals using default membership values.
+- `challenge_pool_memberships_json` may carry advanced membership data, such as pool id/code, weight, cooldown periods, and eligibility overrides.
+- Goal CSV import should support staging pool memberships as a convenience for content setup. It must not publish the pool automatically.
+- Non-challenge goal rows with challenge-pool membership columns should produce a preview warning or validation error.
 
 The frontend can parse CSV into `DefinitionImportGoalRow[]` and call the existing definition import preview/apply APIs. Server-side CSV parsing is not required for the first UI if frontend parsing is deterministic and export uses the same columns.
 
@@ -464,8 +533,43 @@ CSV behavior requirements:
 
 - Editing or clearing CSV input must invalidate parsed rows and preview state.
 - Numeric parsing must be strict integer parsing, not `parseInt`-style partial parsing.
-- Export must page through cursors instead of silently truncating at the first page of results.
+- Export must support both selected rows and all rows matching the current filters. It must page through cursors instead of silently truncating at the first page of results.
 - Goal CSV import should stage draft content. Strict publish-ready validation should happen when publishing a goal or challenge pool, not row by row during staging.
+- Import preview should show creates, updates, unchanged rows, skipped rows, validation failures, and generated direct reward replacements.
+
+### Localization CSV
+
+Localization export/import is a separate workflow from goal CSV import. It is intended for translation passes after goals have been drafted or published, not for bulk requirement/reward tuning.
+
+Recommended row-oriented columns:
+
+- `goal_id`
+- `published_goal_id`
+- `code`
+- `tag`
+- `kind`
+- `is_mastery`
+- `default_title`
+- `default_description`
+- `locale`
+- `localized_title`
+- `localized_description`
+- `source_updated_at`
+- `localized_updated_at`
+
+Behavior:
+
+- Export all localizable goal strings should include every non-archived goal by default, with a control to include archived goals when needed.
+- Export should support all configured locales, a selected subset of locales, or a template mode that emits blank rows for target locales that do not yet have translations.
+- The row-oriented shape is preferred over one-column-per-locale because it stays stable as locales are added and is easier to import after translators add or remove target languages.
+- `goal_id` is the source identity for draft/default localizations. `published_goal_id` may be included for audit/debugging, but import should normally write draft/source localization rows and then run the localization sync/publish path rather than requiring operators to edit published rows directly.
+- `default_title` and `default_description` are context for translators and should not overwrite the default goal copy unless the operator is using the main goal CSV/update workflow.
+- Import should upsert `localized_title` and `localized_description` for `(goal_id, locale)`.
+- Blank `localized_title` should be treated as missing/invalid because a localized title must not be empty.
+- Blank `localized_description` should be allowed as an intentional empty description. A missing cell or explicit clear marker may delete the localized description depending on the CSV parser convention, but the preview must make delete versus blank explicit.
+- Import should support deleting a locale row for a goal so the runtime falls back to language root or default copy.
+- After localization import apply, Eventun should sync published localization rows for affected goals so player-facing APIs can return the updated copy without a gameplay-rule publish.
+- Preview should show creates, updates, deletes, unchanged rows, invalid locales, missing goals, and affected published snapshots.
 
 ### Challenge Pool CSV
 
@@ -498,13 +602,22 @@ Challenge pool import behavior:
 Bulk edit should operate on selected grid rows and generate the same internal payloads as CSV/import:
 
 - duplicate selected goals
-- set category
+- set tag
 - set visibility
 - set counting policy
-- attach reward bundle
-- add inline reward
+- attach reusable reward package
+- add direct reward
 - add selected challenge goals to a pool
 - set pool goal weight/cooldown
+- archive selected goals
+- delete selected never-published draft goals, if backend support exists
+
+Bulk selection requirements:
+
+- The goals grid must support selecting multiple draft rows.
+- Operators should be able to select all rows on the current page and, where backend support exists, all rows matching the current filter.
+- Bulk edit/delete controls should be disabled or should return row-level blockers for archived goals, published-only historical rows, and rows that cannot be safely deleted because published snapshots or player history exist.
+- If hard delete is only safe for never-published draft goals, the UI should label the general action as `Archive` and expose `Delete draft` only when every selected row is eligible.
 
 ## Backend API Design
 
@@ -529,7 +642,7 @@ rpc ArchiveGoal(ArchiveGoalRequest) returns (ArchiveGoalResponse);
 
 - goal definition
 - latest published snapshot, if any
-- linked reward bundle summaries
+- linked direct reward or reusable reward package summaries
 - challenge pool memberships
 - validation warnings
 
@@ -911,13 +1024,13 @@ Files:
 
 Tasks:
 
-- Add inline reward rows to goal editing.
+- Add direct reward rows to goal editing.
 - Query Eventun catalog targets.
 - Support item rewards, ARC currency rewards, and Battle Pass XP rewards in the current UI slice.
 - Do not require operators to choose an AccelByte catalog target for ARC currency rewards.
 - Do not require catalog search or catalog target selection for Battle Pass XP rewards; collect only a positive XP amount.
 - Validate reward rows before save.
-- Allow selecting an existing reusable reward bundle instead of inline rewards.
+- Allow selecting an existing reusable reward package instead of direct rewards.
 
 Verification:
 
@@ -969,17 +1082,32 @@ Files:
 Tasks:
 
 - Export selected goals to goal CSV.
+- Export all goals matching the current filter to goal CSV.
 - Page through admin list cursors for export so exported CSV is not silently truncated at the first result page.
+- Include `goal_id`, `code`, `tag`, `requirement_expression_json`, `reward_mode`, direct reward entry columns, and challenge-pool membership columns in goal CSV exports.
+- Keep per-locale title/description out of goal CSV; use the dedicated localization CSV workflow instead.
+- Export direct rewards as self-describing `reward_mode=inline` rows with reward entry columns. Do not export only the generated reward bundle id.
+- Export Battle Pass XP rewards as `reward_N_type=battlepass_xp` with quantity as XP amount and no item/currency target columns.
 - Parse goal CSV into `DefinitionImportGoalRow[]`.
+- Support CSV round-trip updates: non-empty `goal_id` updates an existing draft goal; blank `goal_id` creates a new draft goal.
+- Treat `code` as optional. Generate it when omitted, suppress duplicate-code warnings when the code belongs to the same `goal_id`, and avoid blocking blank-`goal_id` creates solely because a copied code already exists unless no automatic replacement behavior is implemented.
+- Add client-side fuzzy search over all loaded goals, including requirement metrics and dimensions such as medal name, weapon SKU, part SKU, and course code.
 - Use strict numeric parsing for integer fields.
 - Clear parsed rows and preview state when CSV input is edited or cleared.
 - Preview goal imports through existing Eventun definition import APIs.
 - Apply valid goal imports with explicit confirmation as staged draft content where appropriate.
+- Stage challenge-pool memberships from goal CSV rows where `challenge_pool_codes` or `challenge_pool_memberships_json` is populated.
+- Export localizable goal strings to localization CSV independently from goal CSV.
+- Import localization CSV by upserting/deleting draft/source localization rows and syncing affected published localization rows without changing requirement or reward snapshots.
 - Export challenge pool rows.
 - Preview/apply challenge pool CSV through the new challenge pool import APIs.
 - Treat challenge pool import as staging. Do not require publish-ready linked goals row by row and do not publish automatically.
 - Prevent repeat apply after a successful challenge pool import apply unless the operator creates a new preview.
 - Add bulk table actions that generate the same import/update payloads.
+- Add bulk selection for draft rows, including bulk tag changes, archive, and draft-only delete where safe.
+- Default list views should hide archived goals, challenge pools, and reusable reward packages. Provide an explicit filter/control to show archived records.
+- Goal and challenge-pool list views should show compact reward summaries, including ARC amount and Battle Pass XP amount when present.
+- Diagnose and fix false "no active Battle Pass" validation when the configured development namespace has an active AccelByte Season Pass. Surface namespace/API/fallback details clearly when validation fails.
 
 Verification:
 
@@ -993,13 +1121,17 @@ npm run lint
 
 Manual verification in a development namespace:
 
-- Create a reusable reward bundle.
-- Create an achievement with structured requirement rows and inline reward.
+- Create a reusable reward package.
+- Create an achievement with structured requirement rows and direct reward.
 - Publish the achievement.
 - Create a challenge goal.
 - Add the challenge goal to a daily pool.
 - Export goals to CSV.
 - Modify a CSV row and import it as a draft edit.
+- Export a goal with a generated direct Battle Pass XP reward and re-import it without losing the reward shape.
+- Export mastery rows, duplicate them by clearing `goal_id`, adjust target/reward values, preview creates, and apply.
+- Export existing goals, edit rows with populated `goal_id`, preview updates without duplicate-code warnings, and apply.
+- Search `SMG` or another weapon/part/medal term and confirm goals with matching requirement dimensions appear even when the title does not contain that text.
 - Preview and apply the import.
 - Publish the daily pool and confirm challenge assignment still works through the game/client-facing API.
 
@@ -1040,11 +1172,11 @@ Frontend tasks:
 - Show publish blockers directly in goal and pool detail views without requiring operators to query separate diagnostics.
 - Treat mastery as an achievement flag/filter.
 - Treat challenge availability as solely determined by inclusion in a published challenge pool snapshot.
-- Keep reusable reward bundles as authoring convenience while showing that published snapshots freeze reward details.
+- Keep reusable reward packages as authoring convenience while showing that published snapshots freeze reward details.
 
 Review checkpoint:
 
-- Validate the new authoring model with a daily pool update, a seasonal pool planning flow, an achievement edit, a mastery edit, a no-reward achievement, and an inline reward change.
+- Validate the new authoring model with a daily pool update, a seasonal pool planning flow, an achievement edit, a mastery edit, a no-reward achievement, and a direct reward change.
 
 ## Review Checkpoints
 
@@ -1068,5 +1200,5 @@ Review checkpoint:
 - Whether draft goal validation should also validate challenge pool eligibility context when the goal is already linked to pools.
 - Whether challenge pool import previews should be stored durably like definition imports or returned as stateless previews.
 - Exact published snapshot schema for later publish phases; V1 reward details are copied into `published_goal.reward_snapshot` JSONB, with normalized child rows deferred unless runtime/support queries justify them.
-- Whether reusable reward bundle draft editing is required in the first production UI slice.
+- Whether reusable reward package draft editing is required in the first production UI slice.
 - Whether bulk edit should apply immediately through update APIs or always route through import preview/apply.

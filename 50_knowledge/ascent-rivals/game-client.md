@@ -38,6 +38,8 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - Must treat dedicated-server rejection or kick during gauntlet stage admission as a normal competition-rules flow, not just a transport failure.
 - Should refresh Eventun-backed gauntlet state after rejection, kick, stage completion, or run completion.
 - Can use `run_phase`, accepted/required match counts, and `current_match_id` from join status to distinguish prestart, match-in-progress, between-match, ready-to-complete, and completed stage states.
+- Post-match Insights should treat Eventun readiness as bounded and non-blocking for the route. The client may show the no-insights empty state after its timeout window even if a backend request is still in flight, and late responses must not overwrite a terminal Insights UI state.
+- Challenge assignment and progress UI should consume Eventun active challenge APIs, not AccelByte Challenge APIs. The existing game-client challenge subsystem and widgets are the intended presentation seam; Eventun should provide assignment scope, period, progress, and reward-preview data needed by that subsystem.
 
 ## Open Questions
 - What is the canonical sequence from match completion to externalized competition state updates?

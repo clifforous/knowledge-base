@@ -132,7 +132,9 @@ Examples:
 
 Achievements may grant rewards. Some achievements may intentionally have no grantable reward beyond the completion itself.
 
-Achievement, mastery, and challenge definitions may need presentation metadata, such as a 2D image or icon. Asset storage and delivery are solution-design details, not product requirements.
+Achievement, mastery, and challenge definitions need player-facing title and description copy. V1 should support localized title and description values, with English as the default/fallback response when a requested locale is unavailable.
+
+Achievement, mastery, and challenge definitions may need additional presentation metadata, such as a 2D image or icon. Asset storage and delivery are solution-design details, not product requirements.
 
 ### Mastery
 
@@ -392,11 +394,13 @@ Decision:
 10. Eventun should support career medal totals so the game client and future website can replace AccelByte-backed medal stat display.
 11. Completed achievements, masteries, challenges, medal totals, and related progression stats can be publicly readable by default unless a specific definition or future privacy requirement says otherwise.
 12. The game client and website decide which public stats to surface in their own presentation contexts.
-13. Achievement, mastery, and challenge presentation may require assets such as icons or 2D images, but asset storage and delivery are solution-design details rather than requirements. The solution may use Eventun uploads, client-bundled assets, or another approach.
-14. Active challenge assignments and in-progress challenge values can be public by default unless a future privacy requirement says otherwise.
-15. The game client and website may choose to surface only the current player's active challenge assignments.
-16. Claimable rewards should be private to the player by default.
-17. Claimable reward visibility is low sensitivity; accidental or future intentional exposure that a player has rewards to claim is not a major product concern.
+13. Goal title and description are player-facing and should support locale-aware reads. Missing translations should fall back to English/default copy rather than failing the request.
+14. V1 goal localization scope is limited to title and description. Requirement JSON, metric codes, medal codes, SKUs, category values, and internal identifiers are not player-facing localized fields.
+15. Achievement, mastery, and challenge presentation may require assets such as icons or 2D images, but asset storage and delivery are solution-design details rather than requirements. The solution may use Eventun uploads, client-bundled assets, or another approach.
+16. Active challenge assignments and in-progress challenge values can be public by default unless a future privacy requirement says otherwise.
+17. The game client and website may choose to surface only the current player's active challenge assignments.
+18. Claimable rewards should be private to the player by default.
+19. Claimable reward visibility is low sensitivity; accidental or future intentional exposure that a player has rewards to claim is not a major product concern.
 
 ### Administration Requirements
 
@@ -485,9 +489,10 @@ This flow is non-binding and should be validated during solution design:
 30. V1 rewards should be AccelByte-backed where possible; Battle Pass XP is a committed V1 reward type fulfilled through AccelByte Season Pass, and titles are a future expansion example rather than a committed V1 reward type.
 31. V1 currency reward behavior may assume ARC is the only supported spendable currency.
 32. V1 non-currency AccelByte catalog rewards may assume rewardable items are grantable in-game items.
-33. Presentation asset storage and delivery should not be prescribed as a requirement.
-34. Historical challenge assignments, progress, completions, reward bundles, claims, and grant attempts should be retained after active windows close or rewards are claimed.
-35. Operator-triggered retroactive completion should be supported for achievements and masteries when historical data is available.
+33. V1 goal localization should cover title and description only. Other potential player-facing fields, such as reward labels, medal names, category labels, and future hidden-achievement copy, should be handled by their owning systems or deferred until a concrete surface needs them.
+34. Presentation asset storage and delivery should not be prescribed as a requirement.
+35. Historical challenge assignments, progress, completions, reward bundles, claims, and grant attempts should be retained after active windows close or rewards are claimed.
+36. Operator-triggered retroactive completion should be supported for achievements and masteries when historical data is available.
 36. Simple boolean requirement composition should be supported for achievements where it does not add disproportionate complexity.
 37. Already-owned item rewards should not block reward bundle claims; duplicate item rewards may convert to ARC using a global duplicate-reward percentage of catalog price or may award nothing according to the configured duplicate policy.
 38. V1 should not require per-item bespoke duplicate reward definitions.

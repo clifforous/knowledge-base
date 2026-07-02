@@ -77,6 +77,7 @@ Progression authoring should distinguish staged operator work from player-facing
 - challenge availability should be determined by inclusion in a published challenge pool snapshot
 - publish operations should validate requirements, reward validity, membership health, and assignment eligibility before any player assignment can use the pool
 - publish should atomically create immutable snapshots or fail with explicit blockers; no partial publish should occur
+- goal title and description localization is presentation data. Keep localized text separate from requirement/reward rules so translation fixes can be patched without changing progression semantics. V1 localization scope is title and description only. Localization export/import should be separate from goal definition CSV so translation work does not add locale-specific columns to the main authoring workflow.
 
 Medal definitions should be treated as an authored catalog, not inferred only from observed event rows. The preferred source for the initial Eventun medal definition set is the game client's medal and medal-augment data tables. Eventun may still use observed event data to detect drift or unknown emitted codes.
 

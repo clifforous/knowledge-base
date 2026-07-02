@@ -83,7 +83,8 @@ An insight may be:
 
 - coaching: a specific, evidence-backed improvement opportunity
 - kudo: a specific, evidence-backed positive result or improvement
-- no insight: analysis completed, but no result cleared the quality bar
+- no insight: analysis completed, but no result cleared credibility gates and the low
+  salience floor
 
 This naming avoids conflict with the existing item/part recommendation system. Specific
 part-buy recommendations and item recommender logic are out of scope. High-level
@@ -135,12 +136,12 @@ Out of scope for phase 1:
 | Kudo insight | Praise for a strong result, achievement, or improvement. |
 | Primary insight | The main card on the insights screen. |
 | Secondary insight | Optional supporting cards below the primary card. |
-| No insight | Analysis completed, but no candidate cleared the quality bar. |
+| No insight | Analysis completed, but no candidate cleared credibility gates and the low salience floor. |
 | Pending | Eventun cannot analyze yet because match data is not query-ready. |
 | Unavailable | Insights are unsupported for this mode, map, or player state. |
 | Failed | Eventun failed to evaluate the request. |
 | Client timeout | The client stopped retrying before Eventun returned a final factual state. This is not a backend status. |
-| Policy | DB-backed weights, thresholds, and enablement for known insight IDs. |
+| Policy | DB-backed weights, gates, salience floors, and enablement for known insight IDs. |
 | ARC / credits | The in-match spend resource used by the server economy. The UI may call it ARC. |
 | Loadout value | The resolved loadout's credit-equivalent investment value at heat start. |
 | Ship capability vector | Future compact normalized build metrics derived from resolved loadout stats. |
@@ -185,9 +186,9 @@ Status semantics:
 
 - `ready`: analysis completed and at least one insight slot is present.
 - `pending`: required event data is expected to become query-ready soon. This is retryable.
-- `no_insight`: analysis completed, but no candidate cleared required quality gates. This
-  includes cases such as a new racer or new map where the available facts are valid but too
-  sparse to produce a credible insight.
+- `no_insight`: analysis completed, but no candidate cleared required credibility gates and
+  the low salience floor. This includes cases such as a new racer or new map where the
+  available facts are valid but too sparse to produce a credible insight.
 - `unavailable`: this request is not supported for the mode, map, schema version, or player
   state. This is not retryable in the current post-match flow.
 - `failed`: Eventun reached an unexpected evaluation failure after accepting a valid request.
@@ -367,6 +368,33 @@ Player-facing copy should stay broad:
 
 Avoid player-facing text that names exact stats or specific parts unless a future item
 recommender owns that flow.
+
+### Course Context Metadata
+Course definitions already carry authored map context used by the game client item
+recommender. The client receives the AccelByte `Courses` game record, applies each course's
+dynamic data to `UHGCourseDefinition`, and uses `RoleWeights` as item-role bias. Eventun
+should use the same source as optional insight context instead of asking the client to copy
+course role weights into every match event.
+
+Recommended Eventun approach:
+
+- Sync current course metadata from the AccelByte `Courses` game record into an Eventun
+  reference table.
+- Support a daily/background sync and an admin-triggered refresh from the Extend app UI.
+- Store only fields with a current insight use case: course code, optional stat code/version,
+  feature state, laps, target lap time, max ascension zones, options, role weights, raw source
+  JSON for diagnostics, and `syncedAt`.
+- Treat missing or stale course metadata as non-blocking. Insights should still work from
+  submitted match events, current-run segment tags, and same-heat comparators.
+- Use course role weights as a confidence/salience modifier, not as a standalone reason to
+  generate a build recommendation.
+
+Segment edge tags remain stronger evidence than course-level role weights because they
+describe what actually happened in the run. Course role weights are useful when they agree
+with observed symptoms, such as speed weakness on a speed-biased course, agility weakness on
+a handling-biased course, or combat weakness on a combat-biased course. When role weights
+conflict with the observed symptom, the category insight should lose confidence or be
+suppressed.
 
 ### Future Capability Score Idea
 Capability scores are a useful direction, but they should not be part of phase 1 until their
@@ -697,6 +725,20 @@ Catalog status should be explicit:
 - `seed_disabled`: known insight ID exists, but policy starts disabled until validation.
 - `future`: keep out of phase 1 code unless implementation is intentionally expanded.
 
+Catalog review decision:
+
+- Keep strong kudos as first-class insights. They are the best answer when the player won,
+  reached podium, posted a standout combat/objective result, or produced unusually consistent
+  laps.
+- Keep specific pace, segment, energy, warp, lap-consistency, economy, and loadout-value
+  coaching. These have concrete metrics and can produce human-readable deltas.
+- Keep `crash_reduction` and `death_reduction` only as fallback coaching. Prefer category-
+  and context-aware replacements when the data supports them.
+- Do not ship one generic player-facing `loadout_category_gap`. Split that idea into
+  specific Speed, Agility, and Combat insights tied to observed symptoms.
+- Use course metadata and segment tags as context for confidence and salience. They should
+  not create a player-facing insight without an observed performance symptom.
+
 ### Default-Enabled Phase 1 Coaching Insights
 | Insight ID | Modes | Notes |
 |---|---|---|
@@ -706,12 +748,12 @@ Catalog status should be explicit:
 | `straight_speed_gap` | match, time trial | Tagged or derived straight/open segment speed below benchmark when segment classification is available. |
 | `energy_management_gap` | match, time trial | Excess out-of-energy time or inefficient energy use. |
 | `stall_time_gap` | match, time trial | Excess stalled time. |
-| `crash_reduction` | match | Crashes plausibly harmed heat result, placement, or time. |
-| `death_reduction` | match | Deaths plausibly harmed heat result, placement, or time. |
+| `crash_reduction` | match | Fallback only. Prefer `agility_control_gap` when agility score, segment tags, and comparator data support it. |
+| `death_reduction` | match | Fallback only. Prefer `combat_survivability_gap` when combat score and same-heat comparator data support it. |
 | `warp_usage_gap` | match, time trial | Lower warp use in contexts where benchmark use is clearly better. |
 | `lap_consistency_gap` | match, time trial | Lap-to-lap variance is high versus self or benchmark. |
 | `late_arc_investment` | match | Player's loadout value stayed low until later heats compared with high-CP same-heat players. Do not claim exact purchase timing. |
-| `loadout_value_gap` | match | Same-heat loadout value is materially below high-CP or top-placement comparators. |
+| `loadout_value_gap` | match | Same-heat loadout value is materially below high-CP or top-placement comparators. Keep lower priority than a stronger category-specific build insight. |
 
 ### Default-Enabled Phase 1 Kudo Insights
 | Insight ID | Modes | Notes |
@@ -733,8 +775,20 @@ Catalog status should be explicit:
 | Insight ID | Modes | Required data | Default |
 |---|---|---|---|
 | `unspent_arc` | match | `creditsAtHeatStart`, `creditsAtHeatEnd`, same-heat loadout value comparators. | Enabled conservatively after telemetry lands. |
-| `loadout_category_gap` | match | Speed, Agility, and Combat category score summaries plus observed weakness that aligns with the category gap. | Seed disabled until validation. |
 | `efficient_spender` | match | Loadout value, retained credits, strong outcome, and same-heat comparators. | Seed disabled until validation. |
+
+### Build-Shape And Course-Context Insight Additions
+| Insight ID | Modes | Required data | Default |
+|---|---|---|---|
+| `speed_capability_gap` | match | Lower Speed score versus same-heat high-CP/top-placement comparators plus pace, straight, warp, or best-lap weakness. Course speed role weights may boost salience. | Seed disabled until validation, then prefer over broad speed advice. |
+| `agility_control_gap` | match | Lower Agility score plus corner/bend speed gap, crashes, or control-related segment weakness. Course agility role weights may boost salience. | Seed disabled until validation; suppresses `crash_reduction` when selected. |
+| `combat_survivability_gap` | match | Lower Combat score plus deaths, poor survival, or durability-related outcome weakness versus same-heat comparators. Course combat role weights may boost salience. | Seed disabled until validation; suppresses `death_reduction` when selected. |
+| `combat_pressure_gap` | match | Lower Combat score plus low kills, low combat pressure, or weak combat output where combat mattered to high-CP players. | Seed disabled until validation; avoid if survival is the clearer problem. |
+| `efficient_low_loadout_kudo` | match | Strong placement, CP, lap, or objective result despite lower loadout value or lower category score than comparators. | Seed disabled until validation; kudo, not coaching. |
+
+Do not expose `loadout_category_gap` as a generic player-facing insight. If the existing
+catalog keeps it temporarily, treat it as an internal suppression group or migration bridge
+for the specific build-shape insights above.
 
 ### Requires New Derived Stores Or History
 | Insight ID | Modes | Reason |
@@ -759,6 +813,7 @@ Catalog status should be explicit:
 | `active_strafe_usage_gap` | Must be segment-contextual, not globally "use more strafes." |
 | `hover_speed_control_gap` | Current time-in-air telemetry is not enough to explain hover height tradeoffs directly. |
 | `overall_speed_gap` | Too broad for primary; use only as fallback if enabled. |
+| `loadout_category_gap` | Too generic for player-facing copy; replace with specific build-shape insight IDs. |
 | `specific_part_purchase` | Out of scope; belongs to the item recommender, not post-match insights. |
 
 Shortcut insights should become stronger only after Eventun can learn from enough races
@@ -780,7 +835,8 @@ Each generated candidate has:
 - priority score
 - suppression group
 
-Priority answers: should this insight be shown, and how high?
+Priority answers: among credible candidates, how salient is this insight relative to the
+other candidates?
 
 ```text
 priority_score =
@@ -788,7 +844,6 @@ priority_score =
   * effect_size_score
   * benchmark_relevance
   * outcome_relevance
-  * confidence_score
   * mode_weight
 ```
 
@@ -798,28 +853,32 @@ Definitions:
 - `effect_size_score`: normalized gap or achievement magnitude.
 - `benchmark_relevance`: trust and relevance of the comparator.
 - `outcome_relevance`: relationship to placement, lap time, finish time, or achievement.
-- `confidence_score`: trust in the conclusion.
 - `mode_weight`: mode-specific adjustment.
 
 Score scale:
 
-- `effect_size_score`, `benchmark_relevance`, `outcome_relevance`, and
-  `confidence_score` are normalized to 0.0-1.0.
+- `effect_size_score`, `benchmark_relevance`, and `outcome_relevance` are normalized to
+  0.0-1.0.
 - `base_weight` is policy-controlled and should normally stay in the 0.25-3.0 range.
 - `mode_weight` is policy-controlled and should normally stay in the 0.0-2.0 range.
-- `priority_score` thresholds are stored on the same resulting scale as the formula. Admin
-  controls should show the effective score range so tuning is not guesswork.
+- `priority_score` salience floors are stored on the same resulting scale as the formula.
+  Admin controls should show the effective score range so tuning is not guesswork.
 - Per-insight generators own required facts and metric construction. DB policy can disable,
   gate, and weight a known insight, but it cannot create new metrics or template arguments.
 
 Selection rules:
 
 - Coaching and kudo candidates compete in one ranked set.
-- Primary slot goes to the highest-value candidate that clears primary thresholds.
-- Secondary slots take the next eligible candidates that clear secondary thresholds.
+- Credibility gates run before ranking: required facts, policy enablement, minimum effect
+  size, minimum confidence, benchmark sample count, cooldown, and hard category constraints.
+- Primary slot goes to the highest-salience candidate that clears the primary salience floor.
+- Secondary slots take the next eligible candidates that clear the secondary salience floor.
 - Strong kudos can outrank valid coaching.
 - Weak coaching must not displace meaningful achievements.
 - No candidate should be shown only to fill a slot.
+- A credible candidate with modest salience should still be shown if it clears the low
+  salience floor and no stronger insight exists. The salience floor exists to suppress junk
+  filler, not to reapply confidence as a second gate.
 
 Suppression rules:
 
@@ -882,6 +941,10 @@ Hard gates:
 - Comparator-backed insights must meet the policy's minimum sample count for the selected
   benchmark type.
 - Repeat/cooldown rules suppress recently shown insights before slot selection.
+- Priority/salience is not a confidence gate. After minimum confidence and sample-count
+  gates pass, confidence may be shown in explain output and used for cautious categories,
+  but a medium-confidence candidate should not be rejected solely because a multiplicative
+  priority formula pushed it below an overly high primary salience floor.
 
 Default confidence thresholds:
 
@@ -914,9 +977,14 @@ Examples:
 - `unspent_arc` is high confidence only when late-heat or match-end credits are high, the
   player's loadout value is below same-heat comparators, and the player did not also earn a
   strong efficiency kudo.
-- `loadout_category_gap` is medium at best because Speed, Agility, and Combat scores are
-  presentation summaries. It should require an aligned observed weakness such as corner speed,
-  combat survivability, or late-heat loadout value before becoming player-facing.
+- Build-shape insights are medium at best when they rely only on Speed, Agility, and Combat
+  presentation scores. They need aligned observed weakness, same-heat comparator samples, and
+  preferably segment tags or course role weights before becoming player-facing.
+- `agility_control_gap` should suppress `crash_reduction` when both describe the same
+  problem; `combat_survivability_gap` should suppress `death_reduction` when both describe
+  the same problem.
+- Course role weights can improve or reduce confidence for category insights, but should not
+  create an insight without an observed performance symptom.
 - Future `loadout_capability_gap` insights stay disabled until capability scores and outcome
   relationships are validated across enough same-course or same-heat samples.
 
@@ -942,8 +1010,8 @@ create table insight_policy (
   min_confidence numeric not null default 0,
   min_benchmark_sample_count integer not null default 1,
   min_required_samples integer not null default 1,
-  primary_threshold numeric not null,
-  secondary_threshold numeric not null,
+  primary_salience_floor numeric not null,
+  secondary_salience_floor numeric not null,
   confidence_weights jsonb not null default '{}'::jsonb,
   benchmark_weights jsonb not null default '{}'::jsonb,
   suppression_group text,
@@ -969,6 +1037,8 @@ Recommended behavior:
 - Keep required facts in code, not arbitrary policy JSON, so policy cannot make unsupported
   insights appear valid.
 - Apply cooldown and diversity after confidence gates but before final slot assignment.
+- Keep salience floors low. Initial defaults should be approximately `0.35` to `0.40` for
+  primary and `0.30` to `0.35` for secondary, then tuned from explain output.
 
 Optional audit table:
 
@@ -994,15 +1064,16 @@ Phase 1 flow:
 5. Build economy/loadout inputs for server-match requests.
 6. Generate coaching candidates.
 7. Generate kudo candidates.
-8. Score candidates.
-9. Apply confidence gates and suppression.
-10. Select primary and secondary slots.
+8. Apply credibility gates and score eligible candidates.
+9. Apply suppression and diversity.
+10. Select primary and secondary slots using salience floors.
 11. Return a player-facing response or a factual status.
 
 Status/error mapping:
 
 - Valid request, event batch not query-ready yet: `PENDING` with `DATA_NOT_READY`.
-- Valid request, required facts available, no candidate clears gates: `NO_INSIGHT`.
+- Valid request, required facts available, no candidate clears credibility gates or low
+  salience floors: `NO_INSIGHT`.
 - Valid request for unsupported mode, map, or analytics schema: `UNAVAILABLE`.
 - Valid request reaches an unexpected evaluator error after loading run context: `FAILED`.
 - Invalid request, unauthenticated request, forbidden request, service outage, and database
@@ -1060,7 +1131,7 @@ The Extend app UI should support:
 
 - policy list by mode and insight ID
 - enable/disable controls
-- weight and threshold editing
+- weight, gate, and salience-floor editing
 - suppression group review
 - policy version display
 - policy audit history
@@ -1079,6 +1150,7 @@ Explain response should include admin-only details:
 - priority score
 - confidence score
 - confidence component breakdown
+- salience floor decisions
 - benchmark source
 - suppression reason
 - data readiness state
@@ -1158,7 +1230,7 @@ Backend tests:
 - strong kudo can outrank medium coaching
 - weak coaching does not fill empty slots
 - DB policy disablement suppresses an insight ID
-- DB threshold changes affect ranking deterministically
+- DB salience-floor and weighting changes affect selection deterministically
 - invalid policy insight IDs fail validation or are ignored safely
 - CP heat weighting affects internal priority but not player-facing CP text
 - economy insights are generated only for server-match modes
@@ -1166,8 +1238,13 @@ Backend tests:
 - late unspent ARC can produce coaching when `creditsAtHeatStart`, `creditsAtHeatEnd`,
   same-heat loadout value, and confidence clear required gates
 - efficient-spender kudos suppress low-loadout-value coaching
-- loadout category comparisons require same-heat comparators, category score data, and an
-  aligned observed outcome
+- build-shape comparisons require same-heat comparators, category score data, and an aligned
+  observed outcome
+- `agility_control_gap` suppresses generic `crash_reduction` for the same weakness
+- `combat_survivability_gap` suppresses generic `death_reduction` for the same weakness
+- course metadata sync failure does not block non-course-context insights
+- course role weights boost or reduce build-shape salience but never generate insight
+  candidates alone
 - future capability comparisons cannot be selected without a versioned capability scoring
   formula and required data
 - disabled catalog entries cannot be selected even when policy rows exist

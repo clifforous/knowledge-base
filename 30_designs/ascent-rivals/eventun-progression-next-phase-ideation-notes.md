@@ -113,16 +113,20 @@ Review questions:
 
 ### 4. Localization Review
 
-The next design iteration should identify which progression fields are player-facing and therefore need localization support.
+V1 now requires simple goal localization for `title` and `description`, with English/default fallback and locale-aware player reads. The next design iteration should review fields beyond those two.
 
-Likely fields to review:
+Already in V1 scope:
 
 - achievement, mastery, and challenge display titles
 - achievement, mastery, and challenge descriptions
+
+Likely fields to review later:
+
 - reward bundle display copy, if Eventun owns any player-facing reward text
 - medal display names where Eventun-backed medal totals appear outside game-owned UI copy
 - category, rarity, tier, and status labels if they are displayed directly from Eventun data
 - hidden or unrevealed achievement copy if hidden achievements are added later
+- compact/short titles if tight UI surfaces need alternate copy
 
 Likely non-localized fields:
 
@@ -134,9 +138,9 @@ Likely non-localized fields:
 
 Review questions:
 
-- Should Eventun store localized strings, localization keys, or only stable identifiers that the game client and website map to localized copy?
 - Which fields are admin-only and should never be treated as player-facing copy?
 - Should AccelByte catalog item names be treated as the source of localized reward copy, or should Eventun provide its own reward presentation text?
+- Should future hidden achievements require separate localized locked/unrevealed copy?
 
 ### 5. Platform Achievements
 

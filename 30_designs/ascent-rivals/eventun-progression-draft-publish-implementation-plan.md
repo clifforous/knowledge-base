@@ -65,7 +65,7 @@ Fields:
 - `legacy_goal_version_id` while migrating from the current versioned model
 - `publish_revision_id`
 - copied identity: `operator_key`, `goal_type`, `is_mastery`, `category`
-- copied presentation: `title`, `description`, `presentation`, `visibility`
+- copied presentation: default English `title`, default English `description`, `presentation`, `visibility`
 - copied rules: `requirement_expression`, `counting_policy`
 - copied reward snapshot: fulfillment mode, duplicate policy, entry list, and metadata useful for fulfillment/display/audit
 - `published_at`
@@ -76,6 +76,24 @@ Rules:
 - Insert-only after creation.
 - Runtime goal checking reads the copied requirement and counting policy from this table.
 - Runtime should not depend on mutable `goal_definition_version` rows after the runtime read switch.
+
+### Goal localization rows
+
+Purpose: Store localized player-facing goal title and description without mixing text presentation into requirement or reward rules.
+
+Target fields:
+
+- draft localization: `goal_id`, `locale`, `title`, `description`, `updated_at`
+- published localization: `published_goal_id`, `locale`, `title`, `description`, `updated_at`
+
+Rules:
+
+- V1 localization scope is only goal `title` and `description`.
+- The base `goal_definition.title` / `description` and `published_goal.title` / `description` remain the English/default fallback.
+- Publish should copy available draft localization rows to the new published goal snapshot.
+- Translation corrections on published localization rows are presentation-only patches and should not require republishing the goal or changing requirement/reward snapshots.
+- Locale-aware player APIs should resolve by requested locale, then language root, then English/default fallback.
+- Localization export/import should be separate from the main goal definition CSV. The localization CSV should export default copy for context plus one row per goal/locale for localized title and description. Import should upsert/delete draft localization rows and sync affected published localization rows without changing requirement, reward, challenge-pool, or completion semantics.
 
 ### `published_goal.reward_snapshot`
 
@@ -261,10 +279,12 @@ Admin read APIs should expose a simple authoring state:
 For goals, the comparison must include:
 
 - goal identity fields
-- presentation fields
+- default presentation fields
 - requirement expression
 - counting policy
 - linked reward details copied into the published snapshot
+
+Localized title/description changes are presentation-only. If the admin UI edits draft localizations before publish, it may show them as unpublished presentation changes. If an operator patches published localization rows to fix translation copy, that should be audited as a localization correction rather than treated as a gameplay publish.
 
 For challenge pools, the comparison must include:
 

@@ -47,6 +47,16 @@ Eventun orchestrates competition flow and delegates accounting transition execut
 - Removed protobuf fields do not need `reserved` declarations unless Eventun later exposes direct protobuf/gRPC clients.
 - Treat protobuf definitions as the source for generated gateway shapes, not as a long-lived wire contract for external direct protobuf callers.
 
+## Localization Contract
+- Player-facing progression goal APIs should accept an optional requested locale, represented in HTTP as a `locale` query parameter and in protobuf request messages as an optional `locale` field.
+- Supported locale tags should use BCP 47 style values such as `en-US`, `en`, `fr-FR`, or `fr`.
+- Goal localization scope is limited to `title` and `description` for V1.
+- Responses should return display-ready `title` and `description` resolved by requested locale, then language root, then English/default copy.
+- Missing translations must not fail player-facing reads.
+- Requirement JSON, metric codes, medal codes, SKUs, category values, visibility values, ids, and internal operator references are not localized API fields.
+- Reward preview labels are fallback hints. For AccelByte catalog items, clients should prefer localized catalog names resolved from SKU when available.
+- Admin localization export/import should be separate from goal definition CSV import. The localization workflow should export default copy for context, import one row per goal/locale, and sync published localization rows after source localization changes without requiring gameplay-rule publish.
+
 ## Current Notes
 - Gauntlet stage AccelByte sessions are currently public for simplicity.
 - Public session visibility is not authorization.

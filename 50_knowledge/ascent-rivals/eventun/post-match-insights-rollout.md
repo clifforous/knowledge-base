@@ -1,6 +1,6 @@
 # Post-Match Insights Rollout Notes
 
-Last updated: 2026-06-27
+Last updated: 2026-06-30
 
 ## Implementation Deltas
 
@@ -11,19 +11,22 @@ Last updated: 2026-06-27
 - Admin explain includes selected and rejected candidates, score components, policy-disabled candidates, and readiness notes. Player endpoints never return rejected candidates or raw scores.
 - Unexpected evaluator failures after a valid run context return `FAILED` with `EVALUATION_FAILED`. Data-loading failures still return transport errors.
 - Economy insights compare against the current-match high-CP/top-placement cohort and use `CURRENT_MATCH_HIGH_CP_COHORT` as the benchmark type.
+- Confidence and salience are separate decisions. Confidence gates decide whether a candidate is credible; priority/salience ranks credible candidates and applies only a low floor to avoid junk filler.
 
 ## QA Scenario Matrix
 
 - Post-match Ascent match complete with placement 1: expect `READY` with a primary kudo possible.
 - Post-match Ascent match complete with a strong coaching gap and no stronger kudo: expect `READY` with a primary coaching insight.
 - Run with multiple qualifying candidates from different suppression groups: expect one primary and at most two secondary insights.
-- Complete run with no candidate meeting primary threshold: expect `NO_INSIGHT` and no primary/secondary insights.
+- Complete run with no eligible candidate clearing credibility gates or the low salience floor: expect `NO_INSIGHT` and no primary/secondary insights.
+- Complete time-trial run with a credible medium-confidence pace gap above the salience floor but below the old high primary threshold: expect `READY` with a primary insight, not `NO_INSIGHT`.
 - Run where match/heat ingestion is not complete: expect `PENDING` and bounded client retry behavior.
 - Unsupported post-match race mode: expect `UNAVAILABLE` with `UNSUPPORTED_MODE`.
 - Evaluator panic/unexpected evaluator failure after run context loads: expect `FAILED` with `EVALUATION_FAILED`.
 - Disabled policy row for an otherwise qualifying insight: player endpoint must not return it; admin explain should show it as rejected with `policy_disabled`.
 - Admin policy page: operator can update known returned policy rows only; no unknown insight IDs or template keys can be created.
 - Admin audit page: recent policy changes show previous and next policy JSON.
+- Admin explain should distinguish insufficient confidence/sample gates, below-salience-floor rejection, and suppression/diversity rejection.
 
 ## Client Contract Checks
 

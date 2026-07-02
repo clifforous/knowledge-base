@@ -54,6 +54,7 @@ Do not mix backend and game-client commits unless the repository owner explicitl
 | 4. Eventun admin explainability and Extend app UI | Eventun coder | Admin policy/explain APIs and dashboard controls for policy tuning and debugging. |
 | 5. Unreal client integration | Game client coder | Client requests insights, retries pending states, localizes/render slots, and submits new heat-start telemetry. |
 | 6. End-to-end review and legacy cleanup | Backend + client leads | E2E validation, dead-code cleanup, legacy recommendation removal, final simplification pass. |
+| 7. Course metadata sync and build-shape insights | Eventun coder, then client review if needed | Eventun syncs course definition context and replaces shallow death/crash/loadout-category coaching with specific Speed, Agility, and Combat insights where supported. |
 
 ## File Map
 
@@ -77,6 +78,9 @@ Do not mix backend and game-client commits unless the repository owner explicitl
   - Create `insight_policy`.
   - Create `insight_policy_audit`.
   - Seed conservative policy rows.
+- Create/modify: course metadata migration
+  - Store current AccelByte `Courses` game record context used by insights, including course
+    code, options, role weights, sync timestamp, and source diagnostics.
 - Modify: `migration/c5_func_recommendation.sql`
   - Add comparator/history heat-start economy/loadout category values used by post-match
     baselines.
@@ -514,8 +518,8 @@ message InsightPolicy {
   double min_confidence = 6;
   int32 min_benchmark_sample_count = 7;
   int32 min_required_samples = 8;
-  double primary_threshold = 9;
-  double secondary_threshold = 10;
+  double primary_salience_floor = 9;
+  double secondary_salience_floor = 10;
   string suppression_group = 11;
   string diversity_group = 12;
   int32 cooldown_runs = 13;
@@ -716,8 +720,8 @@ CREATE TABLE IF NOT EXISTS insight_policy (
   min_confidence NUMERIC NOT NULL DEFAULT 0,
   min_benchmark_sample_count INTEGER NOT NULL DEFAULT 1,
   min_required_samples INTEGER NOT NULL DEFAULT 1,
-  primary_threshold NUMERIC NOT NULL,
-  secondary_threshold NUMERIC NOT NULL,
+  primary_salience_floor NUMERIC NOT NULL,
+  secondary_salience_floor NUMERIC NOT NULL,
   confidence_weights JSONB NOT NULL DEFAULT '{}'::JSONB,
   benchmark_weights JSONB NOT NULL DEFAULT '{}'::JSONB,
   suppression_group TEXT,
@@ -733,8 +737,8 @@ CREATE TABLE IF NOT EXISTS insight_policy (
   CHECK (min_confidence >= 0.0 AND min_confidence <= 1.0),
   CHECK (min_benchmark_sample_count >= 1),
   CHECK (min_required_samples >= 1),
-  CHECK (primary_threshold >= 0.0),
-  CHECK (secondary_threshold >= 0.0),
+  CHECK (primary_salience_floor >= 0.0),
+  CHECK (secondary_salience_floor >= 0.0),
   CHECK (cooldown_runs >= 0),
   CHECK (max_per_response >= 1 AND max_per_response <= 3)
 );
@@ -773,8 +777,8 @@ INSERT INTO insight_policy (
   min_confidence,
   min_benchmark_sample_count,
   min_required_samples,
-  primary_threshold,
-  secondary_threshold,
+  primary_salience_floor,
+  secondary_salience_floor,
   suppression_group,
   diversity_group,
   cooldown_runs,
@@ -786,8 +790,7 @@ INSERT INTO insight_policy (
   ('best_lap_gap', 'post_match', TRUE, 1.2, 0.05, 0.55, 1, 1, 0.7, 0.45, 'lap_time', 'pace', 2, 1, 1),
   ('best_lap_gap', 'time_trial', TRUE, 1.4, 0.05, 0.55, 1, 1, 0.7, 0.45, 'lap_time', 'pace', 2, 1, 1),
   ('unspent_arc', 'post_match', FALSE, 1.0, 0.10, 0.65, 3, 1, 0.8, 0.55, 'economy', 'economy', 2, 1, 1),
-  ('efficient_spender', 'post_match', FALSE, 1.2, 0.10, 0.70, 3, 1, 0.9, 0.60, 'economy_positive', 'economy', 2, 1, 1),
-  ('loadout_category_gap', 'post_match', FALSE, 1.0, 0.10, 0.70, 3, 1, 0.8, 0.55, 'loadout_category', 'loadout', 2, 1, 1)
+  ('efficient_spender', 'post_match', FALSE, 1.2, 0.10, 0.70, 3, 1, 0.9, 0.60, 'economy_positive', 'economy', 2, 1, 1)
 ON CONFLICT (insight_id, mode) DO NOTHING;
 ```
 
@@ -1134,8 +1137,8 @@ Implement these coaching generators using current telemetry:
 - `straight_speed_gap`
 - `energy_management_gap`
 - `stall_time_gap`
-- `crash_reduction`
-- `death_reduction`
+- `crash_reduction` as fallback coaching
+- `death_reduction` as fallback coaching
 - `warp_usage_gap`
 - `lap_consistency_gap`
 - `late_arc_investment`
@@ -1143,7 +1146,8 @@ Implement these coaching generators using current telemetry:
 
 Rules:
 - Do not generate `unspent_arc` until `creditsAtHeatStart` exists.
-- Do not generate `loadout_category_gap` until loadout category score fields exist.
+- Do not expose generic `loadout_category_gap` as player-facing coaching. Prefer later
+  specific build-shape IDs once loadout category score fields and observed symptoms exist.
 - Do not generate `loadout_capability_gap` until a future versioned capability-score phase
   defines and validates the scoring formula.
 - Do not generate future/history-only insights.
@@ -1157,9 +1161,14 @@ func selectInsightSlots(candidates []*insightCandidate, policy InsightPolicySet,
 ```
 
 Rules:
-- Candidate score uses `base_weight * effect_size_score * benchmark_relevance * outcome_relevance * confidence_score`.
-- Primary requires primary threshold and at least medium confidence.
-- Secondary requires secondary threshold and at least medium confidence unless policy is stricter.
+- Confidence gates and sample-count gates decide whether a candidate is credible enough to be
+  considered.
+- Candidate priority/salience uses `base_weight * effect_size_score * benchmark_relevance * outcome_relevance * mode_weight`.
+- Primary requires the primary salience floor and at least medium confidence unless policy is stricter.
+- Secondary requires the secondary salience floor and at least medium confidence unless policy is stricter.
+- Salience floors should be low enough to avoid suppressing credible but modest insights when
+  no stronger candidate exists; initial defaults should be about `0.35`-`0.40` primary and
+  `0.30`-`0.35` secondary.
 - Low confidence is never player-facing by default.
 - Suppress duplicate suppression groups.
 - Strong kudo can take primary over medium coaching.
@@ -1170,6 +1179,9 @@ Rules:
 Tests:
 - strong kudo outranks medium coaching.
 - weak coaching does not fill primary.
+- a credible medium-confidence time-trial gap below the old `0.70` threshold but above the
+  salience floor returns `READY` with a primary insight.
+- a very low-salience candidate, such as roughly `0.23`, still returns `NO_INSIGHT`.
 - disabled policy suppresses candidate.
 - duplicate suppression group selects only highest-scored candidate.
 - no candidate returns `NO_INSIGHT`.
@@ -1367,8 +1379,9 @@ Acceptance check:
 - Existing ambiguous `Credits` and `LoadoutValue` fields remain only while actively consumed
   by shared internal helpers. Remove or replace them once the insight-specific fields are in
   use.
-- Same-heat comparator/history data includes the new heat-start fields before `unspent_arc`,
-  `efficient_spender`, or `loadout_category_gap` can be enabled.
+- Same-heat comparator/history data includes the new heat-start fields before `unspent_arc`
+  or `efficient_spender` can be enabled, and before Phase 7 build-shape insights can be
+  generated.
 
 ### Task 3.3: Enable Conservative Economy/Loadout Insights
 
@@ -1399,16 +1412,20 @@ Generation gates:
 After tests pass, update seeded policy or an admin migration step so `efficient_spender` can
 be enabled conservatively for post-match mode.
 
-- [ ] **Step 3.3.3: Keep `loadout_category_gap` seed-disabled until review**
+- [ ] **Step 3.3.3: Keep generic `loadout_category_gap` seed-disabled**
 
-Implement candidate construction only if the observed weakness aligns with the category gap:
+If the generic ID exists in the catalog during migration, do not expose it as a player-facing
+insight. Keep candidate construction disabled or treat it only as an internal suppression
+group until Phase 7 adds specific build-shape IDs.
+
+The future specific insights should require observed weakness aligned with the category gap:
 - lower Speed score plus pace/straight/warp weakness
 - lower Agility score plus corner/control weakness
 - lower Combat score plus death/combat-survivability weakness
 
 Acceptance check:
-- Admin explain can show why a category-gap candidate was rejected.
-- Player-facing response does not show seed-disabled category-gap insights.
+- Admin explain can show why a generic category-gap candidate is unavailable or rejected.
+- Player-facing response does not show generic category-gap insights.
 - No capability-score insight is generated in phase 1.
 
 ### Task 3.4: Phase 3 Review And Cleanup
@@ -1498,7 +1515,7 @@ UI requirements:
 - base weight
 - min effect size
 - min confidence
-- primary and secondary thresholds
+- primary and secondary salience floors
 - benchmark sample count
 - cooldown runs
 - scoring version display
@@ -1731,6 +1748,51 @@ Reviewable outcome:
 - Backend and client run together, line count is reduced where the first implementation
   over-split, and obsolete recommendation APIs/processes are removed.
 
+### Task 6.0: Correct Scoring Semantics
+
+- [ ] **Step 6.0.1: Split credibility gates from salience ranking**
+
+Eventun implementation must treat confidence as an evidence/credibility gate and priority as
+salience for ordering eligible candidates. Do not reject an otherwise credible candidate only
+because an old high primary threshold treated priority like confidence.
+
+Required selector behavior:
+- Apply hard eligibility gates first: enabled policy, required facts, minimum effect size,
+  minimum confidence, minimum benchmark/sample counts, cooldown, and category-specific safety
+  constraints.
+- Compute priority/salience for eligible candidates using policy weight, effect size,
+  benchmark relevance, outcome relevance, and mode weighting. Do not multiply by confidence
+  again unless the implementation deliberately uses a soft, documented confidence adjustment.
+- Select the highest-salience eligible candidate above `primary_salience_floor` as primary.
+- Select secondary candidates above `secondary_salience_floor` after suppression/diversity.
+- Keep floors low enough to suppress junk filler only. Suggested defaults are `0.35`-`0.40`
+  primary and `0.30`-`0.35` secondary.
+
+- [ ] **Step 6.0.2: Rename policy and explain terms**
+
+Rename implementation, proto/admin fields, DB columns, and Extend app labels from overloaded
+`primary_threshold` / `secondary_threshold` terminology to `primary_salience_floor` /
+`secondary_salience_floor` unless a concrete migration constraint requires a temporary alias.
+Backward compatibility is not required by default for this feature.
+
+Explain output should distinguish:
+- failed eligibility gate, such as insufficient confidence or insufficient benchmark samples
+- selected/rejected by salience floor
+- selected/rejected by suppression or diversity
+
+Do not return `NO_INSIGHT` with only a `no_candidate_met_primary_threshold`-style reason when
+eligible candidates exist above the salience floor.
+
+- [ ] **Step 6.0.3: Add regression tests for the observed time-trial case**
+
+Add deterministic tests for:
+- a medium-confidence time-trial pace gap around the observed shape, such as confidence `0.55`
+  and old priority near `0.58`-`0.63`, returning `READY` with a primary insight when it clears
+  the salience floor
+- a low-salience candidate around `0.23` returning `NO_INSIGHT`
+- secondary selection still respecting suppression groups and secondary salience floor
+- low-confidence candidates still suppressed even if their computed salience is high
+
 ### Task 6.1: End-To-End Scenario Matrix
 
 - [ ] **Step 6.1.1: Validate backend scenarios**
@@ -1745,7 +1807,7 @@ Scenario coverage:
 - ready with primary kudo
 - ready with primary coaching
 - ready with primary plus two secondaries
-- no insight
+- no insight because no eligible candidate clears credibility gates or the low salience floor
 - pending
 - unavailable unsupported mode
 - failed evaluator path
@@ -1853,6 +1915,186 @@ Final cleanup:
 - Update KB docs with implementation deltas that differ from the design.
 - Prepare a short rollout note for QA that lists expected insight statuses and test scenarios.
 
+## Phase 7: Course Metadata Sync And Build-Shape Insight Upgrade
+
+Reviewable outcome:
+- Eventun can sync current course definition context from AccelByte and use it to improve
+  insight confidence/salience.
+- Generic death/crash/loadout-category coaching is replaced by more meaningful Speed,
+  Agility, and Combat insights whenever the required evidence exists.
+- Missing course metadata remains non-blocking.
+
+### Task 7.1: Apply Current Insight Catalog Decisions
+
+- [ ] **Step 7.1.1: Keep concrete existing insights**
+
+Keep the existing concrete insight families:
+- strong result and standout kudos
+- best lap and course time gaps
+- corner and straight segment speed gaps
+- warp, energy, stall, and lap-consistency gaps
+- late ARC investment, unspent ARC, efficient spender, and broad loadout value gap
+
+Implementation notes:
+- `loadout_value_gap` stays useful, but category-specific build-shape insights should outrank
+  it when both explain the same weakness.
+- `crash_reduction` and `death_reduction` remain fallback-only candidates.
+- Generic `loadout_category_gap` should not be player-facing. Remove it from enabled policy
+  rows or keep it only as an internal suppression/migration group.
+
+- [ ] **Step 7.1.2: Update catalog, policy seeds, and localization keys**
+
+Add explicit player-facing insight IDs:
+- `speed_capability_gap`
+- `agility_control_gap`
+- `combat_survivability_gap`
+- `combat_pressure_gap`
+- `efficient_low_loadout_kudo`
+
+Policy defaults:
+- Seed disabled or very conservative until validated with explain output and local smoke
+  tests.
+- Put `agility_control_gap` in a suppression group with `crash_reduction`.
+- Put `combat_survivability_gap` in a suppression group with `death_reduction`.
+- Put build-shape coaching in a diversity group separate from economy/loadout-value coaching
+  so a response does not overfill with build advice.
+
+Acceptance check:
+- Admin policy validation rejects unknown IDs.
+- Game client localization can map every new template key and metric ID.
+- No response exposes `loadout_category_gap` as a generic title or template.
+
+### Task 7.2: Add Eventun Course Metadata Sync
+
+- [ ] **Step 7.2.1: Add a course metadata table**
+
+If Eventun already has a manually maintained course table, prefer migrating or extending it
+instead of creating a parallel source of truth.
+
+Recommended columns:
+- `course_code` primary key
+- `stat_code` nullable
+- `course_version` nullable
+- `feature_state` nullable
+- `laps` nullable
+- `target_lap_time` nullable
+- `max_ascension_zones` nullable
+- `options` JSONB
+- `role_weights` JSONB
+- `source_json` JSONB for diagnostics
+- `synced_at` timestamp
+
+Acceptance check:
+- Upsert is idempotent.
+- Missing optional fields do not fail sync.
+- Role weight values are clamped or rejected if they are non-numeric or outside expected
+  bounds.
+
+- [ ] **Step 7.2.2: Sync from AccelByte `Courses` game record**
+
+Implement a small sync path that fetches the same `Courses` game record consumed by the game
+client. Use existing Eventun AccelByte configuration/client helpers if available.
+
+Requirements:
+- daily/background refresh if the service already has a scheduler
+- admin-triggered refresh endpoint in the Extend app UI
+- structured logs for record version, course count, changed courses, and failures
+- no dependency on course metadata during player insight request evaluation
+
+Acceptance check:
+- Admin explain can report whether course metadata was available, missing, stale, or unused.
+- A failed sync does not make post-match insight APIs fail.
+
+### Task 7.3: Generate Build-Shape Candidates
+
+- [ ] **Step 7.3.1: Add `speed_capability_gap`**
+
+Generate only when:
+- player Speed score is materially lower than same-heat high-CP/top-placement comparators
+- an observed symptom aligns, such as straight speed gap, warp usage gap, best-lap gap, or
+  course-time/pace gap
+- benchmark sample count and confidence gates pass
+
+Course speed-oriented role weights may increase salience. Missing role weights should not
+block generation.
+
+- [ ] **Step 7.3.2: Add `agility_control_gap`**
+
+Generate only when:
+- player Agility score is materially lower than same-heat comparators
+- an observed symptom aligns, such as corner/bend segment gap, crashes, or poor controlled
+  segment outcome
+- benchmark sample count and confidence gates pass
+
+When selected, suppress generic `crash_reduction` for the same run.
+
+- [ ] **Step 7.3.3: Add `combat_survivability_gap` and `combat_pressure_gap`**
+
+Generate survivability coaching only when:
+- player Combat score is materially lower than same-heat comparators
+- deaths, survival, or durability-adjacent outcome weakness is present
+- benchmark sample count and confidence gates pass
+
+Generate pressure coaching only when:
+- player Combat score is materially lower than same-heat comparators
+- low kills or low combat output appears meaningful for high-CP comparators
+- survivability is not the clearer problem
+
+When `combat_survivability_gap` is selected, suppress generic `death_reduction` for the same
+run.
+
+- [ ] **Step 7.3.4: Add `efficient_low_loadout_kudo`**
+
+Generate only when:
+- player achieved a strong result, strong CP, standout lap, or standout objective result
+- player had lower loadout value or lower category score than same-heat comparators
+- retained ARC was not simply unspent to a harmful degree
+
+This is a kudo and may take primary if its confidence and salience beat coaching.
+
+### Task 7.4: Apply Course Context Modifiers
+
+- [ ] **Step 7.4.1: Use role weights as modifiers, not facts**
+
+Rules:
+- course role weights can raise salience/confidence when they agree with the observed symptom
+- course role weights can lower confidence when they conflict with the observed symptom
+- course role weights must never generate a candidate without observed performance evidence
+- segment tags and same-run metrics should carry more weight than course-level archetypes
+
+Acceptance check:
+- Tests prove a course role weight alone does not create an insight.
+- Tests prove missing course metadata still allows non-course-context insights.
+
+### Task 7.5: Phase 7 Review And Cleanup
+
+- [ ] **Step 7.5.1: Run backend validation**
+
+The Eventun coder owns the final compile/test commands for this phase. Expected evidence:
+
+```bash
+go test ./internal/eventun -run 'TestInsight|TestCourse|TestRecommendation' -count=1
+go test ./...
+```
+
+- [ ] **Step 7.5.2: Review with explain output**
+
+Review admin explain output for:
+- selected build-shape insight
+- rejected build-shape insight due to missing observed symptom
+- fallback `crash_reduction` selected when no agility/context evidence exists
+- fallback `death_reduction` selected when no combat/context evidence exists
+- course metadata available, missing, stale, and unused states
+
+- [ ] **Step 7.5.3: Simplify after implementation**
+
+Cleanup checklist:
+- remove generic `loadout_category_gap` player-facing code if it exists
+- avoid duplicate course metadata models
+- keep AccelByte sync code small and isolated
+- avoid reimplementing Unreal resolved-stat formulas in Eventun
+- update this plan and the solution design if implementation constraints change the design
+
 ## Known Implementation Risks
 - Proto enum names may need minor adjustment to match existing generated SDK naming conventions.
 - Unreal SDK generation can create wider diffs than hand-written code; review generated files separately.
@@ -1861,10 +2103,14 @@ Final cleanup:
 - Admin policy editing can become too broad. Keep it to numeric tuning, enablement, and suppression/cooldown controls.
 - Internal recommendation-named snapshot helpers can confuse future work if they survive too
   long. Rename or delete them once the insight path is stable.
+- Course metadata sync should not become a second source of truth for course design. Eventun
+  consumes current AccelByte course data for insight context only.
+- Course role weights are authored map archetype hints, not proof of player weakness. Keep
+  observed symptoms and comparator data as hard requirements for build-shape insights.
 
 ## Final Handoff
 Plan complete when:
-- Phase 1-6 tasks are checked or explicitly deferred with a documented reason.
+- Phase 1-7 tasks are checked or explicitly deferred with a documented reason.
 - Backend tests, app build, and Unreal build have been run for the final integrated state.
 - Reviewers have completed the final implementation review and simplification pass.
 - Any final design deltas are reflected in the Knowledge Base.
