@@ -182,15 +182,26 @@ Review questions:
 Deferred challenge ideas:
 
 - challenge rerolls
+- operator/support-triggered challenge pull and replacement during an active period
 - segmented challenge pools by skill, progression, owned inventory, or other eligibility
 - item-specific challenge assignment once ownership filtering is reliable
 - mid-season challenge edits or replacement rules
 - repeat/cooldown tuning
 - private versus public challenge assignment surfaces
 
+Operator pull and replacement is distinct from player rerolls. It is an operational escape hatch for cases where an assigned challenge becomes inappropriate before the period ends, such as:
+
+- a map or mode update makes the goal unachievable
+- a promotional event daily goal ends early
+- a challenge is discovered to be incorrectly scoped after players already received it
+
+The likely behavior is to mark affected active assignments as `replaced`, preserve historical/audit rows, remove them from the active challenge response, and let the assignment system choose a replacement from the current eligible pool. Completed assignments should normally remain completed unless a later support policy explicitly authorizes reversal.
+
 Review questions:
 
 - Should rerolls be free, limited per period, currency-priced, or event-specific?
+- Should operator-pulled challenges be replaced immediately for all affected players, lazily on next challenge fetch, or only for players who have not completed the challenge?
+- What audit detail is required when support pulls an assigned challenge early?
 - How should the system behave when all eligible challenges are on cooldown?
 - What player-facing explanation is needed when a challenge requires an item the player does not own?
 
