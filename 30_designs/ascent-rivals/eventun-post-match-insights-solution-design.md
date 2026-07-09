@@ -1130,6 +1130,11 @@ rpc ListInsightPolicyAudit(ListInsightPolicyAuditRequest) returns (ListInsightPo
 The Extend app UI should support:
 
 - policy list by mode and insight ID
+- read-only type display for each policy and candidate, shown as `Coaching` or `Kudo`
+  instead of exposing raw enum IDs as the primary secondary label
+- filtering policy rows and explain candidates by insight type: all, coaching, or kudo
+- a quick "base descending" sort on the policy list using the current policy `base_weight`
+  value, so operators can inspect the strongest and weakest configured insights quickly
 - enable/disable controls
 - weight, gate, and salience-floor editing
 - suppression group review
@@ -1138,6 +1143,11 @@ The Extend app UI should support:
 - run debugger by `player_id`, `session_id`, `match_id`, and mode
 - candidate review for selected and rejected candidates
 - data readiness diagnostics
+
+Policy row type should come from Eventun's known insight catalog or an admin catalog
+projection, not from frontend-only ID parsing. If `InsightPolicy` does not already return
+type, add a read-only admin response field such as `InsightType type`. Update requests may
+ignore the field because type is derived from the code-owned catalog.
 
 Explain response should include admin-only details:
 
@@ -1155,6 +1165,12 @@ Explain response should include admin-only details:
 - suppression reason
 - data readiness state
 - active policy/scoring version
+
+For explain candidate rows, the table should still keep the insight ID available for
+debugging, but it should not use the raw value such as
+`INSIGHT_ID_EFFICIENT_LOW_LOADOUT_KUDO` as the prominent supporting text. The visible
+operator workflow should prioritize readable title, type, score, confidence, reasons, and
+metrics.
 
 This debug payload is not player-facing and should not be used by the normal Unreal client.
 

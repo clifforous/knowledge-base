@@ -67,6 +67,10 @@ Eventun orchestrates competition flow and delegates accounting transition execut
 - `match_id` is a match index within the AccelByte/session-event context and can be `0`.
 - Client preflight is advisory only.
 - Dedicated servers should call stage-run admission for every human competitor join/rejoin; open stages return a cheap allow response after run/session/phase validation.
+- Stage admission can return player team context (`team_id`, `team_name`, `team_tag`) when the player is on a team.
+- Stage invite APIs exist for explicit player invites and explicit team invites.
+- A stage's `allowed_teams` currently functions as a team membership eligibility filter, not as team scoring or team progression.
+- Stage bracket fields currently function as required stage win/loss admission filters, not as a bracket graph or progression model.
 - Sparse admission checks are on-demand audit/cache records, not participation or preloaded entrant rosters.
 - `gauntlet_stage_placement` is the participation record.
 - Stages may have multiple configured `gauntlet_stage_circuit` rows, so agents must not assume one stage always equals one match.
@@ -79,3 +83,5 @@ Eventun orchestrates competition flow and delegates accounting transition execut
 - Which runtime failures should trigger immediate AccelByte cleanup versus age-based cleanup?
 - What exact DS-side kick/replacement tie-breakers should be used for equal-priority players?
 - Should admission/preflight distinguish normal joins, reconnects, replacements, and spectator/shoutcaster joins?
+- Should Eventun add team standings and explicit runtime entrant snapshots before team-qualified finals?
+- What API should expose team-stage results if final accepted placements remain per-player?

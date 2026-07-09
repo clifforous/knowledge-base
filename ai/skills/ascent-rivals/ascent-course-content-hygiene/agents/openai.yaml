@@ -1,4 +1,0 @@
-version: 1
-display_name: Ascent Course Content Hygiene
-short_description: Reviews one Ascent Rivals course for aliases, stale refs, dependency roots, vendor exceptions, and safe cleanup slices.
-default_prompt: Review this Ascent Rivals course for content/package hygiene read-only, separating project-owned and vendor roots and recommending small approval-gated cleanup slices.

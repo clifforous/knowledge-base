@@ -317,7 +317,7 @@ This is enough to support player invited finals now and move toward team invited
 
 Current support distinction:
 
-- Team invitational v1 is close to supported: `gauntlet_stage_team`/`allowed_teams` can list invited teams, Eventun admission can validate that a joining player belongs to one of those teams, and the DS can enforce `players_per_team`.
+- Team invitational v1 is close to supported: `gauntlet_stage_team`/`allowed_teams` can list invited teams and Eventun admission can validate that a joining player belongs to one of those teams. Completing the mode still requires dedicated-server enforcement of `players_per_team`; the reviewed runtime does not currently enforce that cap.
 - Team-restricted player qualification is partially supported: a player can be required to qualify individually and also belong to an allowed team.
 - True team-qualified finals are not implemented: Eventun does not yet compute team standings, select teams by team score, or materialize ordered eligible members for a qualified team.
 

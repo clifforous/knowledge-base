@@ -16,6 +16,7 @@ This folder is the knowledge hub for Ascent: Rivals domain understanding.
 - [[cardano]]
 - [[game-design]]
 - [[competition-runtime-terms]]
+- [[team-gauntlet-current-state]]
 - [[hangar]]
 - [[lore]]
 - [[design-language]]

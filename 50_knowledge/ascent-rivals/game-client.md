@@ -26,9 +26,19 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - **Player card**: the player identity presentation shown outside live gameplay, including the main menu and career screen.
 - Do not use `player card` for the in-session name label, and do not use `nameplate` for the main-menu or career-screen identity surface.
 
+## Current Team And Social Surfaces
+- Session player entities carry a team index, and session state carries team identity metadata.
+- The reusable player-card path can render team tag, primary color, and team icon. Race-roster rows and ranking/match-summary rows use this team-aware path.
+- The minimap defines a green `FriendlyPlayerIconColor`, but current decoration logic uses blue for the spectated racer and red for every other racer. It does not compare team identity, so the friendly color is currently unused.
+- The generated Eventun client API exposes team list/detail/create/update, membership, pending-request, designation, and rank operations. No dedicated game-client team subsystem or team browser/management route was found in the reviewed source.
+- The current Eventun team list API returns all teams. Client-side filtering is viable for an initially small catalog; scalable search needs a server-side search/filter contract.
+- The inbox consumes AccelByte persistent and transient system messages and already supports unread state and popup delivery. Team notifications still require an event producer, category/routing decisions, and action payload handling for workflows such as accepting an invite.
+- Existing party/social code supports retained parties, party invites, and inviting selected friends. A team-roster quick-invite flow still needs team roster/presence integration and a roster action that reuses the party invite path.
+
 ## Service Relationship
 - Consumes competition domain state represented by [[eventun/overview|eventun]].
 - Uses service-owned persistent state for competition/accounting concerns instead of treating client runtime as the source of truth.
+- Course definitions remain owned by AccelByte session data and game-client course assets. Eventun course sync/admin APIs are backend/admin concerns and should not become game-client course-definition sources.
 - Must not treat public AccelByte session visibility as gauntlet join authorization.
 - Should call Eventun `GetGauntletStageJoinStatus(gauntlet_id, stage)` before joining a gauntlet stage AccelByte session.
 - Should expose gauntlet-stage join only when Eventun returns an advisory joinable status.

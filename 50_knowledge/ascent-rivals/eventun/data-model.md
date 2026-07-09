@@ -34,6 +34,16 @@ Qualifiers are not part of this runtime hierarchy. Qualifiers belong to the comp
 ### 2. Identity and social domain
 Captures player identity, access context, wallet linkage, team membership, join/invite state, and eligibility constraints.
 
+Current team model:
+
+- `team` stores team identity, membership mode, and colors
+- `team_media` stores team media
+- `team_gate_token` stores policy ids used by token-gated team joins
+- `team_player` stores one team membership per player, including role-like `designation` and optional manual `rank`
+- `team_join_request` and `team_invite_request` store pending team lifecycle requests
+
+Team `rank` is current roster metadata. It can support future team-member priority rules, but Eventun does not currently materialize ranked team-stage candidate lists.
+
 ### 3. Content and sponsorship domain
 Captures sponsor and media attachments used by competition and presentation surfaces. Eventun may store course references and derived course data for operational queries, but AccelByte Cloud Save `Courses` is the source of truth for official course configuration, including course code, default laps, and release feature state.
 
@@ -55,10 +65,15 @@ Competition structure can bind to runtime data through match/session context, bu
 - `gauntlet_stage_run_match` stores accepted match ids for a stage run; configured match plans remain in `gauntlet_stage_circuit`
 - `gauntlet_stage_run_match_result` stores per-player accepted result rows for each accepted stage-run match
 - `gauntlet_stage_placement` is the accepted final participation/result record and includes `stage_run_id`
+- `gauntlet_stage_team` stores allowed or invited teams for a stage
+- `gauntlet_stage_bracket` stores simple required stage win/loss filters, not a bracket graph
+- `gauntlet_player_status` stores gauntlet-wide player group and stage win/loss summary state
 
 Admission records are not a participant roster. Claiming a run, joining a lobby, or being admitted by Eventun does not consume participation.
 
 Current implementation note: multi-match stages are supported by accepting each configured match for the stage run, then completing the run once all required matches are accepted. Final stage placement rows are aggregate rows ordered by summed circuit points, then best placement, placement sum, and player id for deterministic tie-breaking.
+
+Current team/bracket implementation note: team-restricted stages are eligibility filters over current player team membership. Final accepted placement remains per-player. Eventun does not yet compute team standings, team stage placements, team winners, bracket seeds, bracket graph progression, or runtime entrant snapshots.
 
 ### 5. Token metadata domain
 Captures token metadata needed for entitlement and social eligibility checks.

@@ -25,8 +25,10 @@ Last updated: 2026-06-30
 - Evaluator panic/unexpected evaluator failure after run context loads: expect `FAILED` with `EVALUATION_FAILED`.
 - Disabled policy row for an otherwise qualifying insight: player endpoint must not return it; admin explain should show it as rejected with `policy_disabled`.
 - Admin policy page: operator can update known returned policy rows only; no unknown insight IDs or template keys can be created.
+- Admin policy page: operator can filter policies by `Coaching` versus `Kudo`, see type
+  without relying on raw insight enum IDs, and sort by current base weight descending.
 - Admin audit page: recent policy changes show previous and next policy JSON.
-- Admin explain should distinguish insufficient confidence/sample gates, below-salience-floor rejection, and suppression/diversity rejection.
+- Admin explain should distinguish insufficient confidence/sample gates, below-salience-floor rejection, and suppression/diversity rejection. Candidate rows should support type filtering and show `Coaching`/`Kudo` as the prominent type label while keeping raw insight IDs secondary/debug-only.
 
 ## Client Contract Checks
 

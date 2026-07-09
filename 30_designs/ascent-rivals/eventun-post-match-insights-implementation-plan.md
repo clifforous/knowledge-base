@@ -1458,6 +1458,7 @@ Reviewable outcome:
 ### Task 4.1: Implement Admin APIs
 
 **Files:**
+- Modify: `proto/ikigai/eventun/v1/admin.proto`
 - Create: `internal/eventun/insight_admin_api.go`
 - Modify: `internal/eventun/admin.go`
 - Modify: `internal/eventun/insight_policy_db.go`
@@ -1467,8 +1468,12 @@ Reviewable outcome:
 
 Rules:
 - Admin list returns policy rows sorted by mode then insight key.
+- Admin policy rows include read-only insight type from the code-owned insight catalog, for
+  example `InsightType type` on `InsightPolicy`. This type is derived server-side and is not
+  stored in `insight_policy`.
 - Update validates known insight ID and supported mode.
 - Update clamps numeric values.
+- Update ignores or validates the read-only policy type field without persisting it.
 - Update writes audit row with previous and next policy JSON.
 - Direct DB edits remain possible for trusted operators, but the implemented product path is
   admin API validation plus audit.
@@ -1511,6 +1516,11 @@ npm run cg:clean-and-generate
 
 UI requirements:
 - table by mode and insight ID
+- show the insight type as `Coaching` or `Kudo`; do not show raw enum IDs such as
+  `INSIGHT_ID_EFFICIENT_LOW_LOADOUT_KUDO` as the prominent secondary text
+- filter rows by type: all, coaching, or kudo
+- add a quick sort control for current `baseWeight` descending so operators can quickly see
+  the strongest configured insights first; table-column sorting may also remain available
 - enabled toggle
 - base weight
 - min effect size
@@ -1526,6 +1536,9 @@ UI requirements:
 - input fields: player ID, session ID, match ID, mode
 - player-facing selected response panel
 - candidate table with selected/rejected status
+- show each candidate's type as `Coaching` or `Kudo` near the title; keep the raw insight ID
+  available only as lower-priority debug detail if useful
+- filter candidate rows by type: all, coaching, or kudo
 - suppression reasons
 - readiness notes
 
@@ -1541,6 +1554,11 @@ npm run build
 Review:
 - Admin UI does not expose template-key editing.
 - Admin UI cannot create unknown insight IDs.
+- Policy row type is server-derived from the insight catalog, not hard-coded separately in
+  the Extend app UI.
+- Type filtering works for both policy rows and explain candidates.
+- Base-descending sort uses current editable policy `baseWeight` values and does not mutate
+  policy state.
 - Explain view is useful without becoming a full analytics dashboard.
 - If the UI grows beyond this scope, split advanced diagnostics into a later phase.
 

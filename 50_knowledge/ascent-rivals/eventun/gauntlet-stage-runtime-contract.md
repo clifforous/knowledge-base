@@ -35,9 +35,13 @@ Current Eventun behavior:
 - the AccelByte session remains public for now
 - the game client preflight result is advisory only
 - the dedicated server is the final admission, seat replacement, and kick authority
+- current Ascent Rivals dedicated-server code bypasses the Eventun admission call for pure unrestricted stages, even though this contract requires admission evaluation for every human competitor join/rejoin
 - participation is consumed only when Eventun completes the run and writes final stage placement rows
 - multi-match stages are supported through per-match acceptance and aggregate run completion
+- stage allowed-team lists are implemented as player team-membership eligibility filters
+- stage win/loss bracket fields are implemented as player summary admission filters
 - automatic retry and bracket advancement are not implemented yet
+- team standings, team stage results, and runtime entrant snapshots are not implemented yet
 - team hierarchy/designated racer priority metadata is not implemented yet
 
 ## Identity
@@ -163,6 +167,8 @@ Eventun sparse admission rows are audit/cache records. They are not a participan
 
 The dedicated server should call `CheckGauntletStageRunAdmission` for every human competitor join or rejoin, including pure open stages. Open stages do not require a restricted eligibility lookup, but the admission call still validates run/session/phase, applies already-completed-stage rules, and records the admission evaluation.
 
+Current implementation gap: `UHGPlayerLifecycleServerSubsystem::BeginGauntletStageAdmission` returns to the normal join path without calling Eventun when the claim reports `allow_any_human_player=true` and `requires_restricted_admission=false`. Until that fast path is removed or the contract is deliberately changed, pure unrestricted joins bypass Eventun's already-completed-stage check and sparse admission audit row.
+
 Stage admission policy fields:
 
 - `overflow_policy`: `reject_new` or `replace_lowest_prestart`
@@ -170,6 +176,8 @@ Stage admission policy fields:
 - `roster_lock_point`: currently `match_start`
 
 The DS owns capacity, replacement, and kick behavior. Eventun returns policy inputs and audit state.
+
+Current implementation gap: reviewed Eventun and Ascent Rivals admission/join paths do not yet enforce `players_per_team` or `team_member_rank`. Treat those fields as configured policy intent until explicit runtime enforcement is added and verified.
 
 ## Join Mode Behavior
 
@@ -181,6 +189,8 @@ If the stage is open and has no team, group, stage-win, or stage-loss restrictio
 - Eventun should return `allowed=true`, `reason=joinable` when the run/session/phase checks pass
 - the DS admits players first come until full
 - the DS still owns capacity and start readiness
+
+The reviewed Ascent Rivals implementation does not yet satisfy the first bullet because it short-circuits unrestricted admission locally.
 
 ### Qualification modes
 
@@ -198,6 +208,14 @@ For team-scoped stages:
 - Eventun validates player qualification and team membership/scope
 - Eventun returns `team_id` and qualification context
 - the DS applies the current team priority policy
+
+Current limit: Eventun does not compute team qualification, team standings, ordered team-member candidate lists, or team stage winners. `allowed_teams` restricts which current team members may pass admission. `players_per_team` is configured policy intent, not an Eventun-enforced stage roster, and current Ascent Rivals join handling does not appear to enforce it either.
+
+### Bracket-shaped filters
+
+Current bracket support is limited to required stage win/loss filters on the stage. Eventun compares those requirements to the player's gauntlet-wide status during admission.
+
+This is not bracket progression. Eventun does not yet materialize seeds, round pairings, round entrants, winner/loser paths, or team bracket state.
 
 ### Invite-only
 
@@ -221,6 +239,7 @@ For invite-only stages:
 - Reject denied players using the returned reason.
 - For allowed players, apply DS capacity and replacement rules.
 - Use stage `overflow_policy`, `admission_priority_rule`, `roster_lock_point`, Eventun `priority_score`, and returned team context as policy input.
+- Add explicit per-team cap and team-rank behavior before relying on `players_per_team` or `team_member_rank` in competitive team stages.
 - Do not count claim, join, or admission as participation.
 - Do not include players rejected or kicked before a normally completed match in final standings.
 - Do include every human participant in a normally completed match, including disconnected/DNF players.
@@ -320,4 +339,6 @@ Known follow-up work:
 - reconnect/reserved-seat game-server lifecycle work
 - richer admission modes for reconnect, replacement, spectator, and shoutcaster joins
 - bracket advancement and progression materialization
+- team standings and team-stage result materialization
+- runtime entrant snapshot tables for resolved player/team fields
 - team hierarchy/designated-racer priority metadata

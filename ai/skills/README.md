@@ -25,4 +25,17 @@ Rules:
 - Use `agents/openai.yaml` only for UI metadata.
 - Add scripts only when a workflow is repetitive, fragile, and explicitly worth automating.
 - If a skill needs a script, document the runtime requirement in the skill and keep the Markdown workflow useful without the script.
-- For Ascent Rivals Unreal work, prefer existing Unreal Editor, Unreal MCP, C++, Blueprint, commandlet, or project tooling paths over extra developer-machine dependencies.
+- For project-specific work, prefer existing project/editor/build/tooling paths over extra developer-machine dependencies.
+
+## Skill Feedback
+
+Project skills should invite concise feedback when actual use shows the skill is incomplete, slow, ambiguous, or misaligned with the user's request.
+
+Useful feedback covers:
+- output quality problems
+- performance or tooling bottlenecks
+- missing evidence paths or helper snippets
+- prompt-routing mismatch
+- unclear approval or mutation boundaries
+
+Keep feedback actionable and durable. Do not add generic praise, conversation-specific notes, or one-off transient observations to skill files.
