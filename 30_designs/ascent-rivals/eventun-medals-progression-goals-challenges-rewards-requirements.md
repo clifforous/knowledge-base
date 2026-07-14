@@ -2,6 +2,7 @@
 
 Status: Requirements draft
 Date: 2026-05-22
+Foundation alignment: 2026-07-13
 Primary repository: `github.com/ikigai-github/eventun`
 Related UI repository: `github.com/ikigai-github/ascentun`
 
@@ -37,7 +38,7 @@ This table separates V1 solution-design scope from future intent. Implementation
 | Claimable reward visibility | Private by default; low sensitivity if exposed later |
 | Battle Pass XP rewards through AccelByte Season Pass | V1 design requirement |
 | Achievement gallery/profile presentation, achievement images, platform achievements, titles, limited-supply rewards, challenge rerolls, segmented challenge pools, prerequisite-gated achievements, repeatable achievements, hidden achievements | Deferred or future expansion |
-| Dedicated admin UI and AccelByte Extend App UI | Deferred product surface; not required for initial operation |
+| AccelByte Extend App UI administration | Existing operator surface; continue progression configuration there rather than adding it to the interim Ascentun website |
 | Presentation asset storage and delivery | Solution scope |
 
 Post-V1 review items are collected in `30_designs/ascent-rivals/eventun-progression-next-phase-ideation-notes.md`.
@@ -46,16 +47,16 @@ Post-V1 review items are collected in `30_designs/ascent-rivals/eventun-progress
 
 Eventun currently:
 
-- accepts trusted server gameplay events through `ServerService.Event`
+- accepts complete identified matches from player/local and dedicated-server producers through shared `ClientService.IngestMatch`, deriving source provenance from the verified actor
 - stores `PlayerKill`, `PlayerDied`, `PlayerMatchEnd`, `PlayerHeatStart`, `PlayerHeatEnd`, lap, checkpoint, and related runtime events
 - records kill payload fields such as `method`, `weaponItemId`, victim data, speed, distance, and placement context
 - records match and heat summary stats such as kills, deaths, crashes, credits, obelisks, placement, podium finish, lap times, circuit points, and finish time
 - derives current player career and course stats from stored events
 - uses SQL functions, views, and materialized views for several derived stats surfaces today, including career overview, recommendation metrics, best-lap/best-finish rankings, and gauntlet standings
 - currently uses Eventun course data such as default lap counts to decide whether some stats and records are comparable, but that data is copied from the game client and can become stale
-- does not yet own a durable medal, achievement, mastery, challenge, reward-claim, or notification/read-state model
+- owns progression definitions, published goal and challenge snapshots, player progress/completion, and reward ledgers, but has not yet moved progression workers and counters to the new narrow facts
 
-Existing Eventun gameplay event identity is sufficient for V1 progression facts. The combination of session id, match number, heat number, event type, and timestamp is guaranteed unique for persisted gameplay event rows; player id and event payload provide player-scoped counting context. The solution design should not introduce separate occurrence ids, heat ids, or match ids solely for medals, achievements, masteries, challenges, or rewards. Events such as `PlayerKill` do not need a separate occurrence identity when the downstream requirement is counting qualifying rows. Medal progression does not require one Eventun row per medal occurrence; per-player heat summary counts are sufficient for V1.
+The foundation now supplies stable batch and event UUIDs, authoritative producer sequence, canonical hashing, actor-derived source provenance, and idempotent acceptance. Progression facts retain the source event identity and must not treat timestamps or payload fields as unique identities. This does not require one Eventun row per medal occurrence: per-player heat summary counts remain sufficient for V1 medal progression.
 
 Ascentun currently:
 
@@ -378,7 +379,7 @@ Decision:
 8. Which aggregate functions, views, records, medals, achievements, masteries, challenges, and leaderboards count regulation versus special-case heats should be decided during solution design.
 9. The solution design should decide whether retroactive completion runs from derived event facts, maintained counters, or another model.
 10. The solution design should define the historical range available for retroactive evaluation, including how archived or partitioned event history is handled.
-11. V1 progression should use existing Eventun gameplay event identity and should not require new occurrence ids or surrogate heat or match ids to count, join, or evaluate gameplay facts.
+11. V1 progression should use the foundation's stable batch/event identities and retained source-event identity on facts. It should not add a second progression-only occurrence id or one row per medal occurrence.
 
 ### Notification and Claim Requirements
 
@@ -446,12 +447,12 @@ This flow is non-binding and should be validated during solution design:
 ## Assumptions
 
 - Player-facing claimable rewards should use Eventun-owned claimable reward records. Automatically fulfilled rewards still need Eventun-owned history for audit and reconciliation.
-- The game server best-effort sends each completed match event batch once. The V1 requirements do not require duplicate match-batch or event-batch protection unless a later delivery contract adds retry behavior.
-- Existing persisted event identity is sufficient for V1: session id, match number, heat number, event type, and timestamp identify a gameplay event row; player id and event payload are counting context. New occurrence ids, heat ids, or match ids should only be added if a future delivery, deduplication, or gameplay requirement creates a concrete need.
+- The game server best-effort sends each completed match once and does not automatically retry. Eventun nevertheless applies stable identities, canonical hashing, and equal-content idempotent acceptance so a future bounded retry does not require another contract change.
+- Progression contributions use the stable source event identity, metric, player, source provenance, and bounded dimensions. Timestamps remain occurrence data rather than identity.
 - Medals are useful as normalized progression events even when a raw Eventun event could also derive the same fact.
 - A "double kill" or similar compound medal will be generated by game/runtime logic.
 - ARC, skins, and Battle Pass XP are expected V1 reward examples and should be AccelByte-backed where possible. Titles are a future reward-type example and may be AccelByte-backed if/when implemented.
-- Item identity details are solution scope. The current expectation is that weapon and part progression will likely use SKU and not AccelByte item ids.
+- Item identity details remain solution scope. The current game payload and narrow facts preserve item IDs from the sole PlayerHeatStart loadout snapshot and weapon events; item ID versus SKU conversion is deferred rather than inferred during projection.
 - A player-specific read/inbox state may be useful later if the game needs reliable post-match "new completion" notifications, but it is not a V1 requirement.
 - Raw AccelByte entitlements do not appear to support generic player-side `UNCLAIMED` state. AccelByte Challenge rewards do, but only inside the Challenge service model.
 
@@ -460,7 +461,7 @@ This flow is non-binding and should be validated during solution design:
 1. The game runtime owns medal-rule logic; Eventun should not derive medal eligibility.
 2. Medals are awarded during heats and sent to Eventun in the final successful match event batch.
 3. Medal events should preserve primary medal context for attached augment medals.
-4. Existing gameplay event identity is sufficient for V1 progression; new occurrence ids, heat ids, or match ids are not required unless a future delivery or gameplay requirement creates a concrete need.
+4. Foundation batch/event identities are authoritative for V1 progression contributions; no second progression-only occurrence identity or per-medal event row is required.
 5. Eventun should preserve authoritative gameplay facts needed for progression; physical storage and derived-data strategy are solution scope.
 6. V1 solution design scope includes medals, achievements, masteries, rewards, daily/weekly/monthly challenges, and seasonal challenges; implementation may still be phased.
 7. Heat-level part usage is the required mastery primitive because players choose parts per heat; match-level usage is optional if easy to derive.

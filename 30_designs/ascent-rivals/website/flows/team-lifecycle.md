@@ -3,6 +3,8 @@
 Date: 2026-04-21
 Status: Draft
 
+Foundation supersession (2026-07-13): the `token_gated` membership mode and every wallet/token eligibility flow in this draft are retired. Current team membership modes are `open`, `request`, and `invite`; existing gated teams transition to invite-only until a provider-neutral asset-source contract is separately designed.
+
 ## Related
 - [[authentication]]
 - [[wallet-linking]]

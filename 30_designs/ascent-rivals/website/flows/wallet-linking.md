@@ -3,6 +3,8 @@
 Date: 2026-04-14
 Status: Draft
 
+Foundation supersession (2026-07-13): wallet linking may remain relevant to prizes and other wallet features, but every token-gated team-join branch in this draft is retired. Eventun removed the TapTools-shaped token catalog and team-gate API; do not use team membership as a wallet-linking entry point unless a provider-neutral replacement is separately designed.
+
 ## Related
 - [[authentication]]
 - [[../unified-design]]

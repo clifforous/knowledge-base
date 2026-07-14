@@ -3,6 +3,8 @@
 Date: 2026-04-13
 Status: Draft
 
+Foundation supersession (2026-07-13): `token_gated` filters and indicators in this draft are retired. Eventun removed the supporting catalog, schema, and API surface; the current directory contract supports only `open`, `request`, and `invite` membership modes.
+
 ## Related
 - [[../unified-design]]
 - [[../information-architecture]]

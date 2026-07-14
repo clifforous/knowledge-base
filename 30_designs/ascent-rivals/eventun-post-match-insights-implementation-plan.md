@@ -11,7 +11,9 @@
 ---
 
 ## Status
-Implementation plan draft for review.
+Implemented through Phase 7. The unchecked task markers below are retained as the original
+execution checklist and are not a reliable completion ledger. Phase 8 is the current approved
+game-client follow-on; integrated manual validation remains outstanding.
 
 ## Source Documents
 - Solution design: `30_designs/ascent-rivals/eventun-post-match-insights-solution-design.md`
@@ -55,6 +57,7 @@ Do not mix backend and game-client commits unless the repository owner explicitl
 | 5. Unreal client integration | Game client coder | Client requests insights, retries pending states, localizes/render slots, and submits new heat-start telemetry. |
 | 6. End-to-end review and legacy cleanup | Backend + client leads | E2E validation, dead-code cleanup, legacy recommendation removal, final simplification pass. |
 | 7. Course metadata sync and build-shape insights | Eventun coder, then client review if needed | Eventun syncs course definition context and replaces shallow death/crash/loadout-category coaching with specific Speed, Agility, and Combat insights where supported. |
+| 8. Automatic pre-summary presentation | Game client coder | Ready insights appear before the normal match summary; every non-ready outcome advances directly to summary. |
 
 ## File Map
 
@@ -74,7 +77,7 @@ Do not mix backend and game-client commits unless the repository owner explicitl
 - Modify generated files after codegen:
   - `gen/ikigai/eventun/v1/*`
   - `gen/0_eventun.swagger.json`
-- Create: `migration/d5_insight_policy.sql`
+- Create: `migration/d2_insight_policy.sql`
   - Create `insight_policy`.
   - Create `insight_policy_audit`.
   - Seed conservative policy rows.
@@ -704,7 +707,7 @@ Expected at this point:
 ### Task 1.5: Add Policy Schema
 
 **Files:**
-- Create: `migration/d5_insight_policy.sql`
+- Create: `migration/d2_insight_policy.sql`
 
 - [ ] **Step 1.5.1: Create policy table**
 
@@ -974,7 +977,7 @@ Tests:
 - every catalog entry has non-empty key/title/body.
 - no duplicate string key.
 - every default-enabled entry has a supported mode.
-- every policy seed string in `migration/d5_insight_policy.sql` maps to a catalog entry.
+- every policy seed string in `migration/d2_insight_policy.sql` maps to a catalog entry.
 
 Run:
 
@@ -1387,7 +1390,7 @@ Acceptance check:
 
 **Files:**
 - Modify: `internal/eventun/insight_candidates.go`
-- Modify: `migration/d5_insight_policy.sql`
+- Modify: `migration/d2_insight_policy.sql`
 - Test: `internal/eventun/insight_scoring_test.go`
 
 - [ ] **Step 3.3.1: Enable `unspent_arc` only with new fields**
@@ -2113,6 +2116,136 @@ Cleanup checklist:
 - avoid reimplementing Unreal resolved-stat formulas in Eventun
 - update this plan and the solution design if implementation constraints change the design
 
+## Phase 8: Automatic Pre-Summary Presentation
+
+Reviewable outcome:
+- A completed final match shows a ready insight surface before the normal match summary.
+- `NO_INSIGHT`, `UNAVAILABLE`, `FAILED`, client timeout, transport failure, rejected or
+  missing submission state, and malformed ready responses advance directly to match summary.
+- Non-final heat summaries keep their current behavior.
+
+### Task 8.1: Centralize The Final Summary Transition
+
+- [ ] **Step 8.1.1: Add one Insights-or-summary controller entry point**
+
+Add a controller method such as `GoToPostMatchInsightsOrSummary(bool bAllowBack)` and use it
+only for final-match transitions:
+
+- the `UHGMatchCompleteMessage` timer/direct path used when no player-results route replaces it
+- `UHGPlayerMatchResultsRoute::GoToMatchSummary()` in dedicated-server matches
+
+Keep non-final `UHGHeatSummaryMessage` handling on `GoToMatchSummary(false)`.
+
+The dedicated-server message order is significant: `MatchComplete` schedules the initial
+transition, then `UHGStatsServerSubsystem::OnMatchFinished` sends `PlayerMatchResults`; both
+currently use `ShowResultsTimer`, so the later player-results callback replaces the direct
+summary callback. The normal server path is therefore montage, player results, Insights when
+ready, then match summary. Standalone/time-trial paths may go directly from the finish delay to
+the Insights-or-summary decision.
+
+- [ ] **Step 8.1.2: Preserve route-stack semantics**
+
+When leaving Insights, remove the Insights route before pushing the normal match summary. Do
+not leave Insights beneath match summary. Do not blindly replace the active route either:
+dedicated-server flow should retain `UHGPlayerMatchResultsRoute` beneath match summary when
+`bAllowBack` is true.
+
+Guard repeated input so one final match cannot push duplicate Insights or summary routes.
+
+### Task 8.2: Prefetch From Accepted Submission
+
+- [ ] **Step 8.2.1: Retain exact submitted-match identity**
+
+When `UHGMatchEventunSubmissionMessage` arrives, retain its exact `SessionId`, `MatchId`, and
+accepted state for the current completed match. Do not rebuild the request identity only from
+the session entity's current match index; session state can advance independently of the
+completed submission being presented.
+
+Reset this retained state at the next match boundary or when finished-screen state is cleared.
+
+- [ ] **Step 8.2.2: Start insight prefetch on acceptance**
+
+When submission is accepted, call `SyncPostMatchInsights` with the correct post-match versus
+time-trial endpoint. This lets Eventun ingestion/retry latency overlap the montage and player
+results screen.
+
+At the final transition:
+
+- rejected or missing submission state goes directly to match summary
+- a cached `READY` response can render immediately
+- cached `PENDING` or an unresolved accepted request may use the existing bounded retry window
+- cached terminal non-ready states go directly to match summary
+
+Do not add a second independent retry state machine in the player controller.
+
+### Task 8.3: Add Automatic Route Behavior
+
+- [ ] **Step 8.3.1: Pass explicit automatic-flow parameters**
+
+Pass route parameters for automatic entry and the existing `bAllowBack` summary behavior. Move
+the current session/match/course/finish/placement parameter construction out of
+`UHGMatchSummaryRoute::ViewInsights()` so the final-flow controller owns it once.
+
+- [ ] **Step 8.3.2: Auto-advance every non-ready outcome**
+
+In automatic mode, route all of the following through one `ContinueToMatchSummary` helper:
+
+- backend `NO_INSIGHT`, `UNAVAILABLE`, or `FAILED`
+- client request timeout or transport/API failure after the bounded retry policy
+- missing route/request context
+- `READY` without a valid primary insight
+
+The existing `EmptyInsightsWindowPanel` may remain only for an explicitly retained manual or
+debug entry. If no such entry remains, remove the unused empty-state branch during cleanup.
+
+- [ ] **Step 8.3.3: Continue after a ready insight**
+
+Bind a Continue action that removes the Insights route and asks
+`AHGPlayerController_Race` to open the normal match summary with the preserved `bAllowBack`
+value. Treat Back the same as Continue in automatic mode so the player cannot loop back into
+the pre-summary gate.
+
+### Task 8.4: Blueprint And Legacy Entry Cleanup
+
+- [ ] **Step 8.4.1: Update `PostMatchRecommendation_WBP`**
+
+Required Blueprint work:
+
+- add a visible `UHGTextButton` named `ContinueButton`
+- bind it to the new C++ `BindWidget` property
+- use player-facing text `Continue` or `Match Summary`
+- make it the desired focus target for keyboard/gamepad navigation
+- verify one primary with zero secondary cards still leaves the action reachable
+
+No new route asset or route configuration is required.
+
+- [ ] **Step 8.4.2: Remove manual match-summary entry**
+
+Remove the obsolete `RecommendationsButton` from `MatchSummaryRoute_WBP` and remove its C++
+binding, click handler, submission-state subscription, and `ViewInsights()` parameter builder.
+Backward compatibility for the manual entry flow is not required.
+
+The remaining `PostMatchRecommendation` native class/asset/route-key names are documented
+technical debt. Rename them only if the Unreal asset/class migration can be performed cleanly
+in the same change; the rename is not required for the behavior change.
+
+### Task 8.5: Review And Validation
+
+The game-client coder owns compilation and runtime validation. Required evidence:
+
+- dedicated-server custom match with bots: player results, ready Insights, Continue, summary
+- dedicated-server no-insight response: player results then summary without empty Insights
+- standalone/time trial ready response: ready Insights then summary
+- standalone/time trial no-insight/timeout: summary without empty Insights
+- Eventun submission rejected or absent: summary without an insight request loop
+- backend transport failure: bounded wait then summary
+- non-final heat: existing heat summary only
+- repeated Continue/Back input: no duplicate routes
+- summary Back behavior still returns to player results where previously allowed
+
+After validation, remove duplicate flow helpers and any manual-entry-only state that no longer
+has a caller.
+
 ## Known Implementation Risks
 - Proto enum names may need minor adjustment to match existing generated SDK naming conventions.
 - Unreal SDK generation can create wider diffs than hand-written code; review generated files separately.
@@ -2128,7 +2261,7 @@ Cleanup checklist:
 
 ## Final Handoff
 Plan complete when:
-- Phase 1-7 tasks are checked or explicitly deferred with a documented reason.
+- Phase 1-8 outcomes are implemented or explicitly deferred with a documented reason.
 - Backend tests, app build, and Unreal build have been run for the final integrated state.
 - Reviewers have completed the final implementation review and simplification pass.
 - Any final design deltas are reflected in the Knowledge Base.

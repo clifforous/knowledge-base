@@ -1,17 +1,19 @@
 # Post-Match Insights Rollout Notes
 
-Last updated: 2026-06-30
+Last updated: 2026-07-13
 
 ## Implementation Deltas
 
 - Public legacy recommendation RPCs and `RunRecommendation*` models have been removed from the Eventun client API. The public flow uses `GetPostMatchInsights` and `GetTimeTrialInsights`.
 - Internal Go and SQL snapshot helpers still use `recommendation_*` names. They are internal insight input loaders retained for migration stability until a dedicated DB/function rename pass.
-- Insight policy schema lives in `migration/a0_create_init.sql`. Durable default policy rows live in `migration/d5_insight_policy.sql`. One-time transition SQL for already-deployed environments lives in `migration/temp_migration.sql`.
+- Insight policy schema lives in `migration/a0_create_init.sql`. Durable default policy rows live in `migration/d2_insight_policy.sql`. The former frozen delta was deployed and removed on 2026-07-13; pending one-time production transitions use `migration/migration.sql` against the current deployed baseline.
 - Admin tuning is the normal product path for policy changes. Direct DB edits are trusted-operator escape hatches.
 - Admin explain includes selected and rejected candidates, score components, policy-disabled candidates, and readiness notes. Player endpoints never return rejected candidates or raw scores.
 - Unexpected evaluator failures after a valid run context return `FAILED` with `EVALUATION_FAILED`. Data-loading failures still return transport errors.
 - Economy insights compare against the current-match high-CP/top-placement cohort and use `CURRENT_MATCH_HIGH_CP_COHORT` as the benchmark type.
 - Confidence and salience are separate decisions. Confidence gates decide whether a candidate is credible; priority/salience ranks credible candidates and applies only a low floor to avoid junk filler.
+- AccelByte `Courses` game-record data is authoritative course context. Eventun mirrors it as a transactional cache, upserts current rows, and marks absent courses inactive rather than deleting rows that may be referenced by historical data.
+- Speed, Agility, Combat, and efficient-low-loadout insight IDs are implemented and seeded disabled/conservatively until explain output and runtime data justify enabling them.
 
 ## QA Scenario Matrix
 
@@ -32,7 +34,9 @@ Last updated: 2026-06-30
 
 ## Client Contract Checks
 
-- The client enters the insights route through the manual Insights button, not automatic routing.
+- The currently submitted client enters the insights route through the manual Insights button.
+- The approved next client change moves Insights before the normal match summary. It prefetches after accepted submission, shows ready insight content, and advances directly to summary for every non-ready outcome.
+- Dedicated-server flow inserts Insights after player results; standalone/time-trial flow may enter the same decision directly after the finish delay. Non-final heat summaries are unchanged.
 - The client renders `primary_insight` as primary and up to the first two `secondary_insights` as secondary. It must not promote secondary insights.
 - Client timeout or network/API failure is distinct from backend `NO_INSIGHT`.
 - Player-facing copy is client-localized from insight IDs/template keys. Eventun returns keys and metrics, not rendered player-facing text.

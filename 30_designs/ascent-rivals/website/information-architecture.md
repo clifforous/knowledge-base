@@ -3,6 +3,8 @@
 Date: 2026-04-13
 Status: Draft
 
+Foundation supersession (2026-07-13): references to `token_gated` teams, team token-gate notices, or token-gate management are historical and must not be implemented from this draft. Eventun removed the TapTools-shaped token catalog, gate relations, and APIs; existing gated teams transition to invite-only until a provider-neutral asset-source contract is separately designed.
+
 ## Related
 - [[unified-design]]
 - [[design-doc-roadmap]]

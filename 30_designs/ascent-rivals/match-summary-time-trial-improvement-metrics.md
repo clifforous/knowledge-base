@@ -289,7 +289,7 @@ This section is for the engineering team, not for mock design decisions.
 
 ### What is missing
 
-- Run identity on best-finish and best-lap materialized views
+- Winning source batch/event identity on the incremental best-finish and best-lap record projections that replace the current materialized views
 - A derived summary that attributes post-change performance to recent part changes over the following heat or run
 
 ### Recommendation confidence rules

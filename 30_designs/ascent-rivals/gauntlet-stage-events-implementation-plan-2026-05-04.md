@@ -14,6 +14,8 @@
 
 Server implementation pass completed locally on 2026-05-06. The first server pass follows the reviewed ownership model: Eventun API coordination lives in `UHGEventunServerSubsystem`, admission and stage-long disconnected reservations live in `UHGPlayerLifecycleServerSubsystem`, and match/lobby orchestration stays in `UHGServerScript` plus race context. This checkpoint has static validation only; runtime validation still needs to happen in a follow-up pass.
 
+Foundation supersession note (2026-07-13): the telemetry retry work in Task 3 is historical and must not be implemented as written. The game now records `ActiveMatchRequest` as one identified MatchStart/MatchEnd envelope and submits it through shared `ClientService.IngestMatch`; it clears the request before asynchronous dispatch and remains best-effort/at-most-once. Eventun already provides stable batch/event identities and idempotent equal-content acceptance, but enabling bounded sender retry is a separate deployment decision. The four gauntlet stage-run operations now live on ServerService, while ingestion is not duplicated there.
+
 Current implementation checkpoint:
 
 - Stage-run session settings are parsed into `FHGGauntletConfig`: `StageRunId`, `RunNumber`, `StageRunShardKey`, `OverflowPolicy`, `AdmissionPriorityRule`, and `RosterLockPoint`.
@@ -524,29 +526,9 @@ Verification:
 - [ ] Confirm wrappers use `GetServerScriptChecked<UHGServerScript>().GetSessionId()` for the body `SessionId`.
 - [ ] Confirm ordinary non-stage sessions do not call stage-run APIs.
 
-### Task 3: Harden Active Match Event Submission
+### Task 3: Harden Active Match Event Submission (Historical; Superseded)
 
-**Files:**
-
-- Modify: `Source/AscentRivals/Public/Server/Subsystems/HGEventunServerSubsystem.h`
-- Modify: `Source/AscentRivals/Private/Server/Subsystems/HGEventunServerSubsystem.cpp`
-
-Steps:
-
-- [ ] Add a pending active-match request map keyed by match id.
-- [ ] Move current match events into the pending map before submit.
-- [ ] Do not call `Clear()` for that match until Eventun returns `Accepted == true`.
-- [ ] On transport error, leave the pending request intact and notify match submission failure.
-- [ ] On `Accepted == false`, leave the pending request intact and notify match submission failure.
-- [ ] Add `RetryPendingActiveMatchEvents(int32 MatchId)` or make `SubmitActiveMatchEvents()` retry pending events for the current match before reading `ActiveRequest`.
-- [ ] Keep ordinary `SubmitAll()` behavior separate from stage-run match submit behavior.
-- [ ] Add a delegate or callback path so race context can continue only after accepted submit.
-
-Verification:
-
-- [ ] Simulate a failed submit path and confirm the pending request still contains the match events.
-- [ ] Simulate accepted submit and confirm only the accepted match request is cleared.
-- [ ] Confirm existing `UHGMatchEventunSubmissionMessage` still broadcasts for client recommendation/stat UI.
+Do not execute the former pending-request/retry checklist. The foundation implementation now records stable batch/event identities in one `ActiveMatchRequest`, validates a complete MatchStart/MatchEnd envelope, clears it before asynchronous `ClientService.IngestMatch` dispatch, and reports accepted or failed state through the existing messages. Eventun provides equal-content idempotent acceptance, but the producer remains at-most-once until bounded retry is separately designed and approved.
 
 ### Task 4: Move Stage Admission Policy Into Lifecycle
 

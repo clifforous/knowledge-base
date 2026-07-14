@@ -9,10 +9,15 @@
 - [[eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]]
 - [[website]]
 - [[../../30_designs/ascent-rivals/gauntlet-finals-and-tournament-modes-design-review|gauntlet-finals-and-tournament-modes-design-review]]
+- [[../../30_designs/ascent-rivals/teams-solution-design|teams-solution-design]]
+- [[../../30_designs/ascent-rivals/team-experience-and-progression-solution-design|team-experience-and-progression-solution-design]]
+- [[../../30_designs/ascent-rivals/team-gauntlets-and-brackets-solution-design|team-gauntlets-and-brackets-solution-design]]
+- [[../../10_research/ascent-rivals/eventun-team-postgresql-derivation-review|eventun-team-postgresql-derivation-review]]
+- [[../../10_research/ascent-rivals/eventun-foundation-api-simplification-review|eventun-foundation-api-simplification-review]]
 
 ## Review Snapshot
 
-Sources reviewed on 2026-07-09:
+Product/team sources were reviewed through 2026-07-10. Eventun and Ascent Rivals foundation changes are incorporated through 2026-07-13:
 
 - `github.com/ikigai-github/eventun` at `34b4286`
 - `github.com/ikigai-github/ascentun` at `deca852`
@@ -28,9 +33,10 @@ Eventun owns team identity and roster state:
 
 - `team` stores name, tag, membership mode, and colors.
 - `team_media` stores team media.
-- `team_gate_token` stores token-gate policy ids.
 - `team_player` stores one team membership per player, a role-like `designation`, and optional manual `rank`.
 - `team_join_request` and `team_invite_request` store pending player-side requests and manager-side invites.
+
+The former `token_meta`, `team_gate_token`, TapTools integration, token registration/sync APIs, and `token_gated` membership mode were removed during the foundation reset. Existing gated teams transition to invite-only. Token gating is unsupported until a provider-neutral asset-source contract is designed.
 
 Ascentun exposes the current team lifecycle:
 
@@ -39,7 +45,6 @@ Ascentun exposes the current team lifecycle:
 - open join
 - request-to-join
 - invite-only acceptance through the team page flow
-- token-gated join checks using linked/current wallet token policy ids
 - team management for owners, managers, and admins
 - roster role changes, manual rank edits, member removal, owner transfer, and disband
 - pending invite and pending join-request management
@@ -61,14 +66,31 @@ The proposed green teammate minimap marker is partially stubbed:
 - `DecoratePlayerIcon` currently paints the spectated racer blue and every other racer red
 - the current minimap path does not compare the local/spectated player's team index with the target player's team index, so the green color is unused
 
-The generated Eventun client specification already exposes team list/detail/create/update, membership, pending-request, designation, and rank operations. No dedicated Ascent Rivals team subsystem or team browser/management route was found in the reviewed source. The current Eventun team list API returns the full team list, so an initial small-catalog search can be client-filtered, but scalable search would need a server-side query contract.
+The generated Eventun client specification already exposes team list/detail/create/update, membership, pending-request, designation, and rank operations. `HGTeamMenu` and `HGNoTeamMenu` routes exist, but their reviewed C++ implementations are stubs, and no Eventun-backed Ascent Rivals team subsystem was found. Blueprint presentation still requires visual verification. The current Eventun team list API returns the full team list with full rosters. That contract is acceptable for the expected five-to-six-member teams in this iteration; a gamepad-first browser should precede optional text search, and payload size should be measured before later pagination work.
+
+The game client currently has two different team paths:
+
+- menu-side `UHGClientLocalPlayerSubsystem` racing-team helpers query AccelByte Groups using configuration code `racing-team` and expose legacy `Member`/`Captain` roles
+- dedicated-server registration queries Eventun `Player`, builds session team metadata, and replicates Eventun team indexes to the race client
+
+Current implication: most game-client team features need an Eventun-backed client team subsystem. The current solution design replaces the legacy AccelByte Groups path rather than synchronizing it. Session team identity is already sufficient for in-race presentation, but it is not a reusable menu-side team roster or membership cache.
 
 Existing social infrastructure can be reused, but it does not complete the proposed features by itself:
 
-- the inbox supports AccelByte persistent and transient system messages, unread state, and popup delivery; team notifications still need an event producer, routing/category rules, and action payload handling
-- party and social code can invite selected friends to the retained party; quick team-member invites still need team roster/presence data and a team-roster action path
+- `UHGChatSubsystem` queries AccelByte Chat persistent and transient system messages, marks persistent messages read, and supplies unread and popup state through `UHGSocialSubsystem`; team notifications still need an Eventun producer/outbox, routing policy, and a prototype proving typed action payloads survive the installed SDK
+- party and social code can invite selected players; a team-roster action may resolve the linked AccelByte id and call that existing path, but the current teams design does not change party behavior or friend synchronization
 
 Current implication: green teammate minimap markers are lower effort than the initial estimate, while team notifications, team activity feeds, stream links, team XP, and team-filtered leaderboards all cross backend/data-contract boundaries and should not be estimated as presentation-only work.
+
+### Game-client gauntlet and challenge support
+
+The Ascent Rivals client already has functional player-oriented Eventun integration:
+
+- `UHGGauntletSubsystem` caches gauntlets, calendar entries, standings, sponsors, and player gauntlet state.
+- The join path locates an active public AccelByte session, calls `GetGauntletStageJoinStatus`, verifies the exact stage run/session candidate, and joins through the existing session subsystem.
+- `UHGChallengesSubsystem` calls Eventun `MyActiveChallenges` and carries active assignments, progress, lanes, and reward previews into existing challenge UI models.
+
+Current implication: general player-shaped gauntlet browsing and stage entry do not need to be rebuilt before team work. Team modes instead need extensions for team standings, resolved player-owned and team-owned racer slots, roster status, mixed allocation sources, and team-specific admission reasons. Team challenges can reuse client presentation patterns, but the current Eventun progression model is player-scoped.
 
 ### Stage-level team restrictions
 
@@ -110,6 +132,7 @@ Current implication: this is not a bracket system. There is no bracket graph, no
 Current gauntlet stage runtime support is player-result based:
 
 - `gauntlet_stage_run` owns a durable run id.
+- stage-run creation currently persists run/session lifecycle state but does not resolve or persist entrant, team, representative, or slot-pool rows
 - the AccelByte `session_id` is distinct from Eventun `stage_run_id`.
 - `gauntlet_stage_run_admission` records sparse evaluated join decisions.
 - `gauntlet_stage_run_match` records accepted configured matches.
@@ -119,6 +142,20 @@ Current gauntlet stage runtime support is player-result based:
 Multi-match stages are supported. Eventun accepts each configured `match_id`, then completes the run after all required matches are accepted. Final aggregate placement is ordered by summed circuit points, best placement, placement sum, then player id.
 
 Current implication: team stage winners are not computed as teams. Final accepted stage placements are still per-player rows. A future team gauntlet needs an explicit rule for deriving team results from player results before progression or prize/accounting flows treat a team as the stage participant.
+
+### Database correctness and derivation
+
+The current PostgreSQL model has additional constraints relevant to both team progression and gauntlets:
+
+- the foundation implementation adds stable match-batch ids, event ids, producer sequence, source classification, artifact association, and idempotent acceptance while preserving source/event-type partitions
+- accepted batches now derive one current narrow match/heat/player/progression fact graph transactionally; detailed lap/checkpoint rows remain only in raw partitions, and current product reads have not yet moved to these facts
+- leaving a team deletes `team_player`, so membership at historical event time cannot be reconstructed
+- gauntlet leaderboard and qualifier materialized views still refresh hourly, are stale between refreshes, and are not a stable final-selection snapshot; the approved direction is incremental per-match qualification contributions and retained best-sequence projections followed by an immutable cutoff snapshot
+- stage admission invokes broad `gauntlet_stats` calculation and filters to one player rather than reading a resolved slot
+- `gauntlet_stage_placement` includes `stage_run_id` but its primary key is still gauntlet, stage, and player
+- progression jobs now use token-fenced two-minute leases, bounded exponential backoff, five-attempt dead-lettering, and one-at-a-time claiming; all fact application, challenge rebuilding, goal evaluation, completion, and reward-record creation serialize on the player row
+
+These are documented with source references and database recommendations in [[../../10_research/ascent-rivals/eventun-team-postgresql-derivation-review|eventun-team-postgresql-derivation-review]].
 
 ### Ascentun gauntlet authoring and display
 
@@ -159,11 +196,13 @@ The following are not implemented in the reviewed code:
 - `participant_type` or `selection_mode` stage semantics
 - `team_score_top_n`
 - `min_teams`
-- runtime entrant snapshot tables such as `gauntlet_stage_run_entry` or `gauntlet_stage_run_player`
+- concrete stage-run racer slots with player or team owners
+- mixed individual and team allocation rules
+- automatic resolution of qualification, explicit, community, sponsor, or fallback slot sources
 - ordered eligible member snapshots for team stages
 - Eventun enforcement of `players_per_team`
 - dedicated-server enforcement of `players_per_team`
-- Eventun or dedicated-server enforcement of `team_member_rank`
+- Eventun or dedicated-server enforcement of `team_player.rank`
 - Eventun computation of team stage placement or team winner
 - automatic bracket advancement
 - bracket seeding or bracket graph materialization
@@ -180,27 +219,27 @@ The following are not implemented in the reviewed code:
 
    It is a wins/losses admission filter over player summary state. Brackets still need explicit seeding, round assignment, progression, and repair/retry rules.
 
-3. Decide whether the next iteration is team invitationals, team-qualified finals, or brackets.
+3. Keep qualification sources cohesive through concrete slots.
 
-   Team invitationals can build on current allowed-team admission. Team-qualified finals require team standings and a team-result model. Brackets should wait for explicit entrant snapshots or they will compound the current filter-based limitations.
+   Qualification or explicit assignment should choose a player or team slot owner, then expand each owner into a configured number of racer slots. “Wildcard” remains a label or policy rather than a separate entrant type.
 
-4. Decide where `players_per_team` is enforced.
+4. Enforce `players_per_team` through resolved slots and dedicated-server occupancy.
 
-   Current code stores the field but does not enforce it in the reviewed admission or join paths. If Eventun makes advisory team-cap decisions, the admission API needs current lobby composition or a stage-run roster snapshot. If the dedicated server owns enforcement, it needs explicit per-team occupancy and replacement logic rather than only overall lobby capacity.
+   Eventun should resolve the number of owned slots and answer indexed eligibility/priority reads. The dedicated server should serialize live provisional occupancy, replace lower-priority members where configured, and submit the actual roster to Eventun at lock.
 
 5. Decide how team results are represented.
 
    Current accepted placements are per-player. Team gauntlets need a durable team result or a documented derivation from per-player rows before standings, progression, prizes, and accounting can safely use team outcomes.
 
-6. Add runtime entrant snapshots before serious brackets.
+6. Add stage-run-scoped slots and results before serious brackets.
 
-   The existing design review recommendation still matches the code gap: materialize resolved player/team entrants per run, then make the dedicated server enforce the resolved run snapshot.
+   Materialize player-owned and team-owned racer slots per run, persist the locked occupants, and change accepted result uniqueness to include `stage_run_id` before adding an explicit bracket graph.
 
 ## Recommended Near-Term Order
 
-1. Expose explicit stage invited-team authoring in Ascentun if the next mode is team invitational.
-2. Add visible stage detail fields for allowed teams, `players_per_team`, and admission policy so operators can verify what they authored.
-3. Implement and verify per-team stage racer cap behavior before relying on fixed team slot counts.
-4. Add team standings and a team score aggregation rule before team-qualified finals.
-5. Add runtime entrant snapshots before bracket progression or team-qualified run enforcement.
-6. Add team result rows or a clearly documented team-result derivation before prizes or progression depend on team outcomes.
+1. Use the implemented compact complete-match facts as inputs; add membership validity intervals and stage-run-scoped result identity.
+2. Add incremental qualification contributions, retained best-sequence projections, and configurable top-N team standings.
+3. Resolve allocation rules into concrete player-owned and team-owned racer slots.
+4. Add indexed admission plus dedicated-server provisional occupancy, replacement, and roster lock.
+5. Add owner-level result rules before enabling more than one racer per team.
+6. Add explicit bracket matches, positions, stage-run shards, advancement, and repair.

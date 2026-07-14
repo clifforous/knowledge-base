@@ -88,7 +88,7 @@ The dedicated server should not infer gauntlet stage identity from session name 
 
 ### Dedicated server / privileged APIs
 
-The dedicated server uses AdminService with its trusted token:
+The dedicated server uses ServerService with its subjectless token and Eventun Server permission:
 
 - `ClaimGauntletStageRun(stage_run_id, session_id)`
 - `CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)`
@@ -117,11 +117,15 @@ This endpoint uses the logged-in player. It returns advisory joinability, reason
 
 ### Event ingest
 
-The dedicated server should continue using the existing trusted telemetry path:
+The dedicated server submits the complete match through the shared operation:
 
-- `ServerService.Event`
+- `ClientService.IngestMatch`
 
-Match acceptance derives standings from `match_summary(session_id, match_id)`, so the trusted server event stream must contain the expected `MatchStart` and `PlayerMatchEnd` data before each match is accepted.
+The generated GameServer surface selects this ClientService operation; Eventun authorizes the subjectless caller with Server `CREATE` and derives `source_kind = server`. There is no duplicate ServerService ingest operation.
+
+Match acceptance derives standings from `match_summary(session_id, match_id)`, so the accepted server-source envelope must contain the expected `MatchStart` and `PlayerMatchEnd` data before each match is accepted. The producer records stable batch/event identities and sequence but remains best-effort/at-most-once; automatic match retransmission is separate deferred work.
+
+Foundation cutover remains coordinated: current `match_summary` and other product reads still use the legacy event relations. The new producer/ingest path is not independently deployable until F13-F15 move progression and serving reads, convert retained history, compare outputs/query plans, and remove the legacy dependency.
 
 For multi-match stages, each match has its own `session_id + match_id` event and replay identity. Eventun stores accepted stage-run match rows separately from final aggregate placement rows.
 
@@ -243,7 +247,7 @@ For invite-only stages:
 - Do not count claim, join, or admission as participation.
 - Do not include players rejected or kicked before a normally completed match in final standings.
 - Do include every human participant in a normally completed match, including disconnected/DNF players.
-- Post trusted server events through `ServerService.Event`.
+- Post the complete trusted server match through shared `ClientService.IngestMatch`.
 - After each normally completed stage match, call `AcceptGauntletStageRunMatch(stage_run_id, session_id, match_id)` after required events have been posted.
 - When the response reports `ready_to_complete=true`, call `CompleteGauntletStageRun(stage_run_id, session_id)`.
 - Retry match acceptance and run completion with the same inputs after transient failures; both calls are intended to be idempotent for the same accepted facts.

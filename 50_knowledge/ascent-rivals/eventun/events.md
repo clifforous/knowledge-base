@@ -13,9 +13,10 @@ This note documents the event types currently tracked by Eventun and the current
 
 ## Sources
 - `github.com/ikigai-github/eventun/blob/main/migration/a0_create_init.sql`
-- `github.com/ikigai-github/eventun/blob/main/internal/eventun/events.go`
-- `github.com/ikigai-github/eventun/blob/main/migration/c2_func_match.sql`
-- `github.com/ikigai-github/eventun/blob/main/internal/eventun/purge_replays.go`
+- `github.com/ikigai-github/eventun/blob/main/event/service.go`
+- `github.com/ikigai-github/eventun/blob/main/event/validation.go`
+- `github.com/ikigai-github/eventun/blob/main/migration/c9_func_match_facts.sql`
+- `github.com/ikigai-github/eventun/blob/main/docs/identified-match-ingestion.md`
 - Ascent Rivals source: `Source/AscentRivals/Public/Server/Subsystems/HGEventunServerSubsystem.h`
 - Ascent Rivals source: `Source/AscentRivals/Private/Server/Subsystems/HGEventunServerSubsystem.cpp`
 - Ascent Rivals source: `Source/AscentRivals/Private/Server/HGServerScript.cpp`
@@ -23,18 +24,31 @@ This note documents the event types currently tracked by Eventun and the current
 - Ascent Rivals source: `Source/AscentRivals/Private/Server/Subsystems/HGStatsServerSubsystem.cpp`
 - Ascent Rivals source: `Source/AscentRivals/Public/Net/HGEventunEvents.h`
 
-## Shared Record Shape
-- `time`: event timestamp
-- `name`: event key
-- `client_id`: OAuth client identifier that submitted the event
-- `session_id`: gameplay session identifier
-- `match_id`: match number within the session; values can start at `0`
-- `heat`: heat number within the match
-- `user_id`: present on client events; null on server events
-- `player_id`: persisted only when the sender supplies a non-empty, non-bot player id
-- `progress`: `{ placement, lap, checkpoint }`
-- `coordinate`: `{ x, y, z }`
+## Identified Match Shape
+
+The current producer sends one complete match from `MatchStart` through terminal `MatchEnd`.
+
+Envelope fields:
+
+- `batch_id`: stable non-nil UUID assigned once when MatchStart opens the envelope
+- `session_id`: gameplay session UUID shared by every event
+- `match_id`: nonnegative match index within the session; `0` is valid
+- `game_build`: diagnostic game-build value, not a payload schema version or season
+- `events`: complete event list in producer order
+
+Event fields:
+
+- `event_id`: stable non-nil UUID assigned when the event is recorded
+- `sequence`: required zero-based list position
+- `occurred_at_ms`: producer UTC Unix timestamp in milliseconds
+- `event_type`: event key; `ReplaySaved` is rejected
+- `heat`: optional nonnegative ambient or heat-scoped context
+- `player_id`: optional canonical UUID; bots and events without a player omit it
+- `progress`: `{ placement, lap, checkpoint }` when present
+- `coordinate`: `{ x, y, z }` when present
 - `event_data`: event-specific JSON payload
+
+Eventun derives and persists `source_kind`, producer OAuth client, submitting player when present, receipt time, event count, bounds, and canonical SHA-256 hashes. A player subject is retained as self-reported `client` provenance. An exactly subjectless Server-authorized caller is retained as higher-trust `server` provenance. The producer cannot select this classification.
 
 ## Runtime Terminology Guardrail
 
@@ -56,20 +70,21 @@ A qualifier is not a heat.
 
 ### Ownership
 - `UHGEventunServerSubsystem` owns the game-side Eventun buffer and transport.
-- The buffer is `ActiveRequest`, an in-memory `FAccelByteEventunEventRequest` whose `Events` array is appended during the session.
+- The buffer is `ActiveMatchRequest`, an in-memory `FAccelByteEventunMatchIngestRequest` whose `Events` array is appended during one active match.
 - Race and server code record events through `RecordEvent`, `RecordPlayerEvent`, and `RecordParticipantEvent`.
 - The templated overloads serialize Unreal `USTRUCT` payloads to the event `event_data` JSON at collection time.
 - `UHGStatsServerSubsystem` owns local match statistics, medal counters, player result messages, and current AccelByte stat updates. Under the new Eventun progression contract, it is expected to supply per-player heat medal summaries for Eventun heat-end payloads. It does not submit Eventun events directly.
 
 ### Collection Behavior
-- `RecordEvent` appends one `FAccelByteEventunAEvent` to `ActiveRequest.Events` and fills `EpochMs`, `EventName`, `SessionId`, `MatchId`, and `Heat` from the current server/session state.
+- `MatchStart` initializes `ActiveMatchRequest` with a stable batch UUID, session UUID, nonnegative match index, and game build. A duplicate MatchStart for the same active match is ignored; a new match discards any stale unsubmitted envelope.
+- `RecordEvent` appends one `FAccelByteEventunMatchIngestEvent`, assigns its event UUID and sequence immediately, and fills event type, occurrence time, and current ambient heat from server/session state.
 - `RecordPlayerEvent` builds on `RecordEvent` and adds `PlayerId`, progress lap, placement, checkpoint, and ship coordinate when those values are available.
 - `RecordParticipantEvent` builds on `RecordEvent` and fills `PlayerId`, lap, and placement from participant rows. This is used for end-of-heat and end-of-match rows when a live racer entity is not available, such as disconnected or DNF participants.
-- Current events do not carry a dedicated event id. The existing natural event identity is the session, match, heat, event name, event timestamp, player id when present, and payload context.
-- If a future idempotent retry feature adds event ids, the id should be assigned when the event is collected into `ActiveRequest`, not when a submit request is sent. A send-time UUID would change across retries and would not deduplicate an at-least-once resend.
+- Only canonical human player UUIDs are sent as `player_id`. Bots and invalid/absent identities serialize as the generated empty optional string, which Eventun narrowly normalizes to absence before validation and hashing.
+- Events before MatchStart or after terminal MatchEnd are ignored by the identified-match producer. This means the earlier SessionStart call is not part of the current envelope.
 
 ### Primary Call Sites
-- `UHGServerScript` registers `UHGEventunServerSubsystem` at server startup and records `SessionStart`.
+- `UHGServerScript` registers `UHGEventunServerSubsystem` at server startup. Its earlier SessionStart event is outside the current MatchStart/MatchEnd envelope.
 - `UHGServerScript` records `PlayerJoin` and `PlayerLeft` as players enter, leave, or convert from temporary spectator to competitor.
 - `UHGRaceServerContext::RecordMatchStart` records `MatchStart` when a match starts or restarts.
 - Heat startup records `HeatStart` and then one `PlayerHeatStart` per active racer, including the player's loadout snapshot and weight profile.
@@ -87,15 +102,22 @@ A qualifier is not a heat.
 - On context teardown or restart paths, the race context also clears active Eventun events to avoid leaking stale match data.
 
 ### Transport Behavior
-- `SubmitActiveMatchEvents` snapshots the current `ActiveRequest` into a local `MatchRequest`.
-- It then calls `Clear()` before dispatching the async API call. `Clear()` without a match id resets the whole active event buffer.
-- Dedicated servers submit through `AccelByte::GameServerApi::Eventun::ServerServiceEvent`.
-- Non-dedicated sessions use the client Eventun API when available.
+- `SubmitActiveMatchEvents` validates the complete local envelope, snapshots `ActiveMatchRequest`, and resets the active request before dispatching the asynchronous call.
+- Dedicated-server and local/client paths both use the generated `ClientServiceIngestMatch` operation. The GameServer generated surface selects the same ClientService operation rather than defining a ServerService copy.
 - If no Eventun API is available, the subsystem broadcasts failed match submission state and failed gauntlet match acceptance.
-- On an accepted response, the subsystem broadcasts accepted match submission state and asks Eventun to accept the gauntlet stage-run match when a gauntlet stage run is active.
+- On `ACCEPTED` or `ALREADY_ACCEPTED`, the subsystem retains Eventun's canonical response batch id, broadcasts accepted match submission state, and asks Eventun to accept the gauntlet stage-run match when a gauntlet stage run is active.
 - On a rejected response or transport error, the subsystem broadcasts failed match submission state and failed gauntlet match acceptance.
 - Ordinary gameplay event batches are not retained for retry after the active buffer is cleared. The current behavior is best-effort one-time submission for a completed match.
+- Replay association is independent. The game submits `ClientServiceCreateMatchArtifact` after replay finalization and includes the canonical accepted batch id when available; otherwise the generated empty optional batch string is normalized to absence by Eventun.
 - Gauntlet stage-run completion is separate from gameplay batch submission. Once Eventun accepts enough submitted matches for a stage run, the stage-run completion request has its own bounded retry behavior.
+
+### Heat Context And Boundaries
+
+- A supplied `heat` is retained telemetry context. It is not by itself evidence that an event belongs inside a heat interval.
+- MatchStart may carry ambient heat 0 before the first HeatStart. PlayerMatchEnd and MatchEnd may carry the final heat after its HeatEnd. These global values are stored unchanged and do not create, count, or require a boundary.
+- HeatStart, HeatEnd, AscensionStart, PlayerHeatStart, PlayerHeatEnd, PlayerCheckpoint, PlayerLap, PlayerDied, PlayerRespawn, PlayerKill, PlayerGate, and SlalomGate are explicitly heat-scoped and require a nonnegative heat.
+- Only HeatStart and HeatEnd discover boundaries. Each heat has one nonoverlapping pair strictly inside MatchStart/MatchEnd; every other heat-scoped event must occur strictly inside its matching pair.
+- Go validates these rules before persistence, and PostgreSQL repeats them for rebuild and direct-maintenance safety.
 
 ## Indexed Payload Fields
 The schema extracts and stores these `event_data` fields for indexing or direct query use:
@@ -129,6 +151,7 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 - `laps`: laps per heat
 - `heats`: total heats in the match
 - `raceMode`: mode label such as `Deathrace`
+- `singlePlayerMode`: explicit canonical game enum name such as `None` or `TimeTrial`; it is not inferred from `raceMode`
 - `stage`: stage index
 - `gauntletId`: gauntlet identifier when the match is tied to a gauntlet
 - `activeQualifiers`: qualifier ids active for the match; these are gauntlet qualification windows, not heats
@@ -153,7 +176,7 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 
 ### Join Identity Payload
 - `playerName`: The players name at the time of the join event
-- `playerAvatarUrl`: The url to the players current selected avatar image 
+- `playerAvatarUrl`: The url to the players current selected avatar image
 - `playerType`: player category such as `Bot`
 - `converted`: whether the joining player was converted from another identity/context
 
@@ -196,7 +219,7 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 - `credits`: Amount of credits earned during the heat
 - `obelisks`: Number of Obelisks the pilot activated during the heat
 - `placement`: The pilots final placement for the heat
-- `doneReason`: The reason the heat ended for the pilot 
+- `doneReason`: The reason the heat ended for the pilot
 - `doneTimeMs`: The total time the heat took the pilot in milliseconds
 - `bestLapTimeMs`: The fastest lap for the pilot during the heat
 - `circuitPoints`: Amount of circuit points earned during the heat
@@ -219,42 +242,55 @@ For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `sess
 - `parentMedalName`: optional parent primary medal name. Present when the row counts an augment medal under a specific primary medal context.
 - `count`: positive integer number of times this medal fact occurred for the player in the heat.
 
-### Replay Payload
-- `replayRecordKey`: replay artifact key used by replay lookup and purge logic
+### Match Artifact
+
+Replay association is not `event_data` and is not part of the complete match list. `CreateMatchArtifact` carries:
+
+- `artifact_id`: stable UUID for idempotent artifact acceptance
+- optional `batch_id`: Eventun's canonical accepted match batch when available
+- `session_id` and nonnegative `match_id`
+- `artifact_kind`: currently replay
+- `external_record_key`: replay/object key
+- `created_at_ms`: producer creation timestamp
 
 ### Unknown Payload
 - No sampled rows and no stronger field evidence in the reviewed files.
 
 ## Observation Coverage
-- Schema-defined event types: 18
-- Observed in the reviewed 10,000-row client/server dumps: 16
-- Still unobserved in the reviewed dumps: `ReplaySaved`, `PlayerMatchStart`
+- The legacy source-specific schema defines 18 named event leaves, including `ReplaySaved`.
+- The identified `game_event` hierarchy has 17 named leaves plus a default leaf in each source subtree. `ReplaySaved` is prohibited and uses `match_artifact` instead.
+- The reviewed legacy client/server dumps observed 16 of the former 18 names; `ReplaySaved` and `PlayerMatchStart` were not observed.
+- `PlayerGate` and `SlalomGate` are recognized as heat-scoped by current validation but route through the identified default event-type leaf and were not part of the reviewed legacy catalog.
 
 ## Event Catalog
 
-| Event Key | Display Name | Description | Source Tables | Payload Shape | Evidence Status |
+The storage column describes new identified ingestion. Legacy `client_event` and `server_event` relations remain available to existing reads until the F14/F15 projection cutover and deterministic conversion are complete.
+
+| Event Key | Display Name | Description | Storage | Payload Shape | Evidence Status |
 |---|---|---|---|---|---|
-| `SessionStart` | Session Start | Captures runtime environment context for the gameplay session, including client version, server mode, and matchmaking or single-player mode. | `client_event`, `server_event` | Session Context Payload | Observed in both larger dumps; `clientVersion` is queried by replay workflows. |
-| `MatchStart` | Match Start | Captures the full match context, including course, race mode, heat count, and any active gauntlet qualifier bindings. | `client_event`, `server_event` | Match Context Payload | Observed in both larger dumps; server queries use `raceMode`, `courseCode`, `heats`, and `activeQualifiers`. |
-| `MatchEnd` | Match End | Match-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
-| `HeatStart` | Heat Start | Captures the start of a heat, repeats the active course and lap context for that heat, and carries game-authored regulation heat eligibility. | `client_event`, `server_event` | Heat Context Payload | Observed in both larger dumps; `canonical` is the current stored payload field for the regulation signal. |
-| `HeatEnd` | Heat End | Heat-level completion marker with no observed payload beyond top-level context. | `client_event`, `server_event` | Empty Payload | Observed in both dumps. |
-| `AscensionStart` | Ascension Start | Marks the transition into the ascension phase as a lifecycle marker with no currently observed payload fields. | `client_event`, `server_event` | Empty Payload | Observed in both larger dumps with empty payloads. |
-| `ReplaySaved` | Replay Saved | Records that a replay artifact was saved for a match. | `client_event`, `server_event` | Replay Payload | Schema-defined; `replayRecordKey` is referenced by match-summary and replay purge logic. |
-| `PlayerMatchStart` | Player Match Start | Marks the point where a player's match participation begins. | `client_event`, `server_event` | Unknown Payload | Schema-defined only; not present in sampled dumps. |
-| `PlayerMatchEnd` | Player Match End | Captures per-player final match results used for standings, career stats, and gauntlet scoring. | `client_event`, `server_event` | Match Result Payload | Observed in both dumps and used heavily by analytics SQL. For accepted gauntlet stage completion, the dedicated server must emit this for every human participant in a normally completed match, including disconnected/DNF players. |
-| `PlayerHeatStart` | Player Heat Start | Captures the player's ship, loadout snapshot, and weight profile at the start of a heat. | `client_event`, `server_event` | Player Loadout Payload | Observed in both larger dumps; server match summary joins this event for loadout details. |
-| `PlayerHeatEnd` | Player Heat End | Captures per-player heat results, placement, and optional heat medal summary counts. | `client_event`, `server_event` | Heat Result Payload | Observed in both dumps and used by match summary heat standings; `medalCounts` is a planned server payload extension for Eventun progression. |
-| `PlayerCheckpoint` | Player Checkpoint | Captures checkpoint-level performance and combat-efficiency telemetry during a heat. | `client_event`, `server_event` | Segment Stats Payload | Observed heavily in both dumps. |
-| `PlayerJoin` | Player Join | Captures a participant entering the session with the display metadata needed to identify them in the match. | `client_event`, `server_event` | Join Identity Payload | Observed in both larger dumps. |
-| `PlayerLeft` | Player Left | Captures a participant leaving the session as a pure lifecycle marker. | `client_event`, `server_event` | Empty Payload | Observed in the larger client dump; still not observed in the reviewed server dump. |
-| `PlayerLap` | Player Lap | Captures lap-level performance and combat-efficiency telemetry. | `client_event`, `server_event` | Segment Stats Payload | Observed in both dumps. |
-| `PlayerDied` | Player Died | Captures a player death event and the responsible cause or instigator. | `client_event`, `server_event` | Death Payload | Observed in both dumps. |
-| `PlayerRespawn` | Player Respawn | Captures a respawn event and spawn-point selection. | `client_event`, `server_event` | Respawn Payload | Observed in both dumps. |
-| `PlayerKill` | Player Kill | Captures a kill event from the killer perspective, including victim state and geometry. | `client_event`, `server_event` | Kill Payload | Observed in both dumps. |
+| `SessionStart` | Session Start | Captures runtime environment context for the gameplay session. The current Ascent Rivals identified producer begins at MatchStart and does not include this earlier event. | Named `game_event` leaf | Session Context Payload | Observed in both legacy dumps and retained for conversion/other producers. |
+| `MatchStart` | Match Start | Captures authoritative course, race mode, explicit single-player mode, heat count, and active gauntlet qualifier bindings. | Named `game_event` leaf | Match Context Payload | Observed in both legacy dumps; current producer includes explicit `singlePlayerMode`. |
+| `MatchEnd` | Match End | Terminal match marker with no observed payload beyond top-level context. | Named `game_event` leaf | Empty Payload | Observed in both dumps. |
+| `HeatStart` | Heat Start | Captures a heat boundary, repeats course/lap context that must agree with MatchStart, and carries game-authored regulation eligibility. | Named `game_event` leaf | Heat Context Payload | Observed in both larger dumps; `canonical` is the stored regulation signal. |
+| `HeatEnd` | Heat End | Terminal heat boundary with no observed payload beyond top-level context. | Named `game_event` leaf | Empty Payload | Observed in both dumps. |
+| `AscensionStart` | Ascension Start | Marks transition into the ascension phase. It is explicitly heat-scoped. | Named `game_event` leaf | Empty Payload | Observed in both larger dumps with empty payloads. |
+| `PlayerMatchStart` | Player Match Start | Marks the point where a player's match participation begins. | Named `game_event` leaf | Unknown Payload | Defined but not present in sampled dumps. |
+| `PlayerMatchEnd` | Player Match End | Captures per-player final match results used for standings, career stats, and gauntlet scoring. | Named `game_event` leaf | Match Result Payload | Observed in both dumps. A normally completed trusted match must include every human participant, including disconnected/DNF players. |
+| `PlayerHeatStart` | Player Heat Start | Captures the sole player/heat loadout snapshot and weight profile. | Named `game_event` leaf | Player Loadout Payload | Observed in both larger dumps; later events do not duplicate loadout state. |
+| `PlayerHeatEnd` | Player Heat End | Captures per-player heat results, placement, and optional heat medal summary counts. | Named `game_event` leaf | Heat Result Payload | Observed in both dumps; `medalCounts` remains the progression input shape. |
+| `PlayerCheckpoint` | Player Checkpoint | Captures checkpoint-level performance and combat-efficiency telemetry during a heat. | Named `game_event` leaf | Segment Stats Payload | Observed heavily in both dumps; detailed rows remain raw only. |
+| `PlayerJoin` | Player Join | Captures a participant entering the match with display metadata. | Named `game_event` leaf | Join Identity Payload | Observed in both larger dumps. |
+| `PlayerLeft` | Player Left | Captures a participant leaving the match as a lifecycle marker. | Named `game_event` leaf | Empty Payload | Observed in the larger client dump; not observed in the reviewed server dump. |
+| `PlayerLap` | Player Lap | Captures lap-level performance and combat-efficiency telemetry. | Named `game_event` leaf | Segment Stats Payload | Observed in both dumps; valid-lap aggregates are projected at heat/player grain. |
+| `PlayerDied` | Player Died | Captures a player death and responsible cause or instigator. | Named `game_event` leaf | Death Payload | Observed in both dumps. |
+| `PlayerRespawn` | Player Respawn | Captures a respawn and spawn-point selection. | Named `game_event` leaf | Respawn Payload | Observed in both dumps. |
+| `PlayerKill` | Player Kill | Captures a kill from the killer perspective, including victim state and geometry. | Named `game_event` leaf | Kill Payload | Observed in both dumps. |
+| `PlayerGate` | Player Gate | Captures a heat-scoped gate event. | Default `game_event` leaf | Unknown Payload | Recognized by boundary validation; not covered by the reviewed legacy dumps. |
+| `SlalomGate` | Slalom Gate | Captures a heat-scoped slalom gate event. | Default `game_event` leaf | Unknown Payload | Recognized by boundary validation; not covered by the reviewed legacy dumps. |
 
 ## Notes
-- The schema defines the tracked event set via table partitions on `server_event` and `client_event`.
+- New raw telemetry is stored in `game_event`, partitioned first by actor-derived source and then by event type. Legacy `server_event` and `client_event` trees remain only for the controlled read/backfill transition.
 - Payload observations in this note were inferred from reviewed event dumps during knowledge-base curation, but the transient inbox dump files are intentionally not cited as durable sources.
-- The reviewed 10,000-row dumps still do not cover every schema-defined event, so `ReplaySaved` and `PlayerMatchStart` remain intentionally marked as unknown or unobserved.
-- `player_id` is not uniformly populated in the sampled rows. The ingestion code only persists it when the sender supplies a non-empty id that is not bot-prefixed.
+- `ReplaySaved` is retained only as a legacy-conversion concern. New match requests reject it and store replay association in `match_artifact`.
+- `player_id` is intentionally absent for bots and non-player events. A nonempty submitted value must be a canonical non-nil UUID.
+- Telemetry has no payload schema-version field. Payload changes require controlled retained-row and derived-state rewrites rather than permanent version branches.

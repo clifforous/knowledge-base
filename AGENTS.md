@@ -32,6 +32,11 @@ Workflow guidance:
 - For non-trivial changes, provide `Goal`, `Assumptions`, `Plan`, and `Review checkpoint` before implementation.
 - Surface risks and weak assumptions during review, not after implementation.
 
+## Review Rules
+- Reviews are read-only analysis by default. Inspect diffs, contracts, edge cases, and the implementation worker's reported verification evidence.
+- Do not independently run compilation, code generation, tests, builds, linters, vulnerability scans, or other validation commands during a review unless the user explicitly requests that rerun.
+- Report missing or insufficient verification as a review finding and return it to the implementation worker rather than performing it in the review.
+
 ## Source Control
 - The repository owner normally owns commits.
 - Do not stage or commit changes by default.

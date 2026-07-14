@@ -185,8 +185,11 @@ Use current Eventun migration conventions:
 - `migration/a0_create_init.sql`: fresh-schema DDL and indexes.
 - `migration/b*.sql`: views.
 - `migration/c*.sql`: functions and stored procedures.
-- `migration/d*.sql`: minimal seed data.
-- `migration/temp_migration.sql`: current dev/prod migration until the next production deployment.
+- `migration/d*.sql`: required baseline reference/configuration and environment-aware canonical setup, numbered sequentially from `d0`. `d3_schedule_refresh_views.sql` safely no-ops without pg_cron and is reapplied by guarded operational setup after pg_cron provisioning.
+- `migration/migration.sql`: stable filename for the current one-time delta from the deployed production baseline to the current canonical schema. Do not create numbered production migration files.
+- `migration/t0_seed_courses.sql` through `migration/t3_seed_teams.sql`: optional development fixtures with an independent sequence, applied explicitly in dependency order.
+
+Verify the pending delta only against an authentic disposable copy of the deployed production baseline. The guarded command uses `production-delta --confirm-disposable-production-baseline=<target-fingerprint>`; Eventun startup and deployment do not apply the delta automatically.
 
 The first migration slice should be additive:
 
@@ -364,8 +367,8 @@ Reviewable outcome:
 Implementation tasks:
 
 - Add publish snapshot DDL and indexes to `migration/a0_create_init.sql`.
-- Add current environment migration to `migration/temp_migration.sql`.
-- Put trigger/function definitions in the appropriate `migration/c*.sql` file for fresh schema and mirror needed deployment steps in `temp_migration.sql`.
+- Add the current environment transition to `migration/migration.sql`.
+- Put trigger/function definitions in the appropriate `migration/c*.sql` file for fresh schema and mirror needed deployment steps in `migration/migration.sql`.
 - Add idempotent backfill for active/current/activated goals.
 - Add idempotent backfill for active challenge pools and active memberships.
 - Add nullable compatibility columns where needed for later runtime switch.

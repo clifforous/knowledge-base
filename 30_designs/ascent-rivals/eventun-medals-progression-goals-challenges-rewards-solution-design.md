@@ -2,6 +2,7 @@
 
 Status: Solution design draft
 Date: 2026-05-26
+Foundation alignment: 2026-07-13
 Primary repository: `github.com/ikigai-github/eventun`
 Related UI repository: `github.com/ikigai-github/ascentun`
 Requirements: `30_designs/ascent-rivals/eventun-medals-progression-goals-challenges-rewards-requirements.md`
@@ -17,8 +18,8 @@ The design favors the more flexible architecture: registered progression metrics
 
 - Eventun owns gameplay medal facts, goal progress checking, challenge assignment, goal completion history, and player-facing reward claim state.
 - The game runtime owns medal-rule logic and sends final per-player heat medal count summaries with any augment parent context.
-- Raw Eventun gameplay events remain the source of truth.
-- V1 does not introduce new occurrence ids, heat ids, or match ids for progression. Existing event identity is sufficient: session id, match number, heat number, event type, timestamp, plus player id and payload context.
+- Identified raw Eventun gameplay events remain the source of truth. Narrow replayable progression facts are the preferred input for counters and goal evaluation.
+- The foundation supplies stable batch and event UUIDs plus producer sequence. Progression contributions use retained source event identity and must not treat timestamps or payload fields as unique identities.
 - Eventun `match_id` values come from the Ascent Rivals runtime match index and are zero-based within a session; validators must reject negative values only.
 - `PlayerHeatEnd.event_data.medalCounts` carries the V1 medal progression payload. Each entry includes a medal code, count, and optional parent medal code for augment counts.
 - `HeatStart` carries one V1 game-authored boolean currently stored as `canonical`, used by progression and record policies. Operator-facing UI should label this concept as regulation.
@@ -43,15 +44,16 @@ The design favors the more flexible architecture: registered progression metrics
 - No V1 platform achievement synchronization, such as Steam achievements.
 - Initial server-side V1 did not require a dedicated admin UI. Follow-on Extend App UI authoring work is documented separately.
 - No V1 notification inbox.
-- No V1 migration to add synthetic occurrence ids to existing gameplay events.
+- No per-medal occurrence rows solely for progression. The foundation's later legacy conversion supplies deterministic event identities for retained historical rows.
 
 ## System Context
 
 ```mermaid
 flowchart LR
-  Game["Dedicated server"] -->|"trusted completed match event batch"| Ingest["Eventun ServerService.Event"]
-  Ingest --> Raw["server_event partitions"]
-  Raw --> CounterBuilder["progress counter builder"]
+  Game["Game or dedicated server"] -->|"complete identified match"| Ingest["Eventun ClientService.IngestMatch"]
+  Ingest --> Raw["source/event-type game_event partitions"]
+  Ingest --> Facts["progression_metric_fact"]
+  Facts --> CounterBuilder["progress counter builder"]
   CounterBuilder --> Counters["player_progression_counter"]
   CounterBuilder --> GoalCheckJobs["goal progress check jobs"]
   GoalCheckJobs --> GoalChecker["goal progress checker"]
@@ -100,30 +102,28 @@ The game runtime owns:
 
 ### Complete Match Batch Contract
 
-The existing trusted server event ingestion path remains the only V1 gameplay submission API.
+Player/local and dedicated-server producers use the single shared `ClientService.IngestMatch` operation. Eventun derives self-reported client versus higher-trust server provenance from the verified actor; the producer does not select source.
 
 Rules:
 
 - The dedicated server sends one best-effort completed match batch after a successful match.
 - The server does not retry the same completed match batch.
-- V1 does not add duplicate match-batch protection for normal ingest.
-- Raw event rows are identified by the existing Eventun gameplay event shape.
-- Goal progress checking counts rows, summary counts, and unnested medal count facts; it does not require per-kill, per-medal, or per-occurrence ids.
-- If the delivery contract later adds retries, idempotency should be added at the batch or counter-building boundary without changing the gameplay event payload model.
+- Every request has a stable batch UUID; every event has a stable UUID and zero-based producer sequence assigned at collection time.
+- Eventun performs canonical hashing and idempotent equal-content acceptance even though automatic sender retry remains disabled.
+- Raw events and narrow facts retain actor-derived source provenance. Product policy must explicitly decide whether each progression metric accepts client-reported, server, or both sources.
+- Goal progress checking consumes idempotent `progression_metric_fact` contributions rather than rereading unbounded raw telemetry.
 
 ### Event Identity
 
-Use existing fields for joins and counting:
+Use the foundation identities at their declared grains:
 
-- `session_id`
-- `match_id`
-- `heat`
-- event `name`
-- event `time`
-- `player_id` where player-scoped
-- `event_data`
+- `batch_id` identifies one accepted source/actor observation of a complete match.
+- `event_id` identifies one immutable event and is retained on every event-derived fact.
+- `sequence` is the authoritative event order within the batch; timestamps do not reorder or uniquely identify events.
+- `session_id + match_id` remains the gameplay match context, while `heat` is ambient context or a validated heat index depending on event type.
+- progression contributions are unique by retained source fact/event identity, metric, player, and bounded dimensions.
 
-Do not add new `occurrenceId`, `matchId`, or `heatId` fields for this feature. If a current payload already contains a runtime `heatId`, it can remain as payload context, but progression joins should use `session_id + match_id + heat`.
+Do not add a second progression-only occurrence identity. If a payload already contains runtime `heatId`, it can remain payload context, but it is not the Eventun fact identity.
 
 Eventun `match_id` values come from the Ascent Rivals runtime match index and are zero-based within a session; validators must reject negative values only. `match_id = 0` is the first match in a session.
 
@@ -552,9 +552,9 @@ sequenceDiagram
   participant CounterBuilder as Progress Counter Builder
   participant GoalChecker as Goal Progress Checker
 
-  DS->>Ingest: completed match event batch
-  Ingest->>DB: insert raw server_event rows
-  Ingest->>CounterBuilder: update affected progress counters
+  DS->>Ingest: complete identified match
+  Ingest->>DB: atomically insert batch, raw game_event rows, and narrow facts
+  Ingest->>CounterBuilder: queue affected fact contributions
   CounterBuilder->>DB: upsert progression counters
   CounterBuilder->>DB: create goal-check jobs for affected players/scopes
   Ingest-->>DS: accepted
@@ -586,7 +586,7 @@ Use `player_goal_progress_check_job` as a retryable work ledger:
 | `attempt_count`, `available_at`, `locked_at` | Retry and worker coordination. |
 | `last_error_code`, `last_error_message` | Support visibility. |
 
-This is not gameplay data and does not imply match-batch deduplication. It exists so progress and completion checks can be retried safely after raw events and counters are durable.
+This job is not gameplay data and is not the match idempotency boundary. Identified ingest already deduplicates equal batches and events; the job exists so progress and completion checks can be retried safely after raw events and facts are durable.
 
 ## Reward Model
 
@@ -1027,7 +1027,7 @@ These phases are implementation order, not product-scope reduction.
 - Add `HeatStart.event_data.canonical` as the current storage field for regulation heat context.
 - Add medal definitions.
 - Add medal totals query for player profile/client use.
-- Keep joins based on existing event identity.
+- Build medal and other progression contributions from retained source event identities in `progression_metric_fact`.
 
 ### Phase 2: Metrics, Counters, And Goal Progress Checking
 

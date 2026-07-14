@@ -370,7 +370,7 @@ Potential examples:
 - time-trial achievements
 - custom or special-mode achievements where the product intentionally wants that mode to count
 
-Time achievements will likely come mostly from time trials or career mode, and those are expected to arrive as `client_event` rows. Client events are less trusted than server-authenticated completed-match event batches, so time achievements need their own trust policy instead of inheriting assumptions from server-trusted progression metrics.
+Time achievements will likely come mostly from time trials or career mode, and those observations are retained with `source_kind = client` in identified telemetry and facts. Client-reported events are less trusted than subjectless Server-authorized complete-match batches, so time achievements need their own trust policy instead of inheriting assumptions from server-trusted progression metrics.
 
 Design considerations:
 

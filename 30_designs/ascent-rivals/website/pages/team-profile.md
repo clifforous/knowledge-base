@@ -3,6 +3,8 @@
 Date: 2026-04-13
 Status: Draft
 
+Foundation supersession (2026-07-13): all token-gated team states and controls in this draft are retired. Eventun now supports only `open`, `request`, and `invite` membership modes; former gated teams transition to invite-only until a provider-neutral asset-source contract is separately approved.
+
 ## Related
 - [[../unified-design]]
 - [[../information-architecture]]

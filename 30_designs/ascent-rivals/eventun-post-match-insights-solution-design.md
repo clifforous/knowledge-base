@@ -1,7 +1,9 @@
 # Eventun Post-Match Insights Solution Design
 
 ## Status
-Draft for review.
+Implemented through the Eventun course-metadata/build-shape phase and the Unreal manual-entry
+integration. The current approved follow-on is automatic presentation before the normal match
+summary when a ready insight result is available quickly.
 
 ## Goal
 Replace the current post-match and time-trial recommendation concept with a backend-owned
@@ -27,43 +29,41 @@ Existing references:
 
 Current implementation facts:
 
-- Eventun already has time-trial and post-match recommendation endpoints.
-- Eventun already derives recommendation snapshots from match events, lap events,
-  checkpoint events, and historical comparator data.
-- `PlayerHeatStart` already records the player's full loadout snapshot, weight,
-  normalized weight, and loadout value.
-- `PlayerHeatEnd` already records the player's current retained credit balance at heat
-  end, placement, CP, kills, deaths, crashes, obelisks, and best lap time. This is not
-  the same as credits earned during the heat.
-- The game client/server already computes UI-facing loadout category scores for Speed,
-  Agility, and Combat. These are tier-plus-augment presentation scores, not full physical
-  capability metrics.
-- Resolved loadouts also compute underlying ship and weapon stats after applying base
-  weight-class stats, part modifiers, augment modifiers, engine stage modifiers, and weight
-  fit penalties.
-- `PlayerHeatStart` does not currently serialize remaining credits or category-score summary
-  values. Versioned resolved capability metrics are a future extension, not phase 1 scope.
-- Eventun's current recommendation metrics already join heat-end retained credit balance
-  with heat-start loadout value.
-- The current response is recommendation-shaped and lacks a first-class kudo or
-  no-insight model.
-- The current recommendation response reserves status/readiness fields and currently uses
-  gRPC errors for several incomplete or unavailable cases.
-- The game client currently maps recommendation categories to localized static text.
-- The game client currently promotes the first recommendation to primary when no primary
-  role is present.
-- The game client can collapse recommendation API errors into an empty response, which
-  makes failure difficult to distinguish from a true no-recommendation result.
+- Eventun exposes typed post-match and time-trial insight endpoints with first-class coaching,
+  kudo, readiness, no-insight, unavailable, and failure states.
+- Eventun derives insight inputs from match, lap, checkpoint, heat-start, heat-end, and
+  historical comparator data. Policy rows tune known catalog entries and admin explain output
+  exposes scoring and rejection diagnostics.
+- During the identified-telemetry cutover, narrow match/heat/player facts provide terminal
+  context while detailed lap and checkpoint inputs remain batch-local reads from their
+  source/event-type partitions. Do not require one-to-one lap or checkpoint fact copies.
+- Time-trial classification depends on explicit single-player mode, not race mode. Insight
+  cutover must wait until `MatchStart` carries that context because time trials use the Classic
+  race mode.
+- `PlayerHeatStart` records the player's loadout snapshot, retained ARC, loadout value, weight,
+  normalized weight, and Speed, Agility, and Combat presentation scores.
+- The Speed, Agility, and Combat values are tier-plus-augment presentation scores, not full
+  physical capability metrics. Versioned resolved capability metrics remain a future extension.
+- Eventun syncs current course context from the AccelByte `Courses` game record daily and on
+  admin request. AccelByte is authoritative; Eventun keeps a transactional cache and marks
+  absent courses inactive instead of deleting referenced course rows.
+- The Unreal client requests the typed insight APIs, renders the backend-selected primary and
+  secondary slots without promotion, localizes copy and units, and distinguishes backend
+  statuses from client timeout/transport failure.
+- The currently submitted Unreal flow is still manual entry from an Insights button on the
+  match summary. Automatic pre-summary presentation is approved but not yet implemented.
 
 Relevant code paths:
 
+- Eventun: `proto/ikigai/eventun/v1/insight.proto`
 - Eventun: `proto/ikigai/eventun/v1/client.proto`
-- Eventun: `proto/ikigai/eventun/v1/match.proto`
-- Eventun: `internal/eventun/recommendation_api.go`
-- Eventun: `internal/eventun/recommendation_scoring.go`
-- Eventun: `migration/c5_func_recommendation.sql`
-- Eventun: `migration/c6_func_recommendation_metrics.sql`
-- Eventun: `migration/c7_func_recommendation_snapshot.sql`
+- Eventun: `internal/eventun/insight_api.go`
+- Eventun: `internal/eventun/insight_candidates.go`
+- Eventun: `internal/eventun/insight_scoring.go`
+- Eventun: `internal/eventun/course_metadata_db.go`
+- Eventun: `internal/eventun/progression_course_admin_api.go`
+- Eventun: `migration/c5_func_insight.sql`
+- Eventun: `migration/c7_func_insight_snapshot.sql`
 - Game client: `Source/AscentRivals/Private/UserInterface/Routes/HGPostMatchRecommendationRoute.cpp`
 - Game client: `Source/AscentRivals/Private/Client/HGStatsSubsystem.cpp`
 - Game client: `Source/AscentRivals/Public/Net/HGEventunEvents.h`
@@ -71,10 +71,6 @@ Relevant code paths:
 - Game client: `Source/AscentRivals/Private/Server/Subsystems/HGLoadoutServerSubsystem.cpp`
 - Game client: `Source/AscentRivals/Private/Loadout/HGResolvedLoadout.cpp`
 - Game client: `Source/AscentRivals/Public/Item/HGItemTypes.h`
-
-Planned new Eventun contract path:
-
-- Eventun: `proto/ikigai/eventun/v1/insight.proto`
 
 ## Product Direction
 Use **Insights** as the player-facing and backend domain term.
@@ -197,37 +193,41 @@ Do not convert authentication, authorization, invalid-request, or service-outage
 into insight statuses. Those remain transport/API errors. The insight status model is only
 for run-analysis outcomes.
 
-Phase 1 client display behavior:
+Initial rollout client display behavior, now implemented:
 
 - Manual entry: if the player clicks the Insights button, show an Insights screen. If no
   result is available, show a neutral "No insights available" state.
-- Automatic entry is out of scope for the first implementation. The client may prefetch
-  insights after match-event submission is accepted, but it should not automatically route
-  players into the Insights screen until the feature has proven valuable enough to show
-  immediately.
+- The player enters through the Insights button on the match summary.
 
-Future automatic-entry behavior:
+Approved automatic-entry follow-on:
 
-- If the post-match flow tries to show insights before the normal match summary, only show
-  the Insights screen when a ready result arrives quickly. Otherwise skip directly to the
-  normal post-match summary.
+- Prefetch after the exact match-event submission is accepted.
+- Insert Insights between the player-results surface and the normal match summary in
+  dedicated-server matches. Standalone/time-trial paths that do not receive player results
+  enter the same Insights-or-summary decision directly after the finish delay.
+- Show insight content only when a `ready` result arrives within the bounded window.
+- On `no_insight`, `unavailable`, `failed`, client timeout, rejected submission, missing
+  submission state, or transport failure, continue directly to the normal match summary.
+- Do not show the manual "No insights available" empty state during automatic entry.
+- After a ready Insights screen, Continue and Back both advance to the normal match summary.
+- Non-final heat summaries do not enter this flow.
 
 Timeout is not the same as `no_insight`. If the client gives up after waiting, log it as a
 client timeout or pending timeout, not as backend-confirmed no-insight.
 
 ## Timing And Readiness
 The insight request should occur only after the match event batch is submitted and accepted.
-For phase 1, the player enters the Insights screen through the manual button. The client may
-also prefetch after accepted submission, but prefetch must not automatically route the player
-into the Insights screen. There may be a small delay between match finish, event submission,
+The initial implementation requests on manual entry. The approved automatic-entry follow-on
+prefetches immediately after accepted submission so ingestion latency overlaps the montage and
+player-results presentation. There may still be a small delay between submission acceptance,
 database commit, and query readiness.
 
 Phase 1 should avoid a large async analysis pipeline:
 
 1. The game client submits the match event batch.
 2. Eventun persists the batch.
-3. The game client requests insights after submission is accepted, either as optional prefetch
-   or when the player enters through the manual Insights button.
+3. The game client requests insights after submission is accepted, either on manual entry in
+   the initial rollout or as prefetch in the automatic-entry follow-on.
 4. Eventun derives insights on demand from committed match data.
 5. If data is not ready, Eventun returns `pending`.
 
@@ -250,8 +250,8 @@ Suggested phase 1 retry state machine:
    - no more than 2000 ms total wait for manual entry
    - per-retry sleep is `retry_after_ms` clamped to 150-500 ms, or 250 ms when omitted
 6. If the client reaches its cap while the latest backend state is `pending`, record a
-   client-side pending timeout. Manual entry renders the neutral empty state. A future
-   automatic-entry flow should skip the insights screen.
+   client-side pending timeout. Manual/debug entry may render the neutral empty state;
+   automatic entry advances to the normal match summary.
 
 Future work may materialize insight analyses in a table or worker if on-demand scoring
 becomes too slow or expensive. The API contract should not require that change.
@@ -1237,6 +1237,22 @@ Add longitudinal player-development capabilities:
 ELO or skill-bracket comparisons remain phase 2 or later. They should not become
 player-facing until rating quality and player population make them credible.
 
+### Current Client Presentation Follow-On
+
+Move the implemented insight surface from the manual match-summary button into the final
+post-match sequence:
+
+- prefetch after accepted Eventun submission using the submission message's exact session and
+  match identifiers
+- centralize the final Insights-or-summary transition so both dedicated-server player-results
+  flow and direct standalone/time-trial flow use the same decision
+- reuse the existing bounded request/retry state machine
+- skip the insight content surface for every non-ready terminal outcome
+- add a bound Continue action to the Insights widget
+- remove the obsolete match-summary Insights button and its submission-state subscription
+- preserve the existing ability to return from match summary to player results when the
+  dedicated-server flow supplied player results
+
 ## Testing And Validation
 Backend tests:
 
@@ -1270,6 +1286,12 @@ Backend tests:
 Client tests:
 
 - manual entry shows "No insights available" for no-insight or timeout
+- automatic entry advances to match summary for no-insight, unavailable, failure, timeout,
+  rejected/missing submission state, and transport failure
+- automatic entry shows a ready insight once and Continue/Back advances to match summary
+- dedicated-server player results remains beneath match summary when back navigation is allowed
+- standalone/time-trial final flow does not depend on a player-results route
+- non-final heat summaries never enter the automatic insight flow
 - client does not promote secondary insight to primary
 - client distinguishes timeout, failure, no-insight, and unavailable internally
 - localized template keys render expected values and units
