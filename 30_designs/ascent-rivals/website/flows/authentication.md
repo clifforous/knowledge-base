@@ -1,7 +1,8 @@
 # Ascent Rivals Authentication User Flow
 
 Date: 2026-04-14
-Status: Draft
+Status: Approved scope baseline; implementation details open
+Last reviewed: 2026-07-16
 
 ## Related
 - [[../unified-design]]
@@ -11,7 +12,7 @@ Status: Draft
 - [[../tone-and-voice]]
 - [[../pages/homepage]]
 - [[../pages/player-profile]]
-- [[wallet-linking]]
+- [[../../../../50_knowledge/ascent-rivals/accelbyte-platform|AccelByte platform]]
 
 ## Purpose
 
@@ -27,38 +28,63 @@ This flow covers:
 - sign-out behavior
 - expired-session handling
 
-This flow does not cover wallet linking in detail. Wallet linking is specified in [[wallet-linking]].
+Wallet linking and wallet-derived account state are outside the initial Website V2 scope.
 
 ## Product Decision
 
 V1 authentication is Steam-only.
 
-The UI may still use a provider picker if the team wants to leave room for future providers, but the simplest V1 experience can be a direct `Sign in with Steam` action.
+Use a direct `Sign in with Steam` action. Do not show a provider picker when Steam is the only implemented provider.
 
 Steam remains the account authority for initial website login.
 
-Wallets are linked only after Steam login.
+Epic or Discord authentication may be reconsidered if a concrete player or viewer account use case is approved. That future work requires explicit decisions about canonical identity, account linking and merging, duplicate accounts, roles, profile ownership, and recovery. A speculative dropdown does not solve those problems, so Website V2 should not prebuild provider-selection UI or a provider registry solely for hypothetical expansion.
 
 ## Implementation Target
 
-The new implementation target is a separate Nuxt/Vue/Reka UI project.
+The implementation target is the greenfield Next.js/React/TypeScript Website V2 project.
 
 The current `ascentun` app is a behavior and API reference only.
 
-Do not copy Next.js/shadcn implementation details directly unless the behavior still makes sense in the new Nuxt site.
+Do not copy current Ascentun components or implementation gaps directly; preserve only behavior that remains part of the approved scope.
+
+## Protocol and Shared Cloud Assessment
+
+As of 2026-07-16, Steam OpenID 2.0 remains Steam's documented browser-authentication method for third-party websites. Steam's separate OAuth 2.0 program is intended for approved partner applications that need scoped access to Steam APIs; it is not a generally available replacement for identity-only website login.
+
+AccelByte's current IAM OpenAPI contract still documents `steamopenid` and the V4 platform-token grant used by Ascentun. No Steam or AccelByte deprecation notice was found for that core exchange.
+
+However, Ascent Rivals runs on AGS Shared Cloud. AccelByte's current authentication coverage table marks Steam in-game login as supported in Shared Cloud and Steam web login as unsupported. The detailed Steam guide describes the unsupported web integration as an AGS Player Portal flow in a publisher namespace, while Ascentun instead performs OpenID in the custom website and submits the returned assertion to the V4 platform-token endpoint with a confidential client. Public documentation does not explicitly confirm whether this custom flow is a supported Shared Cloud contract.
+
+Decision:
+
+- retain `Steam OpenID callback -> server-side AccelByte V4 steamopenid grant -> AccelByte website session` as the provisional Website V2 implementation baseline;
+- do not replace it with Steam OAuth 2.0 or a native Steam auth ticket flow, because neither is the documented general browser-login replacement;
+- do not treat the baseline as launch-approved until the Shared Cloud verification gate in [[../../../../50_knowledge/ascent-rivals/accelbyte-platform|AccelByte platform]] is complete;
+- if AccelByte confirms the custom grant is unsupported, stop and choose a different identity and authorization architecture before implementing Website V2 authentication.
+
+Required hardening when the flow is implemented:
+
+- construct the OpenID realm and callback from one trusted configured public origin, not the request `Host` header;
+- store a signed, time-limited login transaction containing a nonce and validated relative return path;
+- reject protocol-relative, external, expired, replayed, or otherwise invalid return state;
+- require the expected OpenID mode, provider endpoint, claimed-identity shape, callback target, and signed response fields before exchange;
+- submit only the required OpenID assertion fields to AccelByte and do not request unused AX/SREG profile attributes;
+- keep the AccelByte client secret, access token, and refresh token server-only and use secure HTTP-only cookies;
+- handle cancellation, AccelByte linking responses, Login Queue responses, refresh failure, and retry without logging raw assertions or tokens.
 
 ## Current Ascentun Implementation Notes
 
 Current implementation files:
 
-- `/home/cgarvis/projects/genun/ascentun/components/nav/nav-login.tsx`
-- `/home/cgarvis/projects/genun/ascentun/components/nav/nav-steam-login.tsx`
-- `/home/cgarvis/projects/genun/ascentun/components/nav/nav-user.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/api/auth/steam/login/route.ts`
-- `/home/cgarvis/projects/genun/ascentun/app/api/auth/steam/callback/route.ts`
-- `/home/cgarvis/projects/genun/ascentun/app/api/logout/route.ts`
-- `/home/cgarvis/projects/genun/ascentun/lib/session/server.ts`
-- `/home/cgarvis/projects/genun/ascentun/components/auth/token-refresh.tsx`
+- [navigation login](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/components/nav/nav-login.tsx)
+- [Steam navigation login](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/components/nav/nav-steam-login.tsx)
+- [user navigation](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/components/nav/nav-user.tsx)
+- [Steam login route](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/api/auth/steam/login/route.ts)
+- [Steam callback route](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/api/auth/steam/callback/route.ts)
+- [logout route](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/api/logout/route.ts)
+- [session server](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/lib/session/server.ts)
+- [token refresh component](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/components/auth/token-refresh.tsx)
 
 Current behavior:
 
@@ -84,11 +110,11 @@ Current implementation gap:
 - the current `Career` dropdown item is present visually but is not linked in `nav-user.tsx`.
 - `/api/logout` redirects to `/`, but the client logout handler only refreshes the current route after the fetch; protected-route guards may then decide where the user lands.
 
-V1 Nuxt should implement the desired behavior below rather than copying those gaps.
+Website V2 should implement the desired behavior below rather than copying those gaps.
 
 ## Desired V1 Flow Summary
 
-1. Anonymous user clicks `Sign in` or `Sign in with Steam`.
+1. Anonymous user clicks `Sign in with Steam`.
 2. Site records the user's current safe return path.
 3. Site redirects the user to Steam OpenID.
 4. User enters Steam credentials on Steam.
@@ -104,16 +130,14 @@ V1 Nuxt should implement the desired behavior below rather than copying those ga
 
 Primary entry point:
 
-- global top-bar `Sign in` or `Sign in with Steam`
+- global top-bar `Sign in with Steam`
 
 Secondary entry points:
 
 - login-required action prompts
 - protected-route redirects
-- wallet linking page
 - team join/request actions
 - gauntlet create/edit actions
-- prize claim actions
 
 Global navigation rule:
 
@@ -125,14 +149,16 @@ Global navigation rule:
 When not logged in:
 
 - show a sign-in action in the top bar
-- do not show wallet, career, team, or admin account options
+- do not show career, team, or admin account options
 - public entity pages remain browseable
 - login-required actions should be visible only when useful and should explain that Steam sign-in is required
 
-Provider picker rule:
+Direct Steam action:
 
-- if Steam is the only supported provider, a direct `Sign in with Steam` button is acceptable
-- if using a provider picker, the UI should not imply other providers are currently available
+- wide layouts should use the explicit label `Sign in with Steam`;
+- compact layouts may use the Steam icon with `Sign In` when necessary, while retaining the accessible name `Sign in with Steam`;
+- activating the control starts the Steam flow directly rather than opening an intermediate menu;
+- add a provider picker only after another provider and its identity/linking contract are approved and implemented.
 
 Recommended copy:
 
@@ -142,8 +168,8 @@ Recommended copy:
 
 Avoid:
 
-- `Choose login provider` if there is only one visible option and no near-term provider expansion
-- language implying wallet-only auth exists in V1
+- `Choose login provider` while Steam is the only implemented option
+- language implying another login provider is active when Steam is the only supported provider
 
 ## Return Path Handling
 
@@ -153,7 +179,7 @@ Desired behavior:
 - only safe relative paths should be accepted as return destinations
 - missing, invalid, external, or unsafe return paths should fall back to `/`
 
-Recommended Nuxt shape:
+Recommended implementation shape:
 
 - login action calls an auth endpoint with `returnTo={currentPathAndQuery}`
 - auth endpoint stores or signs that value into the OpenID `state`
@@ -222,7 +248,7 @@ Session user info should include:
 - avatar
 - roles
 - team summary, if available
-- linked wallets summary
+- pending team invitation/join-request summary, if available
 - access token expiry timestamp
 - refresh token expiry timestamp
 
@@ -239,36 +265,28 @@ After login:
 - fall back to initials or a branded pilot placeholder if no avatar exists
 - keep the avatar/account menu visible at all breakpoints
 
-Required V1 avatar menu items:
+Approved initial avatar menu items:
 
-- `Career`
-- `Wallets`
-- `Sign out`
-
-Recommended routes:
-
-- `Career` should link to the logged-in player's public career/profile route
-- `Wallets` should link to the wallet management route
-- `Sign out` should trigger logout without requiring a separate confirmation
-
-Route naming is still final-implementation dependent.
-
-Preferred Nuxt route direction:
-
-- `Career`: `/players/[currentPlayerId]` or a stable alias such as `/players/me`
-- `Wallets`: `/wallets` or `/players/me/wallets`
+- `My Career` links to the authenticated pilot's canonical `/players/[id]` profile;
+- `My Team` links to the authenticated team when one exists, otherwise to `/teams` with the user's no-team or pending-request context;
+- `My Team` may carry one concise, accessible count/status for pending invitations and join requests rather than creating separate menu items;
+- `Admin / Operations` appears only when the authenticated account is authorized and at least one administrative destination is available;
+- `Sign Out` triggers logout without a confirmation dialog.
 
 Guardrail:
 
-- the account menu should not become a full admin nav
-- admin shortcuts can appear later, but public identity actions should remain clear
+- do not add team creation, gauntlet creation/editing, or ordinary entity actions to the account menu; keep those actions on their relevant pages;
+- do not render a disabled or dead `Admin / Operations` entry;
+- authorization is enforced before rendering the admin entry and again by every protected route/API;
+- visually separate `Sign Out` from navigation items and keep it easy to find;
+- the account menu should remain a compact account switchboard rather than a full administrative navigation tree.
 
 ## Sign-Out Flow
 
 User action:
 
 - logged-in user opens avatar/account menu
-- user clicks `Sign out`
+- user clicks `Sign Out`
 
 System behavior:
 
@@ -290,7 +308,6 @@ Examples:
 
 - sign out from `/gauntlets/starforge-02` stays on `/gauntlets/starforge-02`
 - sign out from `/players/some-player` stays on `/players/some-player`
-- sign out from `/players/me/wallets` redirects to `/`
 - sign out from `/teams/team-id/manage` redirects to `/teams/team-id` if available, otherwise `/`
 - sign out from `/gauntlets/gauntlet-id/edit` redirects to `/gauntlets/gauntlet-id` if available, otherwise `/`
 
@@ -320,7 +337,7 @@ If user is logged in but lacks authorization:
 
 Examples:
 
-- unauthenticated `/players/me/wallets` should route to sign-in and return to wallets after successful login
+- unauthenticated `/teams/[id]/manage` should route to sign-in and return to the management route after successful login only when the user is authorized
 - unauthorized `/gauntlets/[id]/edit` should route to `/gauntlets/[id]`
 - unauthorized `/teams/[id]/manage` should route to `/teams/[id]`
 
@@ -362,7 +379,7 @@ Eventun player lookup failed but AccelByte user lookup succeeds:
 
 - allow login with reduced profile context
 - avatar/name can come from AccelByte
-- team, wallet, role, and player-specific overlays may be absent until Eventun data is available
+- team and player-specific overlays may be absent until Eventun data is available
 
 No session after callback:
 
@@ -396,7 +413,7 @@ Avoid:
 ## Accessibility Requirements
 
 - sign-in action must be reachable by keyboard
-- provider menu, if used, must use accessible menu primitives
+- compact sign-in treatment must retain the accessible name `Sign in with Steam`
 - avatar menu must have an accessible label such as `Account menu`
 - sign-out must be a real button/menu item, not only an icon
 - loading and error states must be announced or visible as text
@@ -407,7 +424,6 @@ Avoid:
 Potential non-sensitive events:
 
 - login started
-- login provider selected
 - login succeeded
 - login failed
 - login canceled, if detectable
@@ -421,19 +437,23 @@ Do not log:
 - access tokens
 - refresh tokens
 - raw OpenID payloads
-- wallet addresses from this flow unless explicitly covered by wallet analytics policy
 
 ## Acceptance Criteria
 
 - anonymous users can start Steam login from the top bar
-- if only Steam is supported, the UI does not imply multiple active providers
+- the direct sign-in control starts Steam authentication without an intermediate provider picker
+- compact sign-in treatment retains the accessible name `Sign in with Steam`
 - login from a public page returns to that page after Steam callback
 - login from a protected route returns to that route after successful login when the user is authorized
 - unsafe return paths fall back to `/`
+- the custom `steamopenid` V4 grant is verified and confirmed as an accepted Shared Cloud dependency before launch
+- OpenID realm and callback URLs use a trusted configured public origin rather than a request-supplied host
+- login transaction state is signed, time-limited, nonce-bound, replay-resistant, and restricted to safe relative return paths
 - successful login replaces sign-in control with avatar/account menu
-- avatar/account menu includes Career, Wallets, and Sign out
-- Career menu item is a working link
-- Wallets menu item is a working link
+- avatar/account menu includes working `My Career`, `My Team`, and `Sign Out` items
+- `My Team` exposes pending invitation/request status concisely when available
+- `Admin / Operations` is absent unless the account is authorized and an administrative destination exists
+- creator and entity-management actions remain on their relevant pages rather than in the account menu
 - sign-out from public pages keeps the user on the current public page
 - sign-out from fully private pages redirects to `/`
 - sign-out clears server cookies and client session state
@@ -441,8 +461,5 @@ Do not log:
 
 ## Open Questions
 
-- Should the final V1 UI use a direct `Sign in with Steam` button or keep a provider picker for future providers?
-- Should the logged-in career link be `/players/[id]`, `/players/me`, or another stable alias?
 - Should expired protected routes show `/login?expired=true&returnTo=...` or trigger Steam login directly?
-- Should admin shortcuts appear in the avatar menu in V1, or stay only as in-page actions?
 - Should logout from authorized management routes prefer public parent routes or always return to `/`?

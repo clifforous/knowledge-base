@@ -1,15 +1,10 @@
-# Local Repository Path Mapping
+# Local Repository Path Policy
 
 ## Purpose
-Provide machine-specific local checkout paths without embedding those filesystem paths into durable knowledge notes.
-
-## Knowledge Base Repository
-| Machine | Local Path |
-|---|---|
-| PC | `/home/cgarvis/codex/knowledge-base` |
-| Laptop | `/home/cliff/projects/knowledge-base` |
+Keep machine-specific checkout paths out of this shared repository and its durable knowledge notes.
 
 ## Rules
 - Prefer relative paths for files inside this repository.
-- Prefer GitHub repository references for external Git repositories.
-- Use this file only when a local checkout path is operationally necessary.
+- Use canonical GitHub repository links for external Git repositories.
+- Keep checkout mappings in local-only Codex or agent configuration.
+- Do not add per-machine path tables or executable instructions with personal checkout roots to this repository.

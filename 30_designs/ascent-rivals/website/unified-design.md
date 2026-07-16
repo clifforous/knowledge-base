@@ -2,6 +2,7 @@
 
 Date: 2026-04-10
 Status: Draft
+Framework decision updated: 2026-07-15
 
 ## Related
 - [[../../../50_knowledge/ascent-rivals/overview|ascent-rivals-overview]]
@@ -14,10 +15,10 @@ Status: Draft
 - [[shell-concepts]]
 - [[design-doc-roadmap]]
 - [[information-architecture]]
+- [[initial-release-scope]]
 - [[terminal-ops-design-system]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
-- [[flows/wallet-linking]]
 - [[flows/team-lifecycle]]
 - [[pages/homepage]]
 - [[pages/player-directory]]
@@ -28,6 +29,7 @@ Status: Draft
 - [[pages/teams-index]]
 - [[pages/team-profile]]
 - [[pages/sponsors-index]]
+- [[flows/gauntlet-authoring]]
 - [[../gauntlet-finals-and-tournament-modes-design-review]]
 
 ## Problem Statement
@@ -39,11 +41,11 @@ Ascent Rivals currently has a split web presence:
 
 That split is no longer aligned with the intended product experience.
 
-The new website should be a single public-facing Nuxt application that:
+The new website should be a single public-facing Next.js/React application that:
 
 - supports discovery of the game for new visitors
 - supports repeat usage for players and their followers
-- preserves all current operational and player-facing workflows
+- preserves all approved non-blockchain operational and player-facing workflows
 - expands into richer public stats, event discovery, lore, and eventually watch/live-stream features
 
 The new site should feel cohesive across marketing, public competition browsing, and logged-in player workflows rather than behaving like disconnected products.
@@ -55,46 +57,97 @@ Tone direction:
 
 ## Goals
 
-- unify the current marketing site and the current app into a single Nuxt experience
-- preserve all current `ascentun` feature coverage
+- unify the current marketing site and the current app into a single Next.js/React experience
+- preserve all current non-blockchain `ascentun` feature coverage
 - support both new-visitor discovery and repeat player/follower usage
-- expose players, teams, gauntlets, sponsors, and related public information without requiring login
+- expose players, teams, gauntlets, courses, and related public information without requiring login
 - create a stronger public competition surface for stats, rankings, tournament history, and event discovery
 - provide a durable structure for future lore, course, planet, manufacturer, and world-building content
-- support logged-in player workflows such as Steam auth, wallet linking, and team management
+- support logged-in player workflows such as Steam auth and team management
 - keep Eventun as the primary website backend integration point
 - create a design artifact that can be used to derive implementation epics and sprint slices
 
 ## Non-Goals
 
 - final visual design direction
-- final navigation form factor decision between side nav, top nav, or hybrid nav
-- implementation-level API contracts beyond high-level ownership and system boundaries
+- exact visual composition of the approved responsive top navigation at each measured width
+- final endpoint, protobuf, or storage schemas; page-level Website API requirements remain in scope
 - wallet-only spectator auth in phase 1
 - betting, bounties, or other regulated interaction systems in the initial watch scope
-- a full CMS-backed editorial workflow in the first version
+- a CMS, MDX pipeline, or content framework in the initial release
+- wallet linking, wallet management, token gating, or blockchain-dependent access in the initial release
+- Accountun-related prize or reward presentation, configuration, funding, claims, payouts, wallet requirements, administration, or legacy workflow links in Website V2
 
 ## Constraints
 
-- Framework: Nuxt
-- Existing feature parity with the current `ascentun` site is required
+- Framework: Next.js with React and TypeScript
+- Repository direction: a new greenfield project rather than an extension of `ascent-website` or `ascentun`
+- Existing website repositories are content, asset, behavior, and migration references only
+- Existing non-blockchain feature parity with the current `ascentun` site is required
 - Eventun is the source of truth for:
-  - competition data
-  - wallet state exposed to the website
+  - competition data, including course-record and leaderboard aggregation
   - sponsor data
   - website media metadata
 - AccelByte is currently the source of truth for:
+  - course configuration and feature state
   - items
   - battle pass state
   - ELO/rating data
-- Accountun should generally remain behind Eventun rather than being consumed directly by the site
+- Website V2 does not consume Accountun or expose Accountun-related prize/reward data in the initial release
 - Initial auth model is Steam-only
-- Wallets can be linked after Steam login
 - Streaming API integrations are out of scope initially
+- Legacy Ascentun remains only for the explicitly excluded Midnight/blockchain tournament workflows until those workflows are separately retired or relocated
+- All current non-blockchain team, gauntlet, sponsor, and media-administration workflows move to Website V2 at launch
+- Website V2 follows the planned team feature work; team analytics are launch requirements, while their exact presentation is finalized against the implemented team contracts
 
 ## Core Product Decision
 
-Build one unified Nuxt application with multiple public-use modes rather than separate marketing and application sites.
+Build one unified Next.js/React application with multiple public-use modes rather than separate marketing and application sites.
+
+## Framework and Repository Decision
+
+Decision date: 2026-07-15
+
+Use a new greenfield Next.js/React project for Website V2.
+
+Rationale:
+
+- React and Next.js remain the most maintainable choice for the current developer workflow.
+- The ecosystem provides broad support for AI-assisted implementation, code review, design translation, accessible primitives, and common web tooling.
+- Choosing a less familiar server or UI stack would add implementation and operational novelty without addressing a current product requirement.
+- Starting from a new project avoids inheriting the structure, visual assumptions, and deferred legacy workflows of either current website.
+
+Default design implementation loop:
+
+1. implement an approved design or design revision in the application;
+2. review the code;
+3. inspect the result manually in the browser at the required responsive sizes;
+4. iterate until the visual and functional review passes.
+
+Storybook, automated screenshots, and visual-regression tooling are optional. Add them only when repeated component states, collaboration needs, or regression risk justify their ongoing cost.
+
+This decision supersedes Nuxt/Vue/Reka UI references in the decomposed Website V2 drafts. Those references should be reconciled during the dedicated knowledge-base cleanup rather than treated as active constraints.
+
+## Marketing Content Authoring Decision
+
+Decision date: 2026-07-15
+
+Keep the initial marketing-content workflow inside the Next.js repository using ordinary TypeScript and TSX.
+
+- Keep short, layout-specific copy beside the component that presents it.
+- Place long or structured route content in a typed `content.ts` file beside the route.
+- Use shared typed content models only for repeated structures such as editorial event pages.
+- Store each event's content in its own route-local content file, while allowing bespoke sections when a design cannot be represented cleanly by the shared model.
+- Keep title, description, canonical URL, and social-image metadata with the route content they describe.
+- Organize static assets by route or event slug using predictable repository paths.
+- Do not introduce a CMS, MDX, content collection, or global copy registry for the initial release.
+
+Content update loop:
+
+1. designer supplies the approved mock, copy, and assets;
+2. developer or coding agent updates the route, component, or typed content module;
+3. changes receive code review and manual responsive browser review;
+4. the content and implementation ship together.
 
 The site should support three experience modes:
 
@@ -107,10 +160,10 @@ The site should support three experience modes:
    - largely accessible without login
 
 3. Logged-in player/private overlays
-   - for workflows that require account state, team state, wallet state, or user-specific participation context
+   - for workflows that require account state, team state, or user-specific participation context
    - private information should usually be layered into the public pages rather than isolated into an entirely separate product unless the workflow is inherently private
 
-This avoids forcing a hard split between discovery and utility while still allowing the homepage and navigation system to adapt based on visitor context.
+This avoids forcing a hard split between discovery and utility while still allowing navigation and selected modules to adapt based on visitor context.
 
 ## Audience Model
 
@@ -132,7 +185,6 @@ Most of the site should be public.
 Private areas should be limited to workflows such as:
 
 - login and session-bound identity
-- wallet linking
 - team management actions
 - admin-only sponsor and tournament operations
 - user-specific competition context not intended for public display
@@ -141,41 +193,63 @@ Private areas should be limited to workflows such as:
 
 ### Homepage behavior
 
-The homepage should adapt over time instead of being permanently marketing-first or competition-first.
+Decision updated: 2026-07-16
 
 Current direction:
 
-- the root route should function as a player/competition command center
-- new visitors should still encounter enough brand and game-context onboarding to understand Ascent Rivals
-- returning users should reach search, gauntlets, course records, players, teams, and sponsors quickly
-- logged-in users should see personalized competition context layered into the same public page
-- the dedicated `/game` route should carry the heavier marketing/game overview work
+- the root route `/` is the primary marketing and conversion homepage
+- `/gauntlets` is the primary entry into competition and player-facing utility
+- the homepage may use one bounded current-competition or recent-event teaser, but should not become a competition dashboard
+- logged-in users may receive light personalization within fixed content slots without changing section order, module placement, responsive composition, or the page's primary marketing purpose; confirmed game ownership may replace the repeated `Play Now` emphasis with an `Explore Gauntlets` primary action, while sign-in alone does not prove ownership
+- `/game` is deferred from the initial route map and should be added later only if a deeper game-systems overview can avoid duplicating the homepage
 
-The current page-level spec is [[pages/homepage]].
+The [[pages/homepage]] specification now records the approved marketing-first hierarchy and replaces the superseded command-center homepage direction.
 
 ### Homepage module priorities
 
-For anonymous visitors, the current homepage priority order is:
+The approved homepage priority order is:
 
-1. command hero with Ascent Rivals branding and a marketing/game bridge
-2. search everywhere
-3. active and upcoming gauntlets
-4. high-level status strip
-5. course record highlights
-6. pilot highlights
-7. generated system log from real snapshot data
-8. optional sponsor strip
+1. hero and primary conversion, using accurate `Play Now` or release-state copy
+2. gameplay and Ascension Mode
+3. ships and customization
+4. one optional bounded race-network proof module
+5. worlds, planets, and courses
+6. events and community
+7. final conversion and next actions
 
-For logged-in users, the homepage should bias toward utility and immediate re-entry.
+For logged-in users, preserve the same section order, module placement, responsive composition, and CTA region. Personalization may change copy, actions, or data inside an existing slot but must not create an authenticated layout variant. When reliable server-side data confirms ownership of the relevant Steam application, the hero and final CTA may prioritize `Explore Gauntlets` and retain a smaller accurate Steam play/launch action. Do not infer ownership from sign-in or claim to know installation state.
 
-Current high-priority logged-in modules:
+Possible logged-in enhancements:
 
-- search everywhere
-- gauntlets with the user's current rank or participation context
-- course leaderboard placement, where available
-- career, wallet, and team links through the avatar menu
+- ownership-aware hero and final conversion actions when ownership is reliably confirmed
+- a current or upcoming gauntlet teaser with participation context
+- direct links to career or team destinations through the account menu
 
-The homepage should therefore be treated as an adaptive composition problem, not as a single static landing page.
+Personalization must remain additive and should not create a separate homepage information architecture.
+
+The optional race-network module selects at most one featured item, with up to two compact supporting links: prefer a reliably active public gauntlet, then an upcoming gauntlet, a recently completed gauntlet with verified context, or a code-authored `/events` recap. Omit the module when none is strong enough. Do not add homepage telemetry, generated system logs, or multiple leaderboard/data panels.
+
+### Existing homepage migration decision
+
+Preserve the current marketing homepage's useful content categories, not its implementation or layout.
+
+Preserve as inputs:
+
+- hero and Steam conversion intent
+- gameplay feature explanation
+- gameplay video
+- ship customization proof
+- gallery or current media proof
+- verified partners
+- community links
+
+Migration requirements:
+
+- rewrite or revalidate all copy and gameplay claims
+- refresh screenshots, video, partner approvals, and conversion wording
+- rebuild layout and components from scratch in the revised Terminal Ops sci-fi direction
+- treat current backgrounds, clipping treatments, styling, and React components as references only
+- add one optional Website V2 race-network teaser that routes to `/gauntlets` or an explicitly labeled editorial fallback under `/events`
 
 ### Current shell concept candidate
 
@@ -189,26 +263,13 @@ Useful direction from that concept:
 - telemetry/status strips as recurring context elements
 - system-log style activity modules
 
-This is not a final implementation decision.
+The global navigation decision is now final at the information-architecture level: use one responsive top bar with stable `Gauntlets`, `Pilots`, `Teams`, `Courses`, and `Events` destinations, plus search and login/account. Do not add a persistent global side navigation or separate marketing/competition bridge control. Page-local tabs, rails, or section navigation remain available where a complex entity page needs them.
 
-Open questions remain around:
-
-- whether prompt navigation replaces or complements side navigation
-- how much monospace typography is appropriate
-- how to make the concept gritty and physical enough without becoming a clean terminal dashboard
-- how the shell adapts to mobile and data-heavy player pages
+Visual implementation questions remain around typography, physical material treatment, and the exact compact/mobile composition. Resolve those through mocks without changing the approved route order or accessibility model.
 
 ### Navigation behavior
 
-Current preference is for a consistent navigation system across the site, likely influenced by the current app's side-navigation model.
-
-However, the exact navigation pattern is intentionally still open:
-
-- side navigation
-- top navigation
-- hybrid navigation
-
-The design work should test these alternatives before the final information architecture is locked.
+Use the approved consistent responsive top bar. Wide layouts may show all five primary destinations. As available width decreases, move `Events` and then other destinations from the right side of the ordered list into `More`; never wrap, compress, or ambiguously abbreviate labels. Mobile retains brand, search, menu, and login/account controls and places the complete destination list in the drawer. `About` and `Brand` remain secondary menu/footer destinations, and authorized sponsor operations live in the account/admin menu.
 
 ## Information Architecture Direction
 
@@ -217,10 +278,10 @@ The site should be organized around public entities first, not only around inter
 ### Likely top-level public areas
 
 - Home
-- Gauntlets / Events
+- Gauntlets
+- Events
 - Players
 - Teams
-- Sponsors
 - Watch
 - Game
 - Features
@@ -234,10 +295,11 @@ Not all of these need to appear in the initial primary navigation, but the conte
 
 ### Likely logged-in destinations
 
-- My profile / career
-- Wallets
-- Team management
+- My Career through the approved account menu
+- My Team through the approved account menu, with pending invitation/request status when relevant
 - User-specific gauntlet participation context
+
+`Admin / Operations` appears in the account menu only when authorized and when at least one destination exists. `Sign Out` remains a distinct final action. Team/gauntlet creation, editing, and other object-specific actions stay on their relevant pages rather than becoming global account-menu entries.
 
 ### Likely admin destinations
 
@@ -252,16 +314,21 @@ This section captures the current page-priority model so the design work can sta
 ### Phase-1 must-have pages
 
 - `/`
-  - adaptive homepage
-  - player/competition command center with lightweight branding
-  - anonymous view should support search, current competition state, and a bridge to `/game`
-  - logged-in view should layer in utility and personalized competition context
-- `/game`
-  - primary editorial or marketing page describing the game
+  - primary marketing and conversion homepage
+  - may include selected competition and community proof
+  - provides a clear bridge to `/gauntlets`
 - `/gauntlets`
   - public gauntlet and event discovery
 - `/gauntlets/[id]`
   - public gauntlet detail with personalized overlays when logged in
+- `/events`
+  - code-authored editorial listing for LANs, showcases, sponsored tournaments, historical competitions, and recordings
+- `/events/[slug]`
+  - code-authored editorial event detail; may link to a related gauntlet or legacy operational workflow when applicable
+- `/about`
+  - concise studio story, mission, current team, and verified recognition
+- `/brand`
+  - verified logo downloads and usage rules, rebuilt against the approved Website V2 visual direction
 - `/players`
   - public player directory
 - `/players/[id]`
@@ -270,18 +337,21 @@ This section captures the current page-priority model so the design work can sta
   - public team directory
 - `/teams/[id]`
   - public team detail with management affordances when authorized
-- `/sponsors`
-  - sponsor and partner listing
+- `/courses`
+  - course discovery, search, and cross-course summaries
+- `/courses/[code]`
+  - shareable course briefing, category leaderboard, records, and pilot placement context
 
 ### Phase-1 nice-to-have pages
 
 - `/features`
 - `/media`
-- `/courses`
 - `/press`
 
 ### Later pages
 
+- `/game`
+  - conditional deeper game-systems overview once enough distinct content exists
 - `/watch`
 - `/lore`
 - `/faq`
@@ -291,16 +361,17 @@ This section captures the current page-priority model so the design work can sta
 Even when not called out in the public page inventory above, the new site must still preserve current authenticated and operational routes for:
 
 - Steam login
-- wallet linking and verification
 - team creation and management
 - gauntlet creation and management
 - sponsor administration
+
+Accountun-related prize and reward data is entirely deferred. Legacy workflows may continue independently, but Website V2 does not expose or link them and they are not parity requirements. Verified prize descriptions may still appear as code-authored promotional copy on a related editorial event page.
 
 ## Feature Inventory
 
 ## Preserved from Current Site
 
-All existing features from the current `ascentun` application should be preserved.
+All approved non-blockchain features from the current `ascentun` application should be preserved. The detailed behavioral inventory, exclusions, and Eventun readiness gates are defined in [[initial-release-scope]].
 
 ### Identity and auth
 
@@ -330,26 +401,43 @@ All existing features from the current `ascentun` application should be preserve
 ### Gauntlets
 
 - gauntlet list and detail pages
+- `/gauntlets` defaults to a unique-gauntlet `Current & Upcoming` directory sorted by active or nearest future occurrence, with `Past` as a URL-backed secondary scope
+- the alternate URL-backed `Schedule` view is a chronological agenda of qualifier and stage occurrences and may repeat one gauntlet for multiple windows
+- long-lived and ad hoc playtest gauntlets are current only during an actual occurrence window; between windows they sort by the next occurrence and move to Past when none exists
+- schedule overlap supports `Current`, `Upcoming`, and `Past` timing language but not `Live`; stronger runtime/completion language requires an explicit state contract
 - gauntlet creation and editing
 - qualifier views
 - stage views
 - standings
 - stats
-- sponsor association
-- prize management and result flows already supported by the current app
+- direct gauntlet advertising-media upload and optional sponsor-entity association
+- non-blockchain create, edit, and delete workflows
 
-### Wallets and entitlements
+Core create/edit uses one sectioned form with Core Details, Competition Structure, Branding and Advertising, and Review and Save. It is not a wizard, has no implied draft/autosave state, and does not absorb bracket authoring. See [[flows/gauntlet-authoring]].
 
-- wallet linking
-- wallet verification
-- Cardano wallet support
-- Midnight wallet support
+### Explicit legacy exclusions
+
+- wallet linking, verification, and management
+- Cardano and Midnight wallet support
+- token-gated teams and token catalogs
+- all Accountun-related prize/reward presentation and workflows
 
 ### Sponsors and operations
 
-- sponsor list and sponsor detail
+- administrator-only sponsor list and detail
 - sponsor CRUD/admin flows
 - current admin-specific access controls
+
+Terminology boundary:
+
+- `Sponsor` is the Eventun-backed competition entity used in administrator search, optional gauntlet relationships, and administration;
+- direct gauntlet-owned `Billboard` media are the primary initial creator workflow because tournament campaigns and artwork frequently vary; use explicit `Tileable` metadata and a three-copy tile preview for ribbon-style placement compatibility rather than a distinct new `WideBillboard` upload;
+- retain an existing-sponsor picker as a scoped advanced gauntlet-authoring control without granting creators general registry access;
+- sponsor registry/detail routes are not public destinations; approved sponsor branding may still appear within its gauntlet context without exposing operational tier or linking to the registry;
+- `Partner` is a broader code-authored marketing relationship and does not imply Eventun sponsorship;
+- defer `/partners` until distinct partner content and ownership justify a separate route.
+
+Do not infer custom Website behavior from every configured media-purpose label. Initial media management uses shared labeled upload and thumbnail controls except where a verified consumer, such as tileable billboard placement, requires a narrow purpose-specific control. Automatic image-dimension capture, aspect-ratio classification, and placement-slot matching belong to the later advertising redesign.
 
 ### Discovery
 
@@ -379,7 +467,7 @@ These are in scope for the long-term site design, though not all are phase-1 req
 ### Public stats
 
 - richer public player stats
-- richer public team stats
+- richer public team stats, initially secondary to individual pilot results and subject to post-implementation review
 - richer gauntlet stats
 - historical ranking context
 - medal and trophy display models
@@ -418,7 +506,7 @@ Examples:
 - stage-only or bracket-only special events
 - invite-only team events
 - traditional gauntlets with qualifiers and finals
-- sponsored prize events
+- sponsored events
 - manually operated showcase or LAN events
 
 The site should avoid over-splitting these too early if the live catalog is sparse.
@@ -427,7 +515,6 @@ The site should avoid over-splitting these too early if the live catalog is spar
 
 - players
 - teams
-- sponsors
 - courses
 - planets
 - ship parts
@@ -442,8 +529,9 @@ Search should eventually support grouped results across:
 - courses
 - planets
 - gauntlets
-- sponsors
 - ship parts
+
+Permission-filtered administrative search may add Eventun sponsors for administrators. Sponsor records are not public content entities or public/general creator search results.
 
 General lore should not be the first search priority and may instead be discoverable through dedicated content pages and entity relationships.
 
@@ -506,7 +594,6 @@ Private player functionality should remain intentionally small in phase 1.
 
 ### Phase-1 private priorities
 
-- wallet linking and verification
 - account-aware access to team state
 - user-specific context embedded into otherwise public pages
 
@@ -515,7 +602,7 @@ Examples:
 - a gauntlet page can show the logged-in user's current rank
 - a gauntlet page can show whether the user has qualified
 - a player/team surface can expose actions only relevant to the current user
-- a player's own public profile can expose wallet and team actions
+- a player's own public profile can expose team and account actions
 - a player's own public profile can show AccelByte-owned medals or badges if available through the logged-in token
 
 ### Deferred/private candidates
@@ -526,7 +613,6 @@ These may be added later but are not current launch requirements:
 - battle pass progress
 - broader account settings
 - notifications center
-- reward history
 
 ## Team Experience
 
@@ -535,8 +621,10 @@ The team experience should preserve all current management flows and add a riche
 ### Public team direction
 
 - roster
-- team stats
-- team standings in gauntlets
+- public membership mode using `Open`, `Request to Join`, or `Invite Only` for every audience
+- prominent individual pilot identities and profile links
+- fact-backed team stats as a secondary launch surface, with exact modules re-evaluated after team-feature iteration
+- team standings in gauntlets only when the competition defines team-result semantics
 - medals earned by the team
 - trophies earned in team-based finals
 - public team history over time
@@ -544,6 +632,19 @@ The team experience should preserve all current management flows and add a riche
 ### Private team direction
 
 Private team actions can remain attached to the team context rather than moving to a separate profile/settings model.
+
+Route decision:
+
+- `/teams/[id]` remains the public team context and owns ordinary join/request/leave actions;
+- `/teams/[id]/manage` is the dedicated permissioned workspace for metadata, media, roster administration, invitations, requests, ownership transfer, and disbanding;
+- a contextual `Manage Team` action connects the two routes and the management view retains the selected team's identity.
+
+Membership-mode decision:
+
+- use the stable public labels `Open`, `Request to Join`, and `Invite Only`;
+- show the same label to anonymous and authenticated visitors;
+- vary the available action according to authentication, current membership, and invitation state;
+- map the reviewed new-team enums to these labels rather than exposing backend terminology directly.
 
 This includes:
 
@@ -584,29 +685,32 @@ Gauntlets are a central product surface and may eventually cover multiple event 
 - standings
 - stats
 - sponsor display
-- prize display and claim/funding/result flows already supported by the current app
 
 ### Expanded direction
 
-- differentiate current, upcoming, and past gauntlets
+- distinguish unique gauntlet discovery from qualifier/stage occurrence scheduling
+- classify directory relevance from an active or nearest future occurrence rather than the broad first-to-final gauntlet span
 - support bracketed tournaments
 - support invite-only tournaments
 - support team tournaments
 - show qualifier timelines and finals timing more clearly
-- support event calendar views
-- show sponsor associations prominently
-- show prize pools and non-currency prizes in the presentation layer
+- support a responsive chronological Schedule agenda that may repeat one gauntlet for separate occurrences
+- show an approved sponsor association when one exists, but do not infer sponsor identity from direct billboard artwork
 
 ### Listing model
 
 The current preferred listing structure for `/gauntlets` is:
 
-- emphasize current gauntlets
-- emphasize upcoming gauntlets
-- provide a separate way to browse past gauntlets
-- optionally call out featured events when the catalog supports it
+- default to a unique-gauntlet `Current & Upcoming` scope;
+- sort active occurrence windows first and remaining gauntlets by their nearest future occurrence;
+- keep `Past` as a URL-backed secondary scope;
+- keep every successfully created gauntlet public; Past is a discovery scope rather than a hidden or unpublished state;
+- provide `Schedule` as a URL-backed chronological occurrence agenda where one gauntlet may appear multiple times;
+- avoid separate empty Current and Upcoming bands.
 
-Calendar support is still desirable, but it should likely arrive later as a separate view unless the final design work shows that calendar-first discovery is materially better.
+Do not add a dedicated calendar route until it provides value beyond the initial responsive Schedule agenda. Schedule-derived timing supports Current, Upcoming, and Past labels but does not justify `Live` without an explicit runtime or broadcast contract.
+
+The initial release has no gauntlet draft/public lifecycle. Successful creation publishes the gauntlet immediately. Any future private draft, embargo, cancellation, or administrative suppression feature requires explicit Eventun state and authorization rather than a Website-only inference.
 
 ### Detail page priority order
 
@@ -617,9 +721,8 @@ The current gauntlet detail priority order is:
 3. personal status when logged in
 4. hero and branding
 5. sponsors
-6. prize pool or prizes
-7. watch stream
-8. past winners or history
+6. watch stream
+7. past winners or history
 
 Standings remain required because they exist in the current site, but they may live within qualifier and finals sections rather than dominating the page structure on their own.
 
@@ -629,17 +732,15 @@ Terminology guardrail:
 - heats are runtime rounds inside a match
 - do not use qualifier and heat interchangeably in route names, API mocks, UI labels, or Pencil prompts
 
-### Prize representation gap
+### Prize and reward boundary
 
-The current prize API is primarily currency-oriented.
+Prize and reward data is Accountun-related and entirely deferred from Website V2.
 
-The website design should anticipate richer prize presentation such as:
-
-- hardware prizes
-- sponsored physical prizes
-- showcase rewards
-
-This may require presentation-layer accommodation before the underlying prize APIs are expanded.
+- do not integrate Accountun into Website V2 for the initial release;
+- do not display prize pools, reward descriptions, distribution, funding, claims, payouts, wallet requirements, or reward state;
+- do not link public or authenticated Website V2 surfaces into legacy prize/reward workflows;
+- permit verified code-authored promotional prize copy on `/events/[slug]` without Accountun reads or live funding/eligibility/claim/payout implications;
+- revisit the product, authorization, and system boundary as one deliberate later design rather than preserving partial presentation.
 
 ## Match History and Match Detail
 
@@ -666,11 +767,15 @@ Match history is more relevant when scoped to:
 
 `/watch` is not a phase-1 must-have page.
 
+Current broadcasts are user-operated: a shoutcaster launches the game, joins as a spectator, and streams the client through their own Twitch channel. Eventun does not currently provide a canonical broadcaster, stream URL, or reliable live-status contract for Website V2.
+
 ## Initial direction when watch ships
 
 - start with a YouTube VOD list
 - allow an offline-but-useful watch surface even when no live stream exists
-- later add embedded Twitch or YouTube live broadcasts when tournaments are actively being broadcast
+- permit manually verified Twitch, YouTube, or VOD links on code-authored event pages before a first-party watch system exists
+- consider embedded live broadcasts only after broadcaster authorization, spectator admission, stream registration, status, moderation, and ownership are designed
+- never auto-discover a user's personal stream or fabricate a `Live` state
 
 ## Deferred ideas
 
@@ -696,7 +801,7 @@ The content model should support both branded marketing content and deeper world
 - Courses
 - FAQ
 - Press
-- Sponsors
+- Partners, if separately verified code-authored content later justifies a route
 - Watch
 
 ### Current editorial structure direction
@@ -733,34 +838,37 @@ Search-everywhere is also a homepage priority for logged-in users and should be 
 - courses
 - players
 - teams
-- sponsors
 - planets
 - ship parts
+
+Sponsor lookup is an authorized operational search group rather than part of public search-everywhere.
 
 Search-everywhere behavior is desirable, but result grouping by entity type should remain explicit so the experience does not become noisy or ambiguous.
 
 ## Stats Architecture
 
-The current direction is to ship richer stats inside entity pages first rather than creating a dedicated `/stats` hub in phase 1.
+The initial replacement release ships richer stats inside entity pages rather than creating a dedicated `/stats` hub.
 
 Current priority order for deeper stats surfaces:
 
-1. gauntlets
+1. pilots
 2. courses
-3. players
-4. teams
+3. teams
+4. gauntlets
 
-This keeps the initial implementation anchored to the places where users already have strong intent instead of creating a separate stats destination too early.
+Individual pilot performance remains the primary competitive lens during the current design phase. Team analytics stay in launch scope, but they must not displace pilot profiles, roster members, or exact individual results until the team implementation and its real usage have been reviewed.
+
+Tables remain the primary representation for exact standings, leaderboards, rosters, schedules, and match rows. Visualizations are required where they communicate a bounded trend, comparison, gap, or contribution more clearly than a table. They must not imply population percentiles from top-N data, compare unlike course times on one scale, or derive historical team performance from current rosters.
+
+Eventun F14 supplies incremental pilot career, pilot-course career, current-record, player-rank, recent-match-history, and gauntlet read paths in its current worktree. Website launch depends on F14 review and the F15 production backfill/cutover. Credible team analytics also depend on the planned T03 fact-backed team reads and event-time membership attribution after the F15/T00 checkpoint.
+
+See [[initial-release-scope]] for the initial analytics matrix and contract gaps.
 
 ## Auth and Personalization Model
 
 ## Phase-1 auth
 
 - Steam login only
-
-## Phase-1 account extension
-
-- post-login wallet linking
 
 ## Personalization direction
 
@@ -770,7 +878,6 @@ Examples:
 
 - personalized competition context on gauntlet pages
 - easy access to profile/avatar state
-- easy access to wallets
 - team-aware actions
 
 Wallet-only spectator sign-in can be revisited later if spectator interaction systems become important.
@@ -781,22 +888,33 @@ Wallet-only spectator sign-in can be revisited later if spectator interaction sy
 
 Primary website integration point for:
 
-- competition data
+- competition data, including authoritative course-record and leaderboard aggregation
 - gauntlet, player, and team state exposed on the web
 - sponsor data
 - media metadata
-- wallet state surfaced in the site
-- mediated access to accounting-related data
+
+Existing game-client endpoints are reusable inputs, not a fixed Website contract. Extend Eventun or add purpose-built Website read endpoints when a page requires different aggregation, bounded series, filtering, pagination, visibility semantics, or response composition.
+
+### Website-facing read contracts
+
+- reuse an existing endpoint when its meaning and shape fit the Website requirement cleanly;
+- prefer server-computed, authoritative metrics and aggregates over reconstruction in React or browser code;
+- allow the Next.js server layer to authenticate, cache, and compose responses, but do not make it a competing system of record;
+- add stable Website-oriented contracts when reusing several client-oriented calls would create N+1 access, inconsistent snapshots, excessive payloads, or duplicated metric logic;
+- include explicit metric meaning, unit, scope, time window, freshness/as-of context, pagination, and null/no-data behavior where applicable;
+- preserve source-system visibility and permission rules on the server rather than filtering sensitive records only in the browser;
+- keep implementation and validation details that could assist event forgery or abuse out of public response metadata and UI copy.
 
 ### Accountun
 
 - accounting execution remains an internal/domain service concern
-- website usage should generally flow through Eventun rather than integrating Accountun directly
+- Website V2 has no initial Accountun integration and exposes no Accountun-related prize or reward data
 
 ### AccelByte
 
 Current external source of truth for:
 
+- course configuration and feature state
 - items
 - battle pass state
 - ELO/rating data
@@ -807,17 +925,18 @@ These may be surfaced on the website later, but they are not the primary phase-1
 
 ## Phase 1
 
-Unified branded site plus current core workflows with improved UX.
+Replacement branded site plus current non-blockchain workflows and improved public analytics.
 
 Primary outcomes:
 
-- one Nuxt application
-- preserved current operational features
+- one greenfield Next.js/React application
+- preserved current non-blockchain operational features
 - stronger public-facing polish
 - better bridge between marketing and competition usage
-- must-have public pages for home, game, gauntlets, players, teams, and sponsors
-- stats embedded in entity pages rather than a separate stats hub
+- must-have public pages for home, events, about, brand, gauntlets, players, teams, and courses
+- pilot, course, and team analytics embedded in entity pages rather than a separate stats hub
 - adaptive homepage behavior for anonymous versus logged-in users
+- production-cut-over Eventun reads for statistics, with fact-backed team attribution rather than current-roster inference
 
 ## Phase 2
 
@@ -836,7 +955,7 @@ Potential scope:
 - historical winners
 - manually run event showcases
 - user-created gauntlet showcases
-- prize and winner presentation
+- winner presentation
 - season/circuit overview patterns if appropriate
 
 ## Phase 4
@@ -873,38 +992,34 @@ Potential scope:
 ## Risks
 
 - Trying to solve marketing, operations, competition discovery, stats, lore, and watch in a single pass will create an unfocused first version.
+- Treating the replacement target as a visual merge without migrating authenticated non-blockchain operations would leave a second operational site in place.
+- Team charts are incorrect until Eventun can attribute performance to membership at event time; summing current roster careers is not an acceptable shortcut.
 - Over-separating event types too early could make the site feel empty when the actual event volume is still low.
-- Under-specifying the adaptive homepage could lead to a weak compromise that serves neither new users nor returning players well.
+- Overloading the marketing homepage with player utility could weaken conversion and recreate the superseded command-center compromise.
 - Public/private blending is directionally correct, but it can produce confusing permission edges if actions are not clearly scoped.
-- Richer prize presentation may outgrow the current prize APIs.
+- Accidentally preserving prize/reward fragments would create an undefined Accountun and authorization boundary; exclude the area completely until it is redesigned.
 - Future interaction concepts such as betting or bounties should be treated as separate product and policy workstreams, not as simple website features.
 
 ## Open Questions
 
-- What should the homepage do by default for:
-  - anonymous first-time visitors
-  - anonymous returning visitors
-  - logged-in players
-- Should navigation be:
-  - side nav
-  - top nav
-  - hybrid
+- Which supported source can confirm Steam ownership for homepage CTA personalization in the Shared Cloud architecture?
+- Should the bounded homepage race-network item use code-authored curation, an Eventun feature marker, or a deterministic state/recency rule?
 - How should seasonal rank history be modeled if general competitive seasons exist outside gauntlets?
 - Which public event types should receive distinct listing categories versus shared listing/filter treatment?
-- What authoring path will be used for homepage news or announcements if the site does not use a CMS?
-- Which backend source should own course leaderboard aggregation and public rank-tier history presentation?
+- If public seasonal rank-tier history is added, should AccelByte expose the required history through Eventun or another reviewed Website read contract?
 - When `/watch` ships, should the first live experience be embedded on gauntlet pages, on a dedicated page, or both?
 
 ## Initial Epic Breakdown
 
 These are not yet sprint plans, but they are strong candidates for implementation epics and initial workstreams.
 
-### 1. Unified shell and adaptive homepage
+### 1. Unified shell and marketing homepage
 
-- common Nuxt shell
-- navigation experiments and final shell decision
-- anonymous versus logged-in homepage composition
-- search-everywhere entry point
+- common Next.js/React shell
+- implementation of the approved responsive top-bar and page-local navigation model
+- marketing proposition and conversion path
+- limited anonymous versus logged-in personalization
+- competition bridge to `/gauntlets`
 
 ### 2. Public gauntlet discovery and detail redesign
 
@@ -931,21 +1046,22 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 
 ### 5. Marketing and editorial content foundation
 
-- `/game`
+- `/` marketing homepage
 - optional `/features`, `/media`, `/courses`, `/press`
 - homepage announcements and brand modules
 - Steam CTA and social-link integration
 
 ### 6. Sponsor and partner presentation
 
-- public sponsor index
-- sponsor relationship display on gauntlets and other surfaces
+- administrator-only sponsor registry/detail
+- approved sponsor relationship display in public gauntlet context without a public sponsor profile link
 - preserved sponsor admin workflows
+- direct gauntlet `Billboard` upload as the primary creator path, with explicit tileable metadata and reusable sponsor association optional/advanced
+- code-authored partner presentation where separately verified
 
 ### 7. Shared data, auth, and personalization foundation
 
 - Steam auth migration
-- wallet linking migration
 - Eventun integration foundation
 - AccelByte-derived public data integration where needed
 - session-aware personalization on public pages
@@ -962,5 +1078,8 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 - produce design passes for homepage, nav, and entity-page shell options
 - define a page inventory for phase 1 and map each page to audience, auth level, and data dependencies
 - derive implementation epics from the feature inventory
-- validate that every existing `ascentun` workflow has a destination in the new site
+- validate that every approved non-blockchain `ascentun` workflow has a destination in the new site
+- validate that excluded wallet, token-gating, and all Accountun prize/reward data and links remain outside Website V2 acceptance criteria
 - validate the Eventun and AccelByte integration boundaries before implementation work begins
+- use code review and manual browser review as the default visual validation loop
+- introduce isolated component workshops or automated screenshot comparison only where their value exceeds their maintenance and AI-token cost

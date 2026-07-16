@@ -64,9 +64,7 @@ Good:
 - `Final Stage Scheduled`
 - `Pilot Status`
 - `Current Rank`
-- `Prize Pool`
 - `Standings Sync`
-- `Wallet Link Required`
 - `Team Invite Pending`
 - `Signal Acquired`
 
@@ -88,7 +86,6 @@ Good:
 - `No active gauntlets detected.`
 - `Pilot profile not found.`
 - `Unable to sync standings. Retry.`
-- `Wallet link required before claiming rewards.`
 
 Avoid:
 
@@ -127,7 +124,6 @@ Good:
 - `Qualifier Windows`
 - `Final Stage`
 - `Overall Standings`
-- `Prize Manifest`
 - `Sponsor Signal`
 - `Pilot Eligibility`
 
@@ -178,18 +174,12 @@ Good:
 - `View Gauntlet`
 - `Create Gauntlet`
 - `Edit Gauntlet`
-- `Claim Reward`
-- `Link Wallet`
+- `View Standings`
 - `Join Team`
 - `Accept Invite`
 - `Sign in with Steam`
 
 Optional terminal treatment can appear around the action, but the action label should remain clear.
-
-Example:
-
-- visual label: `$ claim reward`
-- accessible label: `Claim reward`
 
 ## Motion and Terminal Text
 

@@ -30,19 +30,19 @@ This page should help players and followers answer:
 Working route:
 
 - `/courses`
-
-Optional later route:
-
 - `/courses/[code]`
 
-V1 route direction:
+Initial route direction:
 
-- `/courses` can support course and category selection through query state or local page state
-- do not require `/courses/[code]` until the product needs shareable course-detail URLs, lore-heavy course pages, or deeper per-course analytics
+- use `/courses` for course discovery, search, and cross-course summaries;
+- use `/courses/[code]` for the selected course briefing, category leaderboard, record context, and personal placement;
+- treat the course code as the stable URL identifier and the display name as mutable presentation data;
+- link directly to course detail from pilot profiles, gauntlets, search results, and cross-course summaries;
+- preserve the selected leaderboard category in query state so the exact view is shareable.
 
-Possible query shape:
+Query shape:
 
-- `/courses?course={courseCode}&category={category}`
+- `/courses/{courseCode}?category={category}`
 
 ## Audience
 
@@ -71,9 +71,11 @@ Secondary:
 
 ## Current V1 Data Availability
 
+Foundation readiness note (2026-07-15): Eventun F14 moves current course records and player ranks to incremental serving projections in the current Eventun worktree. Website V2 launch use remains gated on F14 review and the F15 production historical backfill and cutover.
+
 ### Course metadata
 
-Available:
+Authoritative in AccelByte Cloud Save `Courses`:
 
 - course code
 - display name
@@ -82,17 +84,68 @@ Available:
 - difficulty
 - heats
 - laps
-- active state
+- feature state and the configured production-ready feature state
+- other course configuration
+
+Currently exposed through the Eventun public course read:
+
+- course code
+- display name
+- planet
+- description
+- difficulty
+- heats
+- laps
+- derived active state
 - media
 
-Source:
+Source authority:
 
-- `GET /v1/course`
+- AccelByte Cloud Save `Courses`
+
+Current Website API access path:
+
+- `GET /v1/course`, backed by Eventun's controlled cache of the AccelByte record
+
+Contract caution:
+
+- the current public response exposes only a derived `active` boolean rather than the source feature state;
+- it returns inactive rows as well as active rows;
+- that boolean is not sufficient to distinguish a previously public archived course from alpha, internal, or otherwise unreleased content.
 
 Terminology note:
 
 - course `heats` and `laps` describe course/match runtime settings
 - they are not gauntlet qualifiers
+
+### Course Visibility and Archive Policy
+
+Approved public behavior:
+
+- show production-ready courses by default on `/courses` and in public search;
+- provide an `Archived` filter for courses that were previously public and are deliberately retired;
+- keep explicitly archived course detail pages and historical records accessible through direct links;
+- label archived courses clearly and omit current-competition calls to action when they are no longer usable.
+
+Visibility guardrails:
+
+- AccelByte feature state is authoritative; Website V2 must not treat the Eventun course table as the owner of publication state;
+- `Prod` is the currently documented officially released state, but consumers should honor the configured enabled feature state rather than hard-code that string;
+- alpha, internal, and other unreleased courses must not appear in anonymous directories, global search, metadata, sitemaps, or deep-link responses;
+- do not classify every `active = false` course as archived, because the current derived boolean collapses retired and unreleased states;
+- classify a course as `published` when its AccelByte feature state matches the configured enabled/production-ready state and it is not marked archived;
+- classify a course as `archived` only when an explicit AccelByte course-metadata marker asserts that the previously public course was deliberately retired;
+- classify alpha, internal, disabled, unknown, incomplete, conflicting, and otherwise unreleased configurations as `hidden`;
+- fail closed: `hidden` is an internal classification and must not be serialized by a public Website read or distinguished from a missing course through the public detail route.
+
+Website-facing API requirement:
+
+- derive visibility on the server from AccelByte source metadata or a controlled cache of that metadata;
+- expose only the stable public values `published` and `archived`;
+- return published courses by default and archived courses only through an explicit archive query/filter;
+- return not found for hidden/unreleased course detail requests;
+- feed directories, global search, page metadata, canonical links, and sitemaps from the same public-safe projection;
+- do not use the current unfiltered `GET /v1/course` response directly unless it is revised to enforce this boundary; a purpose-built Website read is acceptable.
 
 ### Top leaderboard entries
 
@@ -153,31 +206,66 @@ V1 usage:
 
 The raw API categories should be presented in player-readable groups.
 
-Recommended V1 groups:
+Player-facing groups and internal mappings:
 
-- `Finish Time`
-- `Lap Time`
-- `Low-Cost Finish`
-- `Low-Cost Lap`
-- `High-Cost Finish`
-- `High-Cost Lap`
-- `Server Finish`
-- `Server Lap`
+| Group | Player-facing category | Eventun field |
+|---|---|---|
+| Race | `Race Finish` | `serverFinish` |
+| Race | `Race Lap` | `serverLap` |
+| Time Trial | `Time Trial Finish` | `clientFinish` |
+| Time Trial | `Time Trial Lap` | `clientLap` |
+| Time Trial / Loadout Class | `3K Class Finish` | `clientLowCostFinish` |
+| Time Trial / Loadout Class | `3K Class Lap` | `clientLowCostLap` |
+| Time Trial / Loadout Class | `10K Class Finish` | `clientHighCostFinish` |
+| Time Trial / Loadout Class | `10K Class Lap` | `clientHighCostLap` |
 
 Default category:
 
-- `Finish Time`
+- `Race Finish`
 
 Default course:
 
-- first active course with leaderboard data, or
+- first published course with leaderboard data, or
 - a featured/currently relevant course if product/config later supports it
 
 Design guardrail:
 
 - do not show all eight categories as eight full tables at once
-- use tabs, segmented controls, or command-like filters
+- use accessible tabs or segmented controls with ordinary player-facing labels; command-like text may be secondary decoration but not the only label
 - keep the selected course and selected category obvious at all times
+- preserve the selected category in the shareable URL query state
+- if `Race Finish` has no entries, show its honest empty state and make the other categories easy to select; do not silently substitute a different category
+- keep Eventun source selection and validation policy internal; public copy should describe race and time-trial contexts, not server/client implementation or relative trust
+
+Loadout-class explanation:
+
+- `3K Class` means a time-trial record set with a total loadout value of 3,000 or less;
+- `10K Class` means a time-trial record set with a total loadout value of 10,000 or less;
+- show this concise threshold explanation in help text or the category control, not in every leaderboard row;
+- the Eventun thresholds are inclusive, and the Website V2 labels must preserve that meaning.
+
+### Race-Mode Scope
+
+`Race` is the public umbrella for records produced in race sessions. It is not a synonym for one specific race mode.
+
+Current product context:
+
+- nearly all current races use Ascent Mode;
+- after podium positions are secured, the remaining racers enter the ascension phase and must reach the designated zone without being eliminated;
+- Classic Race and Deathmatch Race exist but are rarely used;
+- Website V2 may foreground Ascent Mode in gameplay explanation without presenting all three modes as equal navigation choices.
+
+Current data constraint:
+
+- Eventun's course-record projection is not keyed by race mode;
+- the initial `Race Finish` and `Race Lap` boards can therefore contain eligible records from more than one race mode;
+- do not label those boards `Ascent` or `Ascension` unless Eventun first exposes mode-scoped records and ranks.
+
+Future direction:
+
+- consider an explicit race-mode selector when mode-scoped leaderboard contracts exist;
+- prioritize Ascent Mode in that selector while preserving Classic and Deathmatch for historical and future use;
+- preserve the selected mode in shareable query state once the filter is supported.
 
 ## V1 Page Structure
 
@@ -188,6 +276,29 @@ Default first-view priority:
 3. logged-in personal placement
 4. course metadata and related context
 5. cross-course overview
+
+## Visualization Direction
+
+The leaderboard table remains canonical for exact rank, pilot, time, and loadout values. Charts supplement it only when they answer a different question.
+
+Candidate initial visualization:
+
+- a compact horizontal time-gap view for the selected course and category;
+- anchor every bar to the winning time and label the exact delta;
+- use only the returned top-N population and label it as top-N, not as a distribution or percentile;
+- keep the exact leaderboard table adjacent or immediately available;
+- do not combine finish and lap values or values from different courses on one quantitative scale.
+
+Conditional visualization:
+
+- a checkpoint-route trace is useful when the game exports approved checkpoint geometry through a stable website contract;
+- without that contract, use course identity, factual metadata, current approved captures, and record summaries rather than invented geometry.
+
+Deferred until new Eventun contracts exist:
+
+- whole-population distributions and percentiles;
+- historical record-progression timelines;
+- checkpoint or sector performance comparisons.
 
 ## 1. Leaderboard Command Header
 
@@ -225,11 +336,12 @@ Purpose:
 
 Content per course:
 
-- course image
+- course image when a current approved capture exists
+- generated checkpoint-route trace when geometry is available through an approved website export or data contract
 - display name
 - planet
 - difficulty
-- active/inactive state
+- public lifecycle label when the course is explicitly archived
 - default laps/heats metadata
 - best visible record summary if leaderboard data is available
 
@@ -237,12 +349,16 @@ Interaction:
 
 - select course
 - filter/search by course name or planet
-- optionally hide inactive courses by default
+- show production-ready courses by default
+- expose explicitly archived, previously public courses through an `Archived` filter
 
 Design guidance:
 
 - desktop can use a side rail, horizontal card strip, or compact grid
 - mobile should use a select/list pattern with visible selected course identity
+- do not require bespoke course-map illustration or planet art
+- never surface alpha, internal, or otherwise unreleased courses as archived content
+- fall back to a terminal identity panel and factual metadata when course media and checkpoint geometry are unavailable
 - do not let course art dominate the leaderboard table
 
 ## 3. Selected Course Briefing
@@ -274,22 +390,25 @@ Purpose:
 
 - let users switch leaderboard types without losing course context
 
-Recommended V1 categories:
+Recommended initial categories:
 
-- Finish
-- Lap
-- Low-Cost Finish
-- Low-Cost Lap
-- High-Cost Finish
-- High-Cost Lap
-- Server Finish
-- Server Lap
+- Race Finish
+- Race Lap
+- Time Trial Finish
+- Time Trial Lap
+- 3K Class Finish
+- 3K Class Lap
+- 10K Class Finish
+- 10K Class Lap
 
 Design guidance:
 
 - use concise labels in the UI
-- expose explanatory helper text for low/high-cost and server/client distinctions if needed
-- preserve selected category in URL query if feasible
+- group Race and Time Trial categories visually so the context remains clear
+- use player-facing context copy such as `Best times set in races` and `Best times set in time trial` only when helper text is needed
+- explain `3K Class` as `Loadout value: 3,000 or less` and `10K Class` as `Loadout value: 10,000 or less`
+- do not expose server/client authority, event submission, validation, or anti-cheat implementation details in public copy
+- preserve selected category in URL query
 
 ## 5. Leaderboard Table
 
@@ -302,7 +421,7 @@ Columns:
 - rank
 - player
 - time
-- loadout value, if meaningful to players
+- loadout value
 - team, if the row or related player data supports it later
 
 Row actions:
@@ -313,6 +432,9 @@ Row actions:
 Display guidance:
 
 - time should be the visual anchor
+- show loadout value as a compact secondary column on desktop for every category; it records the run conditions and explains the ordering of otherwise equal times
+- give loadout value stronger category context on `3K Class` and `10K Class` boards because it determines class eligibility
+- on mobile, keep loadout value visible in the primary row for `3K Class` and `10K Class`; move it into accessible row details for ordinary Race and Time Trial boards
 - top ranks can receive stronger framing
 - do not over-decorate every row
 - preserve scan clarity over lore styling
@@ -356,12 +478,12 @@ Guardrail:
 
 Purpose:
 
-- help users discover which courses have active records
+- help users discover which published or explicitly archived courses have public records
 
 V1 content:
 
 - course cards with best finish and best lap summary where available
-- active/inactive state
+- current or archived public lifecycle state
 - route/query link to selected course/category
 
 Placement:
@@ -401,7 +523,8 @@ V1 caution:
 Required states:
 
 - no courses
-- no active courses
+- no production-ready courses
+- no explicitly archived courses when the archive filter is selected
 - no leaderboard entries for selected course/category
 - logged-in player has no time for selected course/category
 - failed course fetch
@@ -443,16 +566,18 @@ Mobile:
 
 ## SEO and Sharing
 
-The course leaderboards page should support:
+The course index should support:
 
 - title: `Course Leaderboards - Ascent Rivals`
 - description focused on course records, lap times, and finish times
-- canonical URL
+- canonical `/courses` URL
 
-If query-state pages are indexable later:
+Each course detail should support:
 
 - title: `{Course Name} {Category} Leaderboard - Ascent Rivals`
 - description using course, planet, and leaderboard category
+- canonical `/courses/[code]` URL;
+- shareable category query state without generating conflicting canonicals for every filter combination.
 
 Do not expose private player status in metadata.
 
@@ -460,9 +585,9 @@ Do not expose private player status in metadata.
 
 These ideas are valuable but should not block V1:
 
-- dedicated `/courses/[code]` route
 - season filters
 - gauntlet/event filters
+- race-mode-scoped records, ranks, and filtering
 - team filters
 - ship part/loadout filters
 - deltas between player and world record
@@ -476,18 +601,16 @@ These ideas are valuable but should not block V1:
 
 - `Lap` is a course/match runtime concept.
 - `Finish Time` is the total time for the relevant run/match category.
+- `Race` is the public context label for records produced in race sessions; it does not imply ranked matchmaking.
+- `Ascent Mode` is the dominant current race mode, while `Classic Race` and `Deathmatch Race` remain supported concepts.
+- Do not imply that the initial `Race` leaderboard is Ascent-only while the Eventun record contract remains mode-agnostic.
+- `Time Trial` is the public context label for time-trial records.
+- `3K Class` and `10K Class` are inclusive time-trial loadout-value caps, not divisions of pilot skill.
+- Do not use `Official`, `Server`, `Client`, `Authoritative`, or `Verified` as public leaderboard-category labels.
 - `Heat` is a match-internal runtime round.
 - `Qualifier` is a gauntlet/tournament window.
 - Do not call leaderboard categories qualifiers.
 - Do not call course heats qualifier rounds.
-
-## Open Questions
-
-- Should the route stay as one `/courses` page with query state, or should `/courses/[code]` be added for shareable course pages?
-- Which category should be the default: client finish, server finish, or product-defined `Finish Time`?
-- How should low-cost and high-cost categories be explained to new players?
-- Should inactive courses be hidden by default or visible with an archived state?
-- Is loadout value meaningful enough for V1 display, or should it be behind an expanded row?
 
 ## Next Steps
 

@@ -38,6 +38,9 @@ Supports privileged controls for:
 - sponsor and prize administration
 - synchronization and cleanup operations
 - gauntlet stage run inspection and intervention
+- individual qualification cutoff preview, publication, and audited replacement
+
+`PreviewGauntletQualificationCutoff` is a read-authorized Admin operation for pure individual `circuit_points` qualification stages. It takes the gauntlet/stage lock and returns a consistent projection revision, projection schema version, projector version, source/canonical/bot policies, entry limit, configuration hash, resolution hash, deterministic candidates, qualifier tie values, and exact source-match evidence. `PublishGauntletQualificationCutoff` and `ReplaceGauntletQualificationCutoff` require Admin `CREATE` and `UPDATE` respectively. Both require an idempotency key plus the previewed revision/schema/projector and hashes; stale input fails rather than sealing mixed state. Publish creates immutable version one. Replace requires the latest sealed snapshot id and a reason, creates a linked new version, and is rejected after a stage run has bound a cutoff.
 
 ## Authentication And Permission Model
 
@@ -64,17 +67,34 @@ ClientService first validates token authenticity, expiry, revocation, and config
 ## Integration Boundary
 Eventun orchestrates competition flow and delegates accounting transition execution to [[../accountun]].
 
+## Website Public Course Visibility Contract
+
+Website V2 requires a server-side public course projection derived from AccelByte Cloud Save `Courses` or a controlled cache of that source record. The current course response's derived `active` boolean and unfiltered inactive rows are not sufficient for public Website use.
+
+Required classification:
+
+- `published`: the course feature state matches the configured enabled/production-ready state and the course is not marked archived;
+- `archived`: explicit AccelByte course metadata marks a previously public course as deliberately retired;
+- `hidden`: alpha, internal, disabled, unknown, incomplete, conflicting, or otherwise unreleased source metadata.
+
+The Website-facing list/detail contract exposes only `published` and `archived`. Published is the default list scope; archived requires an explicit filter. Hidden is an internal fail-closed result: hidden courses are omitted from list/search/sitemap inputs and their public detail lookups return the same not-found result as an unknown course. The public API must not serialize hidden course identity or raw unreleased feature-state data. This can be implemented by revising the existing course read or by adding a purpose-built Website read; Website clients must not reproduce the classification locally.
+
 ## Observability Transport
+
 - The deployed AccelByte Eventun configuration advertises Zipkin ingestion through `OTEL_EXPORTER_ZIPKIN_ENDPOINT` and does not advertise or document OTLP ingress.
 - Eventun retains the deprecated OpenTelemetry Zipkin exporter until AccelByte changes the injected configuration or documents a supported OTLP endpoint. Replacing it earlier would break deployed tracing.
 - Eventun uses OpenTelemetry `v1.44.0` semantic conventions from `semconv/v1.41.0` while preserving the existing one-second batch timeout, `AlwaysSample`, service identity, `environment`, and `ID` attributes.
 - OTLP migration is vendor-dependent deferred work and must be coordinated with the deployed receiver contract.
+- Structured logging defaults to `info`; `debug` is explicit opt-in. Unary and stream access records are metadata-only: method, final status, duration, request/response message counts, protobuf wire sizes, and sampled trace id. Request/response bodies, authentication metadata, cookies, tokens, and player payloads are excluded.
+- The unary and stream interceptor boundary is metrics, access logging, error sanitization, then authorization and handler execution. This ordering makes metrics and access records observe the final client-visible status while the sanitizer covers authorization and handler failures.
+- Deliberate non-`Unknown`, non-`Internal` gRPC statuses retain their code and public details. Bare or wrapped Go context cancellation and deadline errors retain `Canceled` or `DeadlineExceeded` with canonical `context canceled` or `context deadline exceeded` text, so wrapper diagnostics cannot cross the transport boundary.
+- Raw errors and gRPC `Unknown` or `Internal` failures are logged internally with the original diagnostic and returned as `Internal` with the stable client message `internal server error`. This contract applies to both unary and stream RPCs.
 
 ## API Compatibility
 - Eventun consumers use generated HTTP gateway APIs rather than direct protobuf/gRPC transport.
 - Removed protobuf fields do not need `reserved` declarations unless Eventun later exposes direct protobuf/gRPC clients.
 - Treat protobuf definitions as the source for generated gateway shapes, not as a long-lived wire contract for external direct protobuf callers.
-- Current code registers 69 ClientService RPCs, 60 AdminService RPCs, and 4 ServerService RPCs, producing 133 merged HTTP operations across 115 paths and 291 definitions. The ten dedicated-server reads and two shared writes are existing Client operations with alternate effective Server policies, not additional RPC declarations.
+- Current code registers 69 ClientService RPCs, 63 AdminService RPCs, and 4 ServerService RPCs, producing 136 merged HTTP operations across 118 paths and 300 definitions. The ten dedicated-server reads and two shared writes are existing Client operations with alternate effective Server policies, not additional RPC declarations. The three F14 qualification-cutoff operations are Admin-only.
 - The retired token catalog, manual token registration/sync, team gate-token methods, and their generated gateway operations have been removed. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
 - Mandatory unary and stream auth interceptors require a non-empty JWT `client_id` and place claims, access token, client id, and player subject when present in request context. ClientService authenticates without a blanket Eventun permission; its ten shared reads apply Server `READ` and its two shared writes apply Server `CREATE` only for subjectless callers, while the other Client methods require a player subject. ServerService and AdminService validate their annotated Eventun permissions. Stream handlers receive the enriched context through the wrapped `grpc.ServerStream`, and event ingestion rejects a missing client identity instead of persisting a zero UUID.
 - Eventun uses only the coarse Server and Admin custom resources above; it does not define Client, endpoint-, or domain-specific IAM permissions. Client authorization below the transport boundary remains in Eventun's domain rules.
@@ -124,10 +144,11 @@ Eventun orchestrates competition flow and delegates accounting transition execut
 - `gauntlet_stage_run_match` is the accepted-match ledger; `gauntlet_stage_circuit` is the configured match plan.
 - Multi-match stage runs now use explicit per-match acceptance followed by aggregate run completion.
 - Final stage placements are ordered by summed circuit points, then best placement, then placement sum, then player id.
+- A first qualification stage-run claim locks the gauntlet before the run row and requires the latest sealed individual cutoff to match the locked live configuration hash, projection revision, schema version, and projector version. It binds the exact snapshot id and a complete rules snapshot. A same-session retry returns that stored binding without reapplying live freshness checks or overwriting the rules. Admission thereafter uses immutable cutoff membership, both rank fields, qualification points/counts, total circuit points, and the frozen stage circuit/match count; live run/session/phase, allowed-team/group, and prior-stage filters remain in force. Stage-run allocation uses the same gauntlet-before-stage lock order as full replacement. Gauntlet update preserves every stage parent with run/history rows, so open/invite configuration is edited in place without cascading away runs, admissions, matches, or results; omitting such a stage from this full-replacement API returns `FailedPrecondition` before mutation. Cutoff replacement and cutoff-relevant configuration changes are frozen only for qualification-bound stages.
 - Match delivery remains at most once from the producer, but the implemented shared `ClientService.IngestMatch` contract uses a client-generated batch id, event ids, producer sequence, canonical payload hash, and idempotent acceptance. Automatic sender retry remains a separate behavior change.
 - Player and dedicated-server producers call the same ingest operation. Eventun classifies a namespaced player subject as self-reported `client` data and an exactly subjectless Server-authorized token as higher-trust `server` data; the producer does not choose source kind. Both remain necessary because time trials and some local/career modes have no dedicated server. Facts, serving projections, and product policies preserve this provenance.
 - Replay association now uses the separate shared `ClientService.CreateMatchArtifact` operation rather than a late authored `ReplaySaved` telemetry event.
-- Identified ingest transactionally derives one current narrow match/heat/player/progression fact graph per batch. Detailed laps and checkpoints remain in source/event-type partitions. Current reads stay unchanged until fresh incremental record/career/gauntlet projections prove parity and replace hourly native materialized-view refreshes.
+- Identified ingest transactionally derives one current narrow match/heat/player/progression fact graph and applies idempotent record, career, and gauntlet serving projections before commit. Career and leaderboard/rank reads use ordinary projections; Match History uses server facts ordered by MatchStart with SessionStart version and replay-artifact association selected at the complete time/batch/sequence/event boundary; gauntlet list/detail/stats/standings use ordinary projections and bounded views/functions. Time-trial history selects current candidates from facts, then fetches exact bounded PlayerHeatStart/End raw detail so the reported PlayerHeatEnd best-lap value remains authoritative. Full `match_summary` and current-match post-match insight baselines/metrics remain session/match-scoped raw reads for bot rows, loadouts, complete heat/standing presentation, and metrics absent from compact facts. Detailed post-match self-history selects current canonical server Ascent/placed candidates from facts, applies the ascension cutoff and per-heat limit, then fetches raw PlayerHeatStart/End detail only for those exact selected batch/event identities. Player discovery's one-day fallback, gauntlet runtime phase/match validation, most-recent-gauntlet lookup, replay purge, and fact repair/derivation are the other deliberate raw/legacy consumers. All twelve native materialized views, their refresh procedure, and the pg_cron schedule are retired.
 - `gauntlet_stage_placement` includes `stage_run_id` but its current primary key is not stage-run scoped, which blocks independent accepted placements across multiple bracket runs in one logical stage.
 
 ## Open Questions

@@ -1,5 +1,7 @@
 # Reconnect State Restoration Initial Implementation Plan
 
+> **Status:** Historical implementation plan. The durable runtime policy is [[../../50_knowledge/ascent-rivals/race-roster-rules|race-roster-rules]]. Where this plan conflicts with that policy, the durable policy takes precedence.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the first production-shaped reconnect foundation for non-gauntlet Ascent: Rivals sessions by preserving durable participant identity, reserved disconnected state, scoreboard rows, and final race results independently of live SnapNet player slots.

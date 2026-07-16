@@ -7,12 +7,13 @@ Foundation supersession (2026-07-13): references to `token_gated` teams, team to
 
 ## Related
 - [[unified-design]]
+- [[initial-release-scope]]
 - [[design-doc-roadmap]]
 - [[shell-concepts]]
 - [[terminal-ops-design-system]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
-- [[flows/wallet-linking]]
+- [[flows/gauntlet-authoring]]
 - [[flows/team-lifecycle]]
 - [[pages/homepage]]
 - [[pages/player-directory]]
@@ -34,29 +35,32 @@ It is the first decomposition of the broader [[unified-design]] document.
 
 ## Working Navigation Decision
 
-Use top-bar-based global navigation.
+Use one top-bar-based global navigation system across the new Next.js/React site.
 
-This is now the working direction for the new Nuxt site.
+The stable semantic order is:
 
-The top bar can adapt by site context:
+1. Ascent Rivals brand linking to `/`;
+2. `Gauntlets`;
+3. `Pilots`, linking to `/players`;
+4. `Teams`;
+5. `Courses`;
+6. `Events`;
+7. global search;
+8. Steam login or the authenticated account menu.
 
-- marketing context
-- competition/player context
-- logged-in player context
-- admin/operations context
+The active state, density, and surrounding shell treatment may adapt to marketing or data-heavy pages, but route names and ordering must not change by context. `About` and `Brand` are secondary destinations available through `More` and the footer. Sponsor administration is available only through the authorized account/admin menu.
 
 Page-local subnavigation should live inside pages instead of relying on a persistent global side navigation.
 
-## Core Cross-Site Bridge Rule
+## Cross-Site Continuity Rule
 
-There must always be a visible top-bar link between the marketing side and the player/competition side of the site.
+The shared navigation itself provides the cross-site bridge:
 
-The label is not final, but the behavior is required.
+- the brand always returns to the marketing homepage;
+- `Gauntlets` always enters the competition experience;
+- the remaining core entity destinations stay in the same order throughout the site.
 
-Example behavior:
-
-- When a visitor is on the player/competition side, the top bar includes a link such as `Marketing`, `Game`, or `About Ascent`.
-- When a visitor is on the marketing side, the top bar includes a link such as `Player Side`, `Pilot Portal`, `Competition`, or `Gauntlets`.
+Do not add a separate `Marketing`, `Player Side`, `Portal`, or `Competition` link. When links collapse into a mobile drawer, `Gauntlets` is the first destination after the homepage/brand entry.
 
 Purpose:
 
@@ -64,54 +68,40 @@ Purpose:
 - returning players can quickly return from marketing/editorial pages to gauntlets, players, teams, and stats
 - the unified site does not feel like two disconnected products
 
-Open naming question:
-
-- choose final labels after testing mocks and confirming the top-level IA language
-
 ## Navigation Principles
 
 ### 1. Global nav is for major destinations
 
 The top bar should expose major site areas, not every action.
 
-Examples:
+The initial major destinations are `Gauntlets`, `Pilots`, `Teams`, `Courses`, and `Events`. Search and login/account are persistent utilities rather than destination links.
 
-- Game
-- Gauntlets
-- Players
-- Teams
-- Sponsors
-- Search
-- Login / avatar menu
+### 2. Width changes disclosure, not semantics
 
-### 2. Context changes nav emphasis
+Do not force all destinations into an undersized row. Preserve labels and touch targets, and move links into `More` or the mobile drawer before the bar wraps or becomes crowded.
 
-The global nav can shift emphasis depending on where the user is.
+Persistent at every width:
 
-Marketing pages can emphasize:
+- brand/home access;
+- search;
+- login/account;
+- a menu trigger whenever any destination is hidden.
 
-- Game
-- Features
-- Media
-- Press
-- Wishlist / Play
-
-Competition/player pages can emphasize:
+Destination-retention priority, highest to lowest:
 
 - Gauntlets
-- Players
+- Pilots
 - Teams
-- Sponsors
 - Courses
-- Search
+- Events
 
-Logged-in contexts can expose:
+Use measured available width rather than relying on one fixed breakpoint. Wide desktop may show every destination. Compact desktop and tablet progressively move `Events`, then lower-priority links from the right side of the list, into `More`. Mobile uses a complete drawer.
 
-- user avatar
-- profile/career
-- wallets
-- team state
-- relevant management shortcuts
+Context may still affect presentation outside the destination list:
+
+- marketing pages may use a more cinematic shell and place the primary Steam conversion action in page content;
+- competition pages use a calmer data-forward shell;
+- logged-in and admin state changes the account menu, not the public destination order.
 
 ### 3. Page-local navigation handles depth
 
@@ -123,7 +113,18 @@ Examples:
 - team page sections
 - gauntlet qualifier/finals/standings sections
 - course leaderboard filters
-- calendar/past-event links from gauntlets
+- Schedule view and Past scope controls from gauntlets
+
+Page-local navigation contract:
+
+- use readable in-page section anchors as the default for long entity pages and sectioned forms;
+- use tabs only when panels are mutually exclusive views of the same region rather than sections of one document;
+- use segmented controls for a small set of short module-level filters, such as leaderboard category groups;
+- preserve meaningful tab or filter state in the URL when sharing or browser history should reproduce the selected view;
+- command-like prefixes or system labels may provide visual character, but the accessible name and primary visible label must remain ordinary product language;
+- on compact layouts, replace a long section row with a labeled jump menu or disclosure instead of requiring hidden horizontal scrolling;
+- render navigation only for sections that structurally exist; do not create empty qualifier, stage, bracket, sponsor, or other optional destinations;
+- distinguish a structurally absent section from an ordinary no-data state inside a supported section.
 
 ### 4. Permissioned actions live near their object
 
@@ -147,75 +148,34 @@ Priority entity groups:
 - players
 - teams
 - courses
-- sponsors
 - planets
 - ship parts
 
-## Top-Bar Nav Contexts
+Permission-filtered administrative search may add sponsors for administrators. Sponsor results are not part of public search or general creator search.
 
-## Marketing Context
+## Responsive Top-Bar Behavior
 
-Used on:
+Wide desktop:
 
-- `/game`
-- `/features`
-- `/media`
-- `/press`
-- future `/about`
-- future `/events`
-- future `/brand`
-- future `/lore`
-- future `/faq`
+- show the brand, all five destinations, compact search, and login/account when they fit without compression;
+- keep the bar on one line and preserve readable spacing.
 
-Likely top-bar links:
+Compact desktop and tablet:
 
-- Game
-- Features
-- Media
-- About
-- Events
-- Brand
-- Player Side / Competition bridge link
-- Press
-- Wishlist / Play CTA
-- Search
-- Login / avatar
+- retain brand, search, login/account, and `More`;
+- keep destination links visible in priority order only while measured space permits;
+- place hidden destinations in `More` in their normal semantic order.
 
-Notes:
+Mobile:
 
-- Marketing context must provide an escape hatch into competition content.
-- The root route `/` is adaptive and currently leans toward the player/competition command-center behavior defined in [[pages/homepage]], while still retaining a marketing bridge.
-- The bridge link can land on `/gauntlets`, `/players`, or a dedicated player-side landing view depending on final IA.
-- Marketing nav should not retain obsolete tournament-specific links such as the old Cardano Clash entry if they no longer represent current product direction.
+- show brand, search, menu, and login/account as compact direct controls;
+- put the complete destination list in the drawer, starting with `Gauntlets`;
+- include `About` and `Brand` after the primary destinations;
+- retain ordinary touch navigation and do not simulate a miniature command line.
 
-## Competition Context
+The top bar must never wrap, horizontally scroll, abbreviate labels into unclear terms, or reduce touch targets merely to retain another visible link.
 
-Used on:
-
-- `/gauntlets`
-- `/gauntlets/[id]`
-- `/players`
-- `/players/[id]`
-- `/teams`
-- `/teams/[id]`
-- `/sponsors`
-- `/courses`
-
-Likely top-bar links:
-
-- Gauntlets
-- Players
-- Teams
-- Courses
-- Sponsors
-- Marketing / Game bridge link
-- Search
-- Login / avatar
-
-Notes:
-
-- Competition context should bias toward entity discovery and fast re-entry.
-- Marketing content remains reachable through the bridge link but should not dominate.
+Anonymous authentication uses one direct `Sign in with Steam` control, not a provider picker. Compact layouts may present the Steam icon with `Sign In`, but the accessible name remains `Sign in with Steam` and activation starts the Steam flow immediately. Epic, Discord, or other providers remain future product/identity decisions rather than initial navigation placeholders.
 
 ## Logged-In Player Context
 
@@ -224,28 +184,29 @@ Logged-in state layers account controls into the current context.
 Flow spec:
 
 - [[flows/authentication]]
-- [[flows/wallet-linking]]
 - [[flows/team-lifecycle]]
 
-Likely avatar/account menu:
+Approved initial avatar/account menu:
 
 - My Career
-- Wallets
-- My Team or Team Requests
-- Log out
+- My Team
+- Admin / Operations, only when authorized and a destination exists
+- Sign Out
 
-Optional contextual indicators:
+Account-menu behavior:
 
-- active gauntlet status
-- qualification status
-- team invite/request count
-- wallet verification warning
+- `My Career` links to the authenticated pilot's canonical profile;
+- `My Team` links to the current team, or to `/teams` when the player has no team;
+- pending team invitations and join requests appear as one concise count/status on `My Team`, not as separate menu entries;
+- creation, editing, and management actions remain on their relevant entity pages;
+- authorization is checked before showing `Admin / Operations` and again at the destination;
+- `Sign Out` remains visually separated and easy to find.
 
 ## Admin / Operations Context
 
 Admin and creator actions should generally be in-page actions, not full-time global nav links.
 
-Admin-only shortcuts may appear in an avatar/admin menu if needed:
+`Admin / Operations` may expose authorized destinations such as:
 
 - Sponsor Admin
 - Gauntlet Admin
@@ -261,15 +222,19 @@ Guardrail:
 
 | Route | Purpose | Primary Context |
 |---|---|---|
-| `/` | adaptive homepage and competition command center | competition / marketing bridge |
-| `/game` | game overview and marketing explanation | marketing |
-| `/gauntlets` | gauntlet/event discovery | competition |
+| `/` | primary game-marketing and conversion homepage | marketing |
+| `/gauntlets` | Eventun-backed unique-gauntlet discovery, Past scope, and repeated-occurrence Schedule agenda | competition |
 | `/gauntlets/[id]` | gauntlet detail | competition |
+| `/events` | code-authored editorial event listing | marketing |
+| `/events/[slug]` | code-authored event detail | marketing |
+| `/about` | studio story, mission, current team, and verified recognition | marketing |
+| `/brand` | verified downloadable brand assets and current usage guidance | marketing |
 | `/players` | player directory | competition |
 | `/players/[id]` | player profile/career | competition |
 | `/teams` | team directory | competition |
 | `/teams/[id]` | team profile | competition |
-| `/sponsors` | sponsor/partner listing | competition / marketing |
+| `/courses` | course directory, category leaderboards, and pilot placement | competition |
+| `/courses/[code]` | shareable course briefing, selected category leaderboard, records, and pilot placement | competition |
 
 ## Phase 1 Preserved Authenticated/Admin Routes
 
@@ -278,18 +243,20 @@ Exact route naming can change during implementation, but the capability must rem
 Authentication flow:
 
 - [[flows/authentication]]
-- [[flows/wallet-linking]]
 
 | Capability | Purpose |
 |---|---|
 | login | Steam authentication |
-| wallets | wallet linking and verification; see [[flows/wallet-linking]] |
 | team create | create team when eligible |
 | team manage | manage roster, invites, requests, media, roles |
 | gauntlet create | create gauntlet when authorized |
 | gauntlet edit | edit gauntlet when authorized |
-| gauntlet prize | funding, result, claim flows preserved from current app |
+| sponsor registry/detail | administrator-only sponsor lookup, record detail, and maintenance context |
 | sponsor admin | create/edit sponsors for admins |
+
+Accountun-related prize and reward data is entirely deferred. Website V2 does not expose or administer data-driven prize pools, funding, claims, payouts, wallet requirements, or legacy workflows. Verified prize copy may still appear as manually maintained promotional content on a related `/events/[slug]` page.
+
+Gauntlet create/edit uses the one-page sectioned flow in [[flows/gauntlet-authoring]]. It has Core Details, Competition Structure, Branding and Advertising, and Review and Save sections; it is not a wizard and does not imply a persisted draft. Successful create and edit both return to a freshly revalidated `/gauntlets/[id]` detail view for manual review.
 
 ## Phase 1 Nice-to-Have Public Routes
 
@@ -297,20 +264,17 @@ Authentication flow:
 |---|---|
 | `/features` | marketing feature breakdown |
 | `/media` | media, video, screenshots |
-| `/courses` | course index and leaderboard entry point |
 | `/press` | press/partner information |
-| `/about` | company/team/ethos content migrated from current public site |
-| `/events` | manually maintained showcase of LAN, venue, and historical tournament events |
-| `/brand` | updated brand guidelines aligned to the new game and website design |
 
 ## Later Routes
 
 | Route | Purpose |
 |---|---|
+| `/game` | conditional deeper game-systems overview once enough distinct content exists |
 | `/watch` | VODs first, live streams later |
 | `/lore` | high-level lore/editorial |
 | `/faq` | support/common questions |
-| `/calendar` or `/gauntlets/calendar` | full gauntlet/event calendar |
+| `/calendar` or `/gauntlets/calendar` | conditional full calendar only if it later provides value beyond `/gauntlets?view=schedule` |
 
 ## Existing Marketing Site Migration Notes
 
@@ -318,27 +282,79 @@ Current public-site content should be audited and migrated selectively.
 
 Known existing content categories:
 
-- About Us
-- company/team/ethos content
-- manually maintained tournament/event history
-- event pages that link to YouTube content when competitions or physical events were recorded
-- brand guideline page
-- old tournament-specific links such as Cardano Clash
+- `/`: hero and Steam conversion, partner proof, game features, gameplay video, ship customization, gallery, and community links
+- `/about`: mission, team, awards and appearances, and development/event vlogs
+- `/brand`: downloadable brand kit plus logo, spacing, dimensions, color, and typography guidance
+- `/tournaments`: one current featured tournament plus a code-authored historical tournament gallery with dates, winners, prizes, sponsors, and YouTube links
+- `/tournaments/msi-grand-prix-2026`: a detailed, code-authored event page with schedule, qualifier format, physical prizes, FAQ, system requirements, controls, and participation guidance
 
 Migration guidance:
 
-- Preserve company/team/ethos content if still accurate, likely under `/about`.
-- Preserve historical event/tournament content, but consider renaming it to `Events` or `Showcase Events` rather than treating every historical item as a gauntlet.
+- Preserve the current homepage's hero/Steam conversion, gameplay features, video, ship customization, gallery, partners, and community as content categories rather than as reusable implementation.
+- Rewrite or verify the homepage copy, gameplay claims, partner approvals, screenshots, video, and conversion wording before migration.
+- Rebuild the homepage layout and components for the revised Terminal Ops sci-fi direction; current backgrounds, clipping treatments, styling, and React components are references only.
+- Add a restrained competition teaser or bridge to `/gauntlets` without turning the homepage into a dashboard.
+- Keep `/about` as one concise page containing the studio story, mission, current team, and a small set of verified recognition.
+- Move LAN, venue, tournament, and showcase appearances from the current About page to `/events`.
+- Place event-specific videos on the related `/events/[slug]` page when useful; otherwise link to the maintained YouTube playlist instead of recreating a large vlog archive on `/about`.
+- Verify team membership, roles, mission copy, and recognition claims before migration.
+- Migrate the current marketing `/tournaments` area to `/events` rather than treating every item as a gauntlet.
 - Historical physical/LAN/venue events are not necessarily gauntlets and should not be forced into the gauntlet data model.
 - Preserve YouTube links associated with historical events where recordings exist.
+- Allow verified prize descriptions as static promotional event copy; never derive them from Accountun or imply live funding, eligibility, claim, or payout state.
 - Remove or de-emphasize obsolete one-off links such as Cardano Clash unless they are intentionally kept as historical event content.
-- Refresh the brand guideline page after the new game/site visual direction is settled.
+- Retain `/brand` as a public route for partners, press, tournament organizers, and creators.
+- Preserve verified logo downloads and essential logo-usage rules, but revalidate spacing and minimum-size guidance.
+- Replace color, typography, and website-usage examples only after the revised Terminal Ops visual direction is approved.
+- Keep downloadable brand assets in the repository and update them through the code-authored workflow; do not introduce a CMS or asset-management service for the initial release.
+- A future `/press` page may link to `/brand`, but should not replace or absorb it initially.
+
+Content disposition summary:
+
+- Preserve after verification: homepage content categories, studio story and mission, current team, verified recognition, logo downloads and essential usage rules, historical event facts, approved event media, and useful recording links.
+- Rewrite or refresh: homepage copy and media, brand-system guidance, About copy, event descriptions, metadata, and any time-sensitive instructions.
+- Move: event appearances and recaps from `/about` to `/events`; event-specific videos to their event detail when useful.
+- Redirect: current `/tournaments` URLs to their `/events` equivalents.
+- Retire: the current homepage implementation and layout, unverified claims or partner marks, obsolete one-off navigation links, duplicate `/game` content, and a standalone vlog archive on `/about`.
 
 Terminology guidance:
 
 - `Gauntlets` are Eventun-backed competition structures.
 - `Events` can include manually maintained LANs, physical venue appearances, historical tournaments, showcases, and recorded competitions.
 - A historical event can link to a gauntlet if one exists, but it does not have to be a gauntlet.
+
+Canonical URL and redirect decision:
+
+- `/`, `/about`, `/brand`, `/events`, and `/events/[slug]` are canonical marketing routes for the initial Website V2 release.
+- `/events` is the canonical editorial event index.
+- `/events/[slug]` is the canonical route for manually authored event details.
+- `/gauntlets` and `/gauntlets/[id]` remain reserved for Eventun-backed competition data.
+- Permanently redirect `/tournaments` to `/events` at Website V2 cutover.
+- Permanently redirect `/tournaments/msi-grand-prix-2026` to `/events/msi-grand-prix-2026`.
+- Do not include legacy prize, reward, funding, claim, payout, or wallet links on Website V2 event pages.
+- Each marketing route must define a unique title, description, canonical URL, social image, and social-image alt text alongside its route content.
+- Historical event pages retain stable slugs when practical; any changed published slug requires a permanent redirect.
+
+## Code-Authored Content Convention
+
+Website V2 does not require a CMS, MDX pipeline, or separate content framework for the initial release.
+
+Authoring rules:
+
+- Keep short, layout-specific copy beside its TSX component.
+- Put long or structured route content in a typed `content.ts` file beside the route.
+- Introduce a shared type or rendering template only when multiple pages repeat a stable structure.
+- Use one route-local content file per editorial event, with bespoke TSX sections allowed when an approved event design needs them.
+- Keep route title, description, canonical URL, and social-image metadata with the corresponding route content.
+- Store static assets under predictable route- or slug-based repository paths.
+- Do not create a global copy registry or abstract isolated text merely to make it data-driven.
+
+Update workflow:
+
+1. the designer supplies an approved mock, final copy, and required assets;
+2. the developer or coding agent updates the relevant TSX and typed content modules;
+3. the change receives code review and manual browser review at the required responsive sizes;
+4. code and content ship in the same deployment.
 
 ## Page-Local Navigation Patterns
 
@@ -350,26 +366,25 @@ Page spec:
 
 Homepage role:
 
-- adaptive competition/player command center
-- lightweight brand hero and marketing bridge
-- not a replacement for the dedicated `/game` marketing overview
+- primary game-marketing and conversion landing page
+- clear bridge into competition through `/gauntlets`
+- selected current competition, recent event, partner, or community proof only where it strengthens the marketing story
+- light logged-in personalization without a separate homepage layout
 
-V1 modules:
+Working V1 content categories:
 
-- hero / command briefing
-- search everywhere
-- current and upcoming gauntlets
-- high-level status strip
-- course record highlights
-- pilot highlights
-- generated system log from real snapshot data
-- optional sponsor strip
+- game proposition and primary Steam conversion action
+- gameplay footage and differentiating features
+- ship customization or other game-system proof
+- gallery or media proof
+- partners and community
+- compact competition bridge or teaser where useful
 
-Logged-in utility overlays:
+Possible logged-in additions:
 
-- gauntlets with the user's rank or participation status, where available
-- course leaderboard placement, where available
-- career, wallet, and team links through the always-visible avatar menu
+- current or upcoming gauntlet participation context
+- career and team links through the account menu
+- compact personal result or course-placement context
 
 ## Gauntlets Index
 
@@ -377,13 +392,19 @@ Page spec:
 
 - [[pages/gauntlets-index]]
 
+Visibility contract:
+
+- every successfully created Eventun gauntlet is public in the initial release;
+- `Current & Upcoming` and `Past` are discovery scopes, not publication states;
+- Past gauntlets retain public detail routes and remain available to search;
+- future draft, embargo, cancellation, or suppression behavior requires an explicit lifecycle contract and is not inferred from timing.
+
 Page-local sections:
 
-- current gauntlets
-- upcoming gauntlets
-- featured events, if available
-- past gauntlets link
-- full calendar link
+- `Gauntlets` and `Schedule` view control
+- unique `Current & Upcoming` gauntlet list, sorted by active or nearest future occurrence
+- URL-backed `Past` entity scope
+- repeated-occurrence chronological Schedule agenda
 
 Permissioned actions:
 
@@ -398,13 +419,26 @@ Page spec:
 Page-local sections:
 
 - overview / briefing
-- qualifiers
-- finals or brackets
-- standings
-- prizes
-- sponsors
+- qualifiers when present
+- stages, finals, or a published bracket when present
+- standings and results supported by the actual gauntlet composition
+- approved sponsor identity when an explicit relationship exists; direct billboard artwork alone does not create this section
 - schedule
 - history / past winners, later
+
+Composition guardrail:
+
+- qualifiers and stages are independent optional parts of a gauntlet;
+- never render an empty qualifier, stage, final, or bracket section merely to preserve a universal template;
+- prioritize the next or active component that actually exists, then show the authoritative completed result for the structure that ran;
+- keep section labels and local navigation stable where possible without implying a missing phase.
+
+Terminology guardrail:
+
+- use `Qualifier` only for qualification windows;
+- use `Stage` for a general scheduled non-bracket competition unit;
+- use `Final` only when the competition explicitly marks a stage as the deciding final;
+- use `Bracket` only when a published bracket graph exists, not merely because stages have win/loss prerequisites.
 
 Personalized logged-in overlays:
 
@@ -415,7 +449,7 @@ Personalized logged-in overlays:
 Permissioned actions:
 
 - `Edit Gauntlet` for creator/admin
-- prize/admin actions for authorized users
+- non-blockchain gauntlet edit/delete actions for authorized users
 
 Terminology guardrail:
 
@@ -442,7 +476,7 @@ Page-local sections:
 Personalized own-profile overlays:
 
 - private or more detailed rank context where appropriate
-- wallet/team/account action links
+- team/account action links
 
 Public privacy guardrail:
 
@@ -457,13 +491,31 @@ Page spec:
 
 Page-local sections:
 
-- course selector
+- production-ready course directory and selector
+- explicit archived-course filter
 - selected course briefing
 - category filter
 - leaderboard table
 - logged-in personal placement strip
 - cross-course overview
 - related context, later
+
+Route behavior:
+
+- `/courses` is the discovery and cross-course overview;
+- `/courses/[code]` is the canonical detail route;
+- the leaderboard category remains explicit shareable query state on the detail route.
+
+Course visibility guardrails:
+
+- AccelByte Cloud Save `Courses` is authoritative for course configuration and feature state;
+- the server classifies a production-ready course as `published` when its AccelByte feature state matches the configured enabled state and it is not marked archived;
+- the public directory shows `published` courses by default;
+- a course is `archived` only through an explicit AccelByte metadata marker asserting that it was previously public and deliberately retired;
+- alpha, internal, and otherwise unreleased courses remain absent from public routes, search, metadata, and sitemaps;
+- unknown, incomplete, or conflicting metadata fails closed to hidden;
+- Website-facing APIs expose only `published` and `archived`; hidden/unreleased detail requests behave as not found;
+- do not infer archive eligibility from Eventun's derived `active` boolean alone.
 
 Personalized logged-in overlays:
 
@@ -488,9 +540,11 @@ Page specs:
 Page-local sections:
 
 - Overview
+- public membership mode: `Open`, `Request to Join`, or `Invite Only`
 - Roster
-- Gauntlet Results
-- Team Stats
+- Individual Pilot Results
+- Team Stats, secondary and provisional until post-implementation review
+- Gauntlet Results when team-result semantics exist
 - Trophies and Medals
 - Manage, if authorized
 
@@ -502,10 +556,27 @@ Permissioned actions:
 - edit team media
 - promote/demote/kick
 
+Membership-mode guardrail:
+
+- show the same public membership label to anonymous and logged-in visitors;
+- authentication, current-team state, and invitations determine which action appears, not whether the team mode is disclosed;
+- treat the three public concepts as stable while mapping them to the reviewed backend enum after the new team implementation.
+
+Team-statistics guardrail:
+
+- team history and aggregate performance require Eventun fact-backed event-time membership attribution;
+- do not sum current roster pilot careers to approximate historical team results;
+- Website V2 follows the team feature work and may assume that data is available by launch;
+- finalize the exact team page modules only after reviewing the implemented contracts described in [[initial-release-scope]].
+- keep pilots, pilot profiles, and the roster more prominent than aggregate team claims until the team feature has been implemented and iterated on;
+- distinguish pilot results earned while representing a team from competition-defined team standings or wins.
+
 Management guardrail:
 
-- team management should remain attached to the team context
-- management may be a page-local section or `/teams/[id]/manage` sub-route, but it should not feel like a disconnected admin product
+- `/teams/[id]` owns the public profile and ordinary join/request/leave actions;
+- `/teams/[id]/manage` owns metadata, media, roster administration, invitations, join requests, ownership transfer, and disbanding;
+- a permission-aware `Manage Team` action links from the public profile;
+- the management route retains team identity and a clear return path so it does not feel like a disconnected admin product.
 
 ## Sponsors
 
@@ -515,16 +586,34 @@ Page spec:
 
 Page-local sections:
 
-- sponsor list
-- featured sponsors
-- sponsor detail links
-- sponsor social/website links
-- gauntlet relationship context where available
+- administrator-only sponsor list and search;
+- administrator-only sponsor detail;
+- approved media, colors, description, and social/website links;
+- gauntlet relationship context where available;
+- mutation controls.
+
+Gauntlet-authoring boundary:
+
+- direct gauntlet-owned `Billboard` uploads are the primary advertising workflow, with an explicit `Tileable` metadata control and a lightweight three-copy preview for ribbon-style placements;
+- creators do not need general sponsor-registry access;
+- retain an optional existing-sponsor picker scoped to the gauntlet form for the less common reusable-entity case;
+- direct billboard artwork does not imply a public sponsor identity or Website sponsor module.
+
+Other configured media purposes receive generic labeled upload and thumbnail handling at launch. Their names are compatibility labels rather than commitments to purpose-specific Website modules. Dimension-derived slot matching and other billboard-system improvements are deferred with the broader advertising redesign.
+
+Terminology boundary:
+
+- `/sponsors` contains Eventun-backed competition sponsors and is limited to administrators;
+- public gauntlet pages may show an approved sponsor name or mark in that gauntlet's context but do not link to the registry or expose relationship tier;
+- code-authored marketing content may use `Partner` for a broader verified relationship that does not imply gauntlet sponsorship;
+- do not introduce `/partners` until there is enough distinct content and ownership to justify a separate route.
 
 Permissioned actions:
 
 - create/edit/delete sponsor for admins
 - update sponsor media, colors, description, and social links
+- upload gauntlet-owned billboard media for gauntlet creators
+- optionally select an existing sponsor through a form-scoped advanced control without granting registry access
 
 ## Page State Matrix
 
@@ -532,18 +621,19 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 
 | Route | Anonymous View | Logged-In View | Authorized/Admin View |
 |---|---|---|---|
-| `/` | adaptive competition homepage with brand hero, search, active/upcoming gauntlets, course records, pilot highlights, system log, and marketing bridge | same plus personalized gauntlet/team/wallet context where available | same as logged-in plus minimal creator/admin alerts or create actions only if necessary |
-| `/game` | public game overview | same, with account/avatar state in nav | same |
-| `/gauntlets` | current/upcoming gauntlets, past link, calendar link | same plus personalized participation context when available | `Create Gauntlet` for creator/admin |
-| `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, prizes | same plus personal rank/qualification/eligibility context | `Edit Gauntlet`, prize/admin actions when authorized |
+| `/` | marketing homepage with game proposition, conversion CTA, feature/media proof, and competition bridge | same, with optional compact gauntlet, career, team, or result context | same as logged-in; no global admin controls |
+| `/gauntlets` | unique current/upcoming gauntlets, Past scope, and repeated-occurrence Schedule agenda | same layout plus personalized participation context when available | `Create Gauntlet` for creator/admin |
+| `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, and factual public result context; no Accountun-driven prize/reward data | same plus personal rank/qualification/eligibility context | ordinary non-prize edit/delete actions; runtime stage tooling remains a post-bracket hosting decision |
 | `/players` | player directory and search/filter | same | same, possible admin-only moderation/actions later |
-| `/players/[id]` | public profile, course stats, course placements, match-history overview, gauntlet results, trophies, rank tier | own profile may show wallet/team actions and own AccelByte medals/badges if available | admin-only actions later if needed |
-| `/courses` | course selector, course metadata, selected leaderboard, player profile links | same plus personal placement strip when available | no V1 admin actions unless course administration is added later |
+| `/players/[id]` | public profile, course stats, course placements, match-history overview, gauntlet results, trophies, rank tier | own profile may show team/account actions and own AccelByte medals/badges if available | admin-only actions later if needed |
+| `/courses` | production-ready course selector, explicit archived filter, course metadata, selected leaderboard, player profile links | same plus personal placement strip when available | no V1 admin actions unless course administration is added later |
+| `/courses/[code]` | public or explicitly archived course briefing, selected category records and leaderboard, pilot links; unreleased courses are not exposed | same plus personal placement when available | no initial admin actions unless course administration is later approved |
 | `/teams` | team directory, search/filter, membership-mode context | same plus create team when eligible and `My Team` context if useful | admin may see broader moderation affordances later |
-| `/teams/[id]` | public team briefing, roster, membership mode, token gate notice where public | join/request/leave actions based on membership and current team state | manage roster, invites, requests, media, colors, membership mode, token gates, ownership/disband for owner/manager/admin |
-| `/sponsors` | sponsor/partner listing, search/sort, public sponsor links, optional detail | same | create/edit/delete sponsor and manage media/colors/social links for admins |
+| `/teams/[id]` | public team briefing, roster, membership mode, and fact-backed team analytics when available | join/request/leave actions based on membership and current team state | manage roster, invites, requests, media, colors, membership mode, ownership/disband for owner/manager/admin |
+| `/teams/[id]/manage` | not publicly navigable | unavailable unless authorized for the selected team | metadata, media, roster roles, invitations, join requests, ownership transfer, and disbanding |
+| `/sponsors` | unavailable; approved sponsor branding may appear within a public gauntlet | unavailable unless the account is an administrator | administrators can browse, create, edit, delete, and manage media/colors/social links |
+| `/sponsors/[id]` | unavailable | unavailable unless the account is an administrator | administrators can inspect, edit, and delete the record |
 | login | Steam login entry | redirect or show already logged-in state | same |
-| wallets | login required | wallet linking and verified wallet state | same |
 | team management | login required | only visible if authorized by team role | admin override if supported |
 | gauntlet management | login required | only visible to creator role where applicable | admin override |
 | sponsor administration | login required | hidden unless admin | full sponsor CRUD |
@@ -557,8 +647,9 @@ Initial groups:
 - Gauntlets
 - Players
 - Teams
-- Sponsors
 - Courses
+
+Authorized administrative search adds `Sponsors` for administrators. Public search responses and general creator search must not include sponsor registry records; a gauntlet form may provide a narrower relationship picker.
 
 Future groups:
 
@@ -571,17 +662,7 @@ General lore should not be the first search priority. Lore should mostly be reac
 
 ## Open Questions
 
-- What should the cross-site bridge labels be on each side?
-  - player side to marketing side
-  - marketing side to player/competition side
-- Should the marketing-to-player bridge land on `/gauntlets`, `/players`, or a dedicated competition landing view?
-- Should `/calendar` be a standalone route or nested under `/gauntlets/calendar`?
-- Should top-bar nav changes be route-driven, user-state-driven, or both?
-- Should logged-in utility modules replace anonymous homepage modules or reorder them?
-- Should contextual page-local nav be tabs, anchor links, panel headers, or command-like section links?
-- What is the exact avatar/account menu structure?
 - Which pages need admin-only action affordances in phase 1 versus later?
-- Should historical events live under `/events`, `/media`, or a combined `Events / Media` section?
 - What brand guideline content can be migrated as-is versus rewritten after the new design direction lands?
 
 ## Next Steps

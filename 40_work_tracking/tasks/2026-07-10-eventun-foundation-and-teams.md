@@ -25,7 +25,7 @@ Simplify and harden Eventun before adding teams features, then refresh and imple
 - Require mandatory AccelByte authentication on all three surfaces. ClientService ordinarily requires a namespaced player token with `sub` and relies on Eventun domain authorization rather than a blanket player permission; exactly ten shared reads also accept a subjectless token with Server `READ`. ServerService and AdminService use coarse Eventun custom permissions.
 - Remove local insecure runtime operation; authentication is always installed.
 - Keep the canonical clean schema and one manually applied production delta. The owner confirmed the former `t0_migration.sql` was deployed on 2026-07-13 and removed it from source. Current pending transitions use stable `migration/migration.sql` against the deployed production baseline; verify it with `production-delta --confirm-disposable-production-baseline=<target-fingerprint>` against an authentic disposable production copy. Optional fixtures use the independent `t0_seed_courses.sql` through `t3_seed_teams.sql` sequence. Canonical `d3_schedule_refresh_views.sql` safely no-ops without pg_cron and is reapplied by guarded operational setup after provisioning. Do not add a migration runner, numbered production migration files, or a CI service.
-- Move the executable to `cmd/eventun`, remove `internal/`, and extract domains incrementally.
+- Keep the executable in `cmd/eventun` and extract domain packages incrementally when a behavior change or ownership boundary justifies it. Do not make wholesale relocation or removal of the remaining `internal/` tree a completion gate.
 - Keep pgx and PostgreSQL-first bounded aggregation. Do not add an ORM or generic repository layer.
 - Introduce client-generated batch ids, event ids, and producer sequence. Do not add payload schema-version branches.
 - Preserve the source/event-type `game_event` partitions as immutable detailed telemetry. Derive only narrow semantic facts that collapse lifecycle rows or establish idempotent contributions; do not copy every lap or checkpoint into a second wide relation.
@@ -33,11 +33,23 @@ Simplify and harden Eventun before adding teams features, then refresh and imple
 - Retain one current derived fact set per accepted batch. Rewrite it transactionally during repair or payload migration instead of keeping parallel global fact revisions online.
 - Remove the retired TapTools integration and the complete disabled Koios/token-gating slice. Reintroduce gating later only through a newly designed provider-neutral asset source.
 - After that removal reduces the module graph, move Eventun from Go 1.26.1 to Go 1.26.5, remove every unused Go dependency, and update every remaining Go module and tool dependency to its latest stable release.
+- After F14 review, simplify ordinary Eventun development verification: compatible installed toolchains are sufficient, exact local patch/build strings must not be equality gates, generated-file hash manifests are removed, and verification must not download temporary exact-version binaries. Dependency lockfiles and normal compile/test/schema contracts remain; development and production publishes rebuild independently without an artifact-identity or promotion requirement.
 - Resolve dependency and generated-code compatibility before changing package boundaries, auth, event ingestion, or other foundation architecture.
 - Isolate Accountun and Cardanoun as optional proof-of-concept integrations during the later package extraction.
-- Finish foundation work before re-approving the team solution designs.
+- Complete the event-model foundation through F15B before re-approving the team solution designs. H01 may overlap T00 design review but must finish before team implementation or production release.
 
 **Production-baseline supersession:** completed-task evidence below preserves the filenames and verification claims that were true when each task ran. Any reference in that historical evidence to frozen `t0_migration.sql`, active `t1_migration.sql`, or `t2`-`t5` fixtures is superseded by the current convention above and must not be reused as worker instruction.
+
+**Migration audit reconciliation (2026-07-14):**
+
+- All eight durable documents named in the migration handoff are present in the Knowledge Base. This tracker remains the active source of work order; no replacement task file is required.
+- Eventun `teams` is at `36c1818c3f9aa96d210075f7097d76a6aebbf13d`, matches `origin/teams`, and is 16 commits ahead of `main`. Foundation implementations through F13 are committed and accepted; historical evidence below that says those changes were uncommitted records their state at review time.
+- F14 remains the next Eventun task and has not started. The eight leaderboard and four gauntlet native materialized views plus the hourly refresh procedure remain. F15 follows F14; legacy `server_event` and `client_event` relations, remaining legacy reads, and the `internal/` tree still exist.
+- F11's backend-dependent manual dedicated-server and local/client submission checks remain an explicit release-verification gap even though the authored producer implementation and its focused build/test evidence were accepted.
+- Ascentun `main` is at `589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57`. Its active team forms filter out token-gated membership, but tracked `api.json`, team types/constants, and dormant gate-token actions still expose the retired contract. The R01 zero-reference completion statement is therefore stale for Ascentun. Remove those artifacts during the next coordinated Ascentun contract refresh, no later than the F15/T00 boundary; do not restore token-gating behavior. This cleanup does not change F14's Eventun priority.
+- T00 and every T/G implementation task remain planned. Do not re-approve or begin team implementation before F15 and the T00 design checkpoint.
+
+**F14 implementation update (2026-07-15):** The stale pre-work statements above are retained as dated audit evidence. F14 is now implemented in the Eventun worktree against committed base `36c1818`; the requested hard-delete, allocation race, history-plan, and access-bound corrections are recorded in its evidence below. Nothing is staged, committed, migrated, or deployed. Repository hygiene and practical local-verification cleanup now follow F14 review before F14R. F14R remains the bounded contract-and-safety closure before authentic rehearsal. F15 is split into disposable rehearsal and development cutover, H01 owns the remaining runtime hardening, and production deployment is an explicit unscheduled F15P release task. T00 and all T/G work remain planned and were not started.
 
 ## Sequencing Rules
 
@@ -45,8 +57,11 @@ Simplify and harden Eventun before adding teams features, then refresh and imple
 - Complete R01 through R03 before starting or resuming any F-series foundation task.
 - Remove dead integrations before updating modules so obsolete dependencies do not enlarge the compatibility pass.
 - Keep each task buildable and reviewable. Additive transition schema may exist temporarily, but remove obsolete paths in the final cutover task.
+- Complete the post-F14 repository-hygiene and practical-verification cleanup before F14R. Complete F14R before F15A, and accept the F15A rehearsal before starting the F15B development cutover.
+- T00 design review may proceed after F15B while H01 is implemented, but T01/T02 implementation and any production release require H01 completion.
+- Do not treat F15B completion as authorization to deploy production. F15P remains unscheduled until the owner explicitly selects a release window.
 - Do not combine dependency major-version migrations with protobuf contract changes.
-- Use the currently available checks during R01 and each R02 dependency group. Run the complete local verification command after every Eventun task once F01 provides it.
+- Historical R/F evidence retains the exact checks that were run at the time. After the post-F14 cleanup, ordinary work uses the simplified compatibility-based verification path; exact local version strings, generated-file hash manifests, and clean-room byte-identity checks are not completion gates.
 - Update the knowledge base whenever an implementation decision changes these tasks or either team solution design.
 
 ## Mandatory Pre-Foundation Reset
@@ -380,7 +395,7 @@ The integrated GameServer specification and wrapper each expose exactly ten sele
 
 **Depends on:** F02, F05, F06B
 
-**Status:** Complete; implementation review passed and changes remain uncommitted (2026-07-12)
+**Status:** Complete; implementation review passed and current result is committed on `teams` (2026-07-12)
 
 **Implementation evidence (2026-07-12):** The previous 489-line root executable and 11-file `internal/common` catch-all were replaced by a 16-line `cmd/eventun/main.go` process boundary and packages with explicit ownership. The entry point only calls `internal/app.Run` and performs the final process exit; lower packages return errors. `internal/app` owns environment configuration and validation, AccelByte and PostgreSQL dependency construction, registration of all six scheduled jobs with immediate error checks, gRPC/Gateway HTTP/metrics servers, Zipkin tracing with B3 and W3C propagation, health, reflection, generated Swagger serving, and graceful concurrent shutdown of the scheduler, servers, tracer, and pool. The existing top-level `app` directory remains exclusively the separately built Extend App UI. Existing ports, routes, schedules, telemetry, and deployment behavior are retained.
 
@@ -405,7 +420,7 @@ The root `main.go` and `main_test.go` and all of `internal/common` were deleted,
 
 **Depends on:** F07
 
-**Status:** Complete; implementation review passed and changes remain uncommitted (2026-07-12)
+**Status:** Complete; implementation review passed and current result is committed on `teams` (2026-07-12)
 
 **Implementation evidence (2026-07-12):** Added focused `integration/accelbyte`, `integration/steam`, `integration/r2`, `integration/accountun`, and `integration/cardanoun` packages without a generic provider framework. `internal/app` remains the direct composition owner. It always constructs the mandatory AccelByte services and one configured Steam player-summary client, leaves the consumerless R2 client uninitialized, and conditionally constructs Accountun/Cardanoun only after their explicit enable flags and configuration validate. `ACCOUNTUN_ENABLED` and retained `CARDANOUN_FORWARDING_ENABLED` default to false. Injectable factory tests prove both disabled paths make zero constructor calls and produce no settlement or sink; invalid booleans, missing enabled settings, invalid URLs, and nonpositive adapter timeouts fail configuration or startup rather than silently disabling an enabled integration.
 
@@ -430,7 +445,7 @@ Cardanoun configuration, HTTP payload mapping, and tests moved into its adapter.
 
 **Depends on:** F03, F06, F08
 
-**Status:** Complete; amended implementation review passed and changes remain uncommitted (2026-07-12)
+**Status:** Complete; amended implementation review passed and current result is committed on `teams` (2026-07-12)
 
 **Checkpoint evidence (2026-07-12):** Repository inspection found no authoritative competition-period source shared by dedicated-server, client-hosted, and local matches. The current request and game event buffer carry no period field; build information appears only inside `SessionStart.event_data`; Eventun exposes no active competition configuration; and no universal AccelByte session metadata contract is documented. The proposed shared `GetActiveCompetitionPeriod` operation would therefore create a new API, authorization exception, generated Unreal operation, and runtime dependency before the product has defined season ownership or lifecycle. The owner declined that implementation.
 
@@ -484,7 +499,7 @@ Implemented period-neutral identified ingestion:
 
 **Depends on:** F09
 
-**Status:** Complete; implementation review passed and changes remain uncommitted (2026-07-12)
+**Status:** Complete; implementation review passed and current result is committed on `teams` (2026-07-12)
 
 - [x] Replace `ClientService.Event` with the one shared `ClientService.IngestMatch` operation at `POST /v1/match/ingest`; remove `ServerService.Event` without a compatibility copy.
 - [x] Add the one shared `ClientService.CreateMatchArtifact` operation at `POST /v1/match/artifact`; do not add a ServerService counterpart.
@@ -534,7 +549,7 @@ The new top-level `event` package validates required presence, nil/malformed and
 
 **Depends on:** F10
 
-**Status:** Complete; corrected revised implementation is uncommitted and awaiting review (2026-07-13)
+**Status:** Complete; corrected implementation review passed and current result is committed on `teams` (2026-07-13)
 
 - [x] Retain `event_ingest_batch`, `game_event_identity`, the source/event-type `game_event` partition tree, and `match_artifact` as the immutable identified telemetry layer.
 - [x] Keep and narrow `match_fact`, `heat_fact`, `match_player_fact`, and `heat_player_fact` to stable context, terminal results, proven loadout dimensions, and values required by current career, record, progression, qualification, and team work.
@@ -592,6 +607,8 @@ Per projected match, fact heap/index allocation was about 27,853/27,034 bytes mi
 
 **Depends on:** F12
 
+**Status:** Complete; implementation review passed and current result is committed at `36c1818` on `teams` (2026-07-13)
+
 - [x] Replace raw-event rereads with normalized progression metric facts.
 - [x] Make contributions idempotent by source fact.
 - [x] Keep direct SQL aggregates only where their input is explicitly bounded; otherwise maintain current counters as idempotent incremental projections from the contribution ledger. Do not introduce periodic full refresh.
@@ -616,31 +633,157 @@ Progression workers claim one due or lease-expired job immediately before each e
 
 **Depends on:** F12, F12G, F13
 
-- [ ] Add one incrementally maintained player/course record row per source, record category, course, and player, retaining the winning source fact/event identity and using a B-tree order that serves top-N reads directly.
-- [ ] Add player and player/course career rollups containing mergeable sums, counts, and minima; derive averages at read time.
-- [ ] Add one gauntlet match contribution per player/match/qualifier plus a retained best-sequence projection with the selected source match identities. New in-order matches evaluate only the new trailing window; late or rewritten input triggers targeted player/qualifier recomputation.
-- [ ] Update simple projections transactionally with accepted facts when representative ingest measurements permit. Otherwise use one idempotent immediately queued projector with an explicit freshness target, watermark, retry, and repair path; do not use periodic full refresh as the normal update mechanism.
-- [ ] Move career and leaderboard reads to their projections. Move match-history lists to narrow facts, but retain batch-local raw reads or a purpose-built snapshot for full match summaries, player discovery, bot rows, and detailed insights.
-- [ ] Preserve `single_player_mode` semantics before moving time-trial records or insights. Do not infer time trial from `race_mode`.
-- [ ] Move gauntlet qualifier scoring to incremental contributions and retained best sequences, then publish immutable cutoff snapshots.
-- [ ] Preserve and apply each product surface's explicit accepted-source policy; do not silently merge client-reported and dedicated-server facts as equally authoritative.
-- [ ] Apply an approved statistics scope to comparisons and public records only if that separate lifecycle decision has been completed; do not introduce `competition_period_id` by default.
-- [ ] Compare representative old and new outputs, query plans, cold/warm latency, and update freshness; explain intentional differences.
-- [ ] Remove the eight leaderboard and four gauntlet native materialized views and their hourly refresh procedure only after incremental replacements pass parity.
+**Status:** Implementation and the requested hard-delete/history-access review corrections are complete in the unstaged Eventun worktree (2026-07-15). F14R owns the remaining cross-foundation contract findings. Nothing is deployed.
+
+- [x] Add one incrementally maintained player/course record row per source, record category, course, and player, retaining the winning source fact/event identity and using a B-tree order that serves top-N reads directly.
+- [x] Add player and player/course career rollups containing mergeable sums, counts, and minima; derive averages at read time.
+- [x] Add one gauntlet match contribution per player/match/qualifier plus a retained best-sequence projection with the selected source match identities. New in-order matches evaluate only the new trailing window; late or rewritten input triggers targeted player/qualifier recomputation.
+- [x] Update simple projections transactionally with accepted facts when representative ingest measurements permit. Otherwise use one idempotent immediately queued projector with an explicit freshness target, watermark, retry, and repair path; do not use periodic full refresh as the normal update mechanism.
+- [x] Move career and leaderboard reads to their projections. Move match-history lists to narrow facts, but retain batch-local raw reads or a purpose-built snapshot for full match summaries, player discovery, bot rows, and detailed insights.
+- [x] Preserve `single_player_mode` semantics before moving time-trial records or insights. Do not infer time trial from `race_mode`.
+- [x] Move gauntlet qualifier scoring to incremental contributions and retained best sequences, then publish immutable cutoff snapshots.
+- [x] Preserve and apply each product surface's explicit accepted-source policy; do not silently merge client-reported and dedicated-server facts as equally authoritative.
+- [x] Apply an approved statistics scope to comparisons and public records only if that separate lifecycle decision has been completed; do not introduce `competition_period_id` by default. No scope was approved, so F14 remains period-neutral.
+- [x] Compare representative old and new outputs, query plans, cold/warm latency, and update freshness; explain intentional differences.
+- [x] Remove the eight leaderboard and four gauntlet native materialized views and their hourly refresh procedure only after incremental replacements pass parity.
+
+**Implementation evidence (2026-07-15):** Accepted ingestion now derives facts and applies synchronous idempotent serving updates in the same transaction before progression enqueue. `match_serving_projection_state` stores the exact fact fingerprint, source receipt, projection schema version, projector version, and projection timestamps. Accepted work and repairs lock affected players in UUID order before updating additive player/course career rollups, so distinct concurrent matches for one player cannot collide on singleton creation or omit each other's contribution. Player records use per-batch/heat/player/category contributions plus one current `player_course_record` keyed by source, category, course, and player. The retained categories are server/client `finish` and `lap`, plus client-only `high_cost_finish`, `high_cost_lap`, `low_cost_finish`, and `low_cost_lap`; the legacy names and inclusive loadout-value thresholds remain exactly `<= 10,000` and `<= 3,000`. Winner order is time, loadout value ascending with null last, occurrence time, batch, heat, and event identity. Leaderboard and `player_rank` order is time, loadout value ascending with null last, then player id; mutable player profile/team presentation remains joined at read time. Career uses canonical dedicated-server contributions and player/player-course rollups of mergeable sums, counts, and minima. Explicit `reported_podium_finish = true` is the only podium contribution.
+
+Gauntlet serving state consists of per-gauntlet revision state, server match/player contributions, stat rollups, server/non-bot qualifier contributions, per-qualifier best-sequence scores, exact ordered sequence-match evidence, and overall player scores. The legacy `activeQualifiers` payload values are gauntlet ids despite the field name. Qualifier scoring is server-only, canonical-unfiltered, and bot-excluding; a normal in-order match evaluates only the new trailing `stat_window`, while late input and relevant fact/qualifier/configuration changes rebuild bounded affected state. The live path is the batch qualifier updater; the unused single-match updater that accepted an arbitrary revision without locking or updating overall state was removed. Batch-leading player and qualifier contribution indexes support accepted projection and targeted repair; qualifier contribution `(batch_id, player_id, gauntlet_id, qualifier_id)` and qualifier-leading contribution/score indexes bound fact-repair cascades and qualifier deletion. Both targeted repair entry points serialize first on `event_ingest_batch`, then share ordered player and gauntlet locks with accepted ingestion. The semantic fingerprint includes the top-level projection configuration and every non-operational contribution/evidence field, including source event, player-type event, session, and match identities. Every accepted update, configuration rebuild, targeted repair, facts-plus-serving repair, gauntlet rebuild, and full rebuild acquires affected gauntlet locks in UUID order. One semantic output or exact-evidence change increments the gauntlet revision exactly once and stamps that revision on every affected row; a proven identical retry/rebuild preserves it, including an empty gauntlet only when its configuration is identical.
+
+`gauntlet_qualification_snapshot` and its entry, qualifier, and match-evidence children implement explicit Admin-owned preview/publish/replace for pure individual `circuit_points` qualification stages. Preview returns the locked projection revision, projection schema version, projector version, source/canonical/bot policies, entry limit, configuration hash, resolution hash, deterministic ranks, scores, tie values, and source evidence. Publish is idempotent, rejects a stale revision/hash/schema/projector binding, and seals immutable parent/child rows at that exact revision. Replace creates a new version linked to the latest sealed snapshot with a reason; prior versions remain immutable. First claim locks the gauntlet before the run row, requires the latest sealed snapshot to match the live configuration hash/revision/schema/projector tuple, and stores both the cutoff id and exact stage rules. A same-session retry returns that stored binding without rechecking current projection freshness or rewriting it. Bound admission replaces both row/ranking fields, qualification points/counts, and total circuit points from the snapshot, so a later projection cannot produce mixed sealed/live ranking data. Admission, configured-match validation, and required-match/completion counts consume `rules_snapshot`. Stage-run allocation now acquires the gauntlet projection lock before its stage-row lock, matching update order; therefore an update either snapshots the new run or completes replacement before allocation observes the stage. Gauntlet update preserves every stage parent with any run/history row and edits open/invite configuration in place; because it is a full-replacement API, omitting any run-backed stage is rejected with `FailedPrecondition` before baseline capture or mutation, so projection revision is unchanged. The stricter cutoff-relevant freeze applies only to qualification-bound stages. Replacement and cutoff-relevant configuration remain frozen after qualification binding.
+
+Career, leaderboard, player-rank, Match History, gauntlet list/detail/stats/standings, and bounded insight reads now use facts, contributions, projections, or bounded functions. Match History uses server `match_fact`/`match_player_fact`, MatchStart time, SessionStart client version, and `match_artifact` replay association. SessionStart and PlayerJoin provenance freeze at MatchStart using the complete time/batch/sequence/event tuple, excluding an equal-time event ordered after the start. Time-trial self-history selects and limits eligible current fact identities first, then fetches exact bounded client PlayerHeatStart/End raw detail, preserving reported `bestLapTimeMs`. Post-match self-history selects canonical server Ascent/placed facts through the player-selective completion-history index, applies course and AscensionStart policy from keyed fact lookups, ranks the eligible history per heat, and treats compact-fact metrics as authoritative; only score fields absent from compact facts are fetched from bounded PlayerHeatStart rows after candidate limiting. Its fact-candidate work is intentionally player-selective rather than strictly `_limit`-bounded and is covered by a measured mature-player contract. Both fact candidate paths explicitly constrain match, heat, and heat-player source. The unrelated best-lap contribution-history index was removed because neither helper reads it. The remaining raw/legacy consumers are explicit: full match summary and current post-match baselines/metrics are session/match scoped for bot rows, loadouts, full heat/standings detail, and metrics absent from compact facts; player discovery uses a one-day non-bot fallback; gauntlet stage phase/match-event validation and the most-recent-gauntlet lookup are operational; replay purge is an operator cleanup over legacy replay rows; and fact derivation/repair reads the identified raw batch as its rebuild source. F15B owns conversion/removal of those legacy relations and consumers after F15A rehearsal. The eight leaderboard and four gauntlet materialized views, refresh procedure, `d3_schedule_refresh_views.sql`, operational pg_cron setup, and related assumptions were removed.
+
+PostgreSQL 16.14 verification passed deterministic serving parity and repair fixtures; profile-at-read, Match History order/limit/replay, fact-first raw-fetched time-trial and post-match selection, exact equal-time MatchStart provenance boundaries, source/canonical/null/podium/threshold/tie behavior, and unequal non-null loadout ranking; multi-qualifier in-order/late/configuration behavior, empty-state configuration revision, exact evidence/provenance fingerprinting, evidence-only revision advancement, circuit-points-only cutoff validation, and exact evidence; idempotent retry, unchanged/changed targeted and full rebuilds; immutable publish/replace/freeze; two concurrent distinct matches for one player; two repair entry points recreating the former batch/player/match-fact wait cycle without deadlock; claim rejection after revision advancement; claim/configuration-update lock overlap; a changed repair racing preview; a changed repair racing stale publication; and a full rebuild racing exact publication. Focused Go coverage proves same-session claim retry, frozen runtime circuit selection, fully sealed admission ranking/points after live advancement, and in-place open/invite claimed-stage update planning. A rolled-back long-history fixture expanded both contribution tables to 18,496 rows and placed-player history by 102,400 rows; `EXPLAIN ANALYZE` required the player batch, qualifier gauntlet/batch, and placed-player history indexes and measured the printed representative plans at 0.149, 0.017, and 0.016 ms, with separate client time-trial and server post-match source assertions. The guarded F14 destructive block requires the exact projection schema/projector/count manifest and fails closed until `serving_projection_cutover_state` is `historical_backfill_validated`, then executes against a canonical disposable schema with all twelve retired views present. This proves syntax and the F15A/F15B gate, not an authentic historical backfill.
+
+The final one-CPU/two-GiB PostgreSQL 16.14 run measures the added F14 serving phase separately from the already-present F12 fact derivation and continues to report their combined synchronous time. For 5-human/11-bot, fact derivation was 42.660/55.886 ms p50/p95, F14 serving was 6.226/15.851 ms, combined was 48.675/67.537 ms, and raw+facts+serving commit was 187.152/213.907 ms. For maximum-normal 16-human, those values were 62.844/75.316, 7.384/14.157, 71.897/83.051, and 217.198/240.396 ms. The added-serving p95 gates of 50/75 ms and end-to-end commit p95 gates of 353/436 ms therefore pass. Separately labeled synthetic 32-human stress measured F14 serving 13.389/16.471 ms, combined 142.924/169.587 ms, and commit 433.412/596.126 ms. Median WAL was 8,369,560, 8,821,456, and 17,687,976 bytes. Warm representative leaderboard, career, gauntlet-standing, and fact-backed history reads were 0.055, 0.013, 0.065, and 0.137 ms; after restart they were 0.179, 0.079, 0.190, and 0.197 ms. A no-op targeted rebuild took 144.555 ms and a full rebuild took 417.022 ms while preserving parity across 46 batches, 5,318 contributions, and 408 projections. These are local relative measurements, not durable Azure latency.
+
+Focused Go tests, vet, and `go test -race -count=1 ./event ./api ./auth ./internal/eventun`, full `go test ./...`, the complete pinned `./scripts/verify.sh`, `./scripts/verify.sh appui`, and final `./scripts/verify_schema.sh` passed. Generation retained Unreal Client 69 operations/148 definitions, GameServer 16/156, and Models 73/156; the three new Admin operations do not enter Unreal inputs. The merged HTTP contract is now 136 operations across 118 paths and 300 definitions. F14R, F15A/F15B, H01, T00, team history/progression/gauntlets, slots, brackets, Ascentun features, and game-client work were not started.
+
+**Review-correction evidence (2026-07-15):** This supersedes the preceding long-history-plan fixture and benchmark figures, while retaining them as historical evidence. Stage-run allocation and full-replacement update now share the gauntlet-before-stage lock order; a real two-session PostgreSQL regression proved that update waited on allocation, then retained both the stage and newly inserted `allocating` run at unchanged projection revision 7. Focused Go coverage rejects omission of the lowest run-backed open/invite stage with `FailedPrecondition` before any projection batch is queued and accepts a complete replacement. The retained-history fixture now uses 18,496 rows in each contribution table, 5,000 same-player client matches across mixed courses/modes/canonical/completion states, and 9,000 same-player server heat histories across mixed courses/modes/canonical/completion states. Measured child-side plans returned 33 batch/player fact-repair rows through `gauntlet_qualifier_match_contribution_batch_player_idx`, 578 qualifier contribution rows through `gauntlet_qualifier_match_contribution_qualifier_idx`, and 32 qualifier score rows through `gauntlet_qualifier_score_projection_qualifier_idx`. The placed-player ordered probe returned 30 rows through its completion-history index. The exact joined time-trial candidate and joined/windowed post-match candidate each returned 30 rows with nonzero shared-buffer work; PostgreSQL validly selected a selective match-first/primary-key join for the full client shape rather than being forced to use one join order.
+
+The correction rerun's 5-human/11-bot p50/p95 values were 44.921/61.404 ms fact derivation, 6.776/14.899 ms F14 serving, 50.577/68.599 ms combined projection, and 201.678/224.397 ms committed. Maximum-normal 16-human values were 67.274/91.769, 7.018/7.671, 74.493/99.151, and 222.927/269.222 ms. Separately labeled synthetic 32-human stress was 133.682/164.524, 13.784/27.021, 147.931/178.288, and 443.342/462.065 ms. Median WAL was 8,371,032, 8,826,100, and 17,701,248 bytes. Warm leaderboard, career, gauntlet-standing, and fact-backed history execution was 0.087, 0.011, 0.064, and 0.108 ms; post-restart execution was 0.171, 0.047, 0.234, and 0.231 ms. No-op targeted and full rebuilds took 162.910 and 330.306 ms while preserving 46 fact batches, 5,318 contribution rows, and 408 projection rows. `./scripts/verify_schema.sh`, shell syntax, and `git diff --check` passed. The untouched complete `./scripts/verify.sh` passed using temporary exact Go 1.26.5 and Bun 1.3.9 binaries, including clean generation/manifest parity, all Go and Bun tests, formatting, tidy stability, vet, `govulncheck` with zero called vulnerabilities, and the linux/amd64 build. Nothing was staged, committed, migrated, or deployed.
+
+**Second review-correction evidence (2026-07-15):** Hard delete now takes the gauntlet projection lock and rejects any `gauntlet_stage_run` row before queued deletion, independently of status or qualification-snapshot presence. This preserves allocating, externally session-backed, active, terminal, and historical runs until a separate coordinated cleanup/history-purge workflow is approved. Focused Go coverage proves an existing session-backed run returns `FailedPrecondition`. The two-session PostgreSQL check is accurately scoped as a lock-and-visibility proof: the guard waited for the allocator's gauntlet lock, observed its newly committed `allocating` run before the external-session window, and retained the gauntlet/run at unchanged revision 9. It does not invoke the handler or prove handler-level rollback behavior.
+
+**Third review-correction evidence (2026-07-15):** Time-trial and post-match history candidate blocks are byte-for-byte parity checked between the canonical functions and production delta. The access-plan contract is not a third byte-compared copy; it invokes those shared helpers directly. Both helpers begin from `heat_player_fact_placed_player_history_idx` and perform canonical-heat and course/policy checks through keyed lateral fact lookups; the course-led, redundant canonical-heat, and now-unused best-lap contribution-history indexes were removed. The retained-history fixture gives the target player 1,250 of 5,000 client histories and 2,250 of 9,000 server heat histories, including at least 900 and 1,600 other-course rows respectively; unrelated players retain substantial target-course history. This explicitly measures the post-match contract as player-selective facts with bounded raw fetch, not strictly `_limit`-bounded fact access. The isolated PostgreSQL 16.14 plan returned 30 time-trial candidates from 1,458 fact inputs and 2,909 shared buffers and 30 post-match candidates from 6,268 fact inputs and 12,703 shared buffers, with both using the placed-player history index and neither performing a sequential fact scan. The contract caps those measurements at 2,000/8,000 fact inputs and 4,000/16,000 shared buffers.
+
+Post-match fields represented in `heat_player_fact` are authoritative; the limited wrapper reads only PlayerHeatStart score fields absent from compact facts and no longer joins PlayerHeatEnd. Independent hard-coded semantic cases pin exact time-trial and three-heat post-match identities, wrong-course and wrong-source decoys, canonical match and heat rejection, exact two-field exclusions, source isolation, all three heats, raw/fact value disagreement, successful output with a missing raw end event, and the exact batch-UUID ordering of an equal-time pair. Post-match JSON aggregates by the complete candidate row number. Canonical/delta marked-block parity is enforced, and the allocation/delete concurrency script remains accurately labeled as a lock-and-visibility protocol rather than an end-to-end handler race. The complete `./scripts/verify_schema.sh`, `go test ./...`, `go vet ./...`, tidy stability, Go formatting, shell syntax, and repository diff checks passed. Nothing was staged, committed, migrated, or deployed.
 
 **Done when:** player-facing records, career summaries, and gauntlet standings update incrementally without hourly refresh delay; authoritative cutoff remains immutable; and each remaining raw-event read is deliberately batch-local or diagnostic rather than an accidental lifetime scan.
 
-### F15: Complete Event Cutover And Foundation Cleanup
+### Post-F14 Repository Hygiene And Practical Local Verification
 
-**Depends on:** F11, F14
+**Depends on:** F14 review completion
 
-- [ ] Backfill production rows with synthetic batch, event, sequence, artifact, narrow fact, and serving-projection data; classify historical statistics only if an approved scope model exists.
-- [ ] Validate counts, source coverage, and representative outputs before destructive cleanup.
-- [ ] Remove the duplicated legacy `server_event`/`client_event` logical APIs and obsolete SQL only after the replacement parent and equivalent source/event-type partitions are populated, representative query plans are compared, and no material regression is found.
-- [ ] Finish extracting touched race, progression, insight, and gauntlet code and remove the remaining `internal` tree.
-- [ ] Run the full manual release and smoke-test checklist.
+**Status:** Completed 2026-07-15; F14R may begin. No deployment or production migration was performed.
 
-**Done when:** the canonical schema contains only the replacement model, Eventun and the game client use only the new contract, and rollback/recovery steps for the manual deployment are recorded.
+- [x] Move every SQL artifact out of `scripts/` and into a clearly named verification, contract, benchmark, operational, or fixture location under `migration/`. This includes temporary and test-only SQL. Keep automatic canonical initialization limited to the reviewed canonical filename sequence, and update shell/documentation references after the moves.
+- [x] Rename `scripts/f14_access_plan_contract.sql` to the durable domain path `migration/verification/serving_access_plan_contract.sql`.
+- [x] Remove internal work-phase identifiers from the Eventun repository. Phase codes such as F12, F13, F14, and F15 may remain in this Knowledge Base tracker, but do not appear in Eventun filenames, SQL identifiers or dollar tags, temporary table names, benchmark columns, fixtures/seeds, parity markers, comments, logs, error messages, README files, or other repository documentation. Stable compact-fact, serving-projection, historical-backfill, qualification-cutover, and access-plan terminology replaces them.
+- [x] Replace exact local Go/Bun/Node/npm version equality checks with presence and compatibility checks. A compatible installed toolchain, including a locally patched Go build string, runs ordinary verification without downloading an exact temporary binary. The existing module directive and dependency lockfiles define compatibility.
+- [x] Remove `scripts/generated.sha256`, the generated-manifest update subcommand, and ordinary-workflow SHA/byte-identity checks. Generator inputs and source contracts remain reviewable Git diffs; fresh ignored generated output is validated through generation success, compilation, focused semantic/descriptor tests, and direct inspection when needed.
+- [x] Consolidate the ordinary developer check into `./scripts/verify.sh`, which generates current clients, runs focused contracts, formatting, tidy stability, Go tests/vet, and compilation in the current checkout. Docker/schema, App UI, and Unreal checks remain explicit subcommands.
+- [x] Retain package lockfiles for dependency resolution without adding release-promotion, artifact-signing, cross-environment hash comparison, or build-once/promote machinery. The current AccelByte workflow may build and publish development and production independently.
+- [x] Rewrite Eventun `README.md` and `scripts/README.md` around compatible prerequisites and the simplified commands. The pinned developer-toolchain/hash-manifest narrative and historical phase names were removed from shared repository documents.
+
+**Completion evidence (2026-07-15):** All nine verification/benchmark SQL artifacts moved to `migration/verification/` or `migration/benchmarks/`; `scripts/` contains no SQL, and canonical initialization continues to select only the root canonical filename sequence. README and agent guidance explicitly assign verification and benchmark SQL to opt-in subdirectories excluded from initialization. Scoped Eventun-owned filename/content searches find no internal rollout codes or rollout-prefixed identifiers while leaving legitimate third-party and domain terminology unchanged. The large serving-access fixture is explicitly labeled as synthetic-provenance scale evidence and relies on the compact-fact derivation contract for provenance boundaries. Canonical and production-delta insight blocks remain byte-compared; the access-plan contract invokes the shared helpers directly. The generated SHA manifest and maintenance command are absent. Generator inputs and source contracts are reviewed as Git diffs; ignored generated clients are validated fresh through semantic contracts, compilation, and direct inspection when needed.
+
+The simplified `./scripts/verify.sh` passed with installed Go `go1.26.5-X:nodwarf5`, Bun 1.3.14, Node 24.18.0, and npm 11.16.0 without substituting an exact runtime. It regenerated clients, passed protobuf formatting/lint, focused Bun contracts, Go formatting/tidy stability, `go test -count=1 ./...`, `go vet ./...`, and linux/amd64 compilation. `./scripts/verify_schema.sh` passed canonical/delta parity, schema/migration contracts, concurrency contracts, access plans, and benchmarks from the relocated SQL. Explicit App UI generation/lint/build/audit and Unreal generation/parity checks also passed. Shell syntax, JavaScript syntax, repository/Knowledge Base diff checks, and final acceptance searches passed. Nothing was staged, committed, published, deployed, or applied to a production database.
+
+**Review checkpoint:** demonstrate that `scripts/` contains no SQL; an Eventun-wide phase-code search finds no internal work identifiers; ordinary verification succeeds with a compatible non-byte-identical local tool build and does not download an exact replacement; the generated SHA manifest and its maintenance command are gone; semantic tests and schema contracts still run; and development/production publishing remain independent rebuilds.
+
+**Done when:** Eventun contains only durable product/domain terminology, SQL ownership is entirely under `migration/`, and the normal local workflow tests behavior without enforcing exact developer-machine tool or generated-artifact hashes.
+
+### F14R: Close Gauntlet Authoring And Deployment-Safety Contracts
+
+**Depends on:** F14
+
+**Status:** Implementation and local verification are complete in the current unstaged Eventun worktree on 2026-07-15. The repository-configured target preflight intentionally rejects three invalid unbound qualifier schedules; nothing is deployed, migrated, or applied to a shared database.
+
+- [x] Enforce each authored stage circuit's `match_id` as its exact zero-based array position `0..N-1` in one shared create/update validator. Persist the validated position, add the essential nonnegative database constraint, and change frozen-rule fixtures that currently normalize arbitrary IDs.
+- [x] Audit existing stage circuits and serialized run-rule snapshots before applying the pending delta. Reject or explicitly repair invalid unbound configuration; never silently renumber run-backed history.
+- [x] Consolidate create/update gauntlet validation for positive qualifier duration, nonnegative stage, positive configured laps/heats, circuit indexing, and the existing competitor/lobby and policy relationships. Back persisted invariants with focused database constraints rather than relying only on Go validation.
+- [x] Compute `final_event_time` from the greatest actual qualifier/stage end, not the qualifier with the latest start.
+- [x] Define `row_number` and cutoff `selection_rank` as unique deterministic ordinals, while `ranking` is the competitive dense rank over performance fields without the final stable-player-id tie-breaker. Keep deterministic top-N cardinality and pagination independent from shared displayed rank. Correct the existing `qualifier_rank` carried by cutoff qualifier candidates, snapshot qualifier rows, protobuf evidence, and the resolution hash; do not add a redundant overall rank to cutoff entries or admission.
+- [x] Disable complete gRPC request/response payload logging, make the production log level explicit with an `info` default, and retain only identity-safe method, size, message-count, outcome, duration, and sampled trace-id metadata. No payload sampling path is retained.
+- [x] Add a narrow transport error boundary that logs underlying internal failures and returns a stable generic client message. Preserve cancellation, deadline, and deliberate non-internal statuses. Defer complete typed domain-error conversion to H01 and replacement of team-specific permission queries to T01/T02.
+- [x] Inspect the current Ascentun legacy team mutation routes and record the owner-approved containment decision: leave all current writes unchanged, add no feature flag, compatibility layer, temporary patch, or numeric-designation extension, and accept the temporary risk until the team-authority work replaces the workflow, potentially through a breaking Ascentun change. The active checked-in route/component graph proves the writes remain reachable; available repository evidence does not prove deployment or production use.
+
+**Owner decisions (2026-07-15):** Ascentun option 2 was explicitly selected. The legacy create, update, membership, invitation, ownership-transfer, roster rank/designation, and disband writes remain unchanged for this correction. This is an approved temporary-risk containment decision, not an accidental omission or an assertion that the routes are unused. Ranking correction remains within the existing qualifier-rank evidence model: equal qualifier performance shares `qualifier_rank`, deterministic cutoff selection continues to use unique `selection_rank`, and no new overall ranking field is added to candidates, snapshot entries, admission responses, or protobuf cutoff entries. Cancellation and deadline statuses remain public as `Canceled` and `DeadlineExceeded`; deliberate non-internal statuses remain intact, while raw, `Unknown`, and `Internal` failures are logged internally and sanitized at the transport boundary.
+
+**Implementation and verification evidence (2026-07-15):** Eventun remained on `teams` at `5aaaea2`. One shared pre-mutation authoring validator now serves create and update, requires exact positional circuits and the existing qualifier/stage/policy relationships, and persistence enumerates the validated match position. Canonical and pending-delta SQL add focused row constraints plus a fail-closed preflight for authored circuits, run-backed configuration, serialized rules, accepted match/placement identities, and pre-existing sealed cutoff evidence. The timing and standing views and qualification configuration-hash function are marked and normalized-text compared between canonical and delta SQL. `final_event_time` uses maximum actual ends. `row_number` and `selection_rank` remain deterministic ordinals; dense ranks exclude player id; corrected `qualifier_rank` continues through the existing cutoff qualifier rows, protobuf mapping, snapshot child, and resolution hash; the qualification algorithm version advances to 2 before first publication.
+
+The repository-configured PostgreSQL 16.14 target was inspected read-only after implementation. All 19 authored circuit rows, four serialized rules snapshots, accepted match history, and placement identities satisfy positional identity. Qualification snapshot tables are absent. The exact pending-delta preflight nevertheless rejects three unbound historical schedules because their qualifier ends are not at least one hour before the first stage: `March Madness` (`0623e266-935d-4a65-8551-fffbba436f54`), `April Showers` (`22cfc0b3-1bb0-4b32-9623-26634f8a4a14`), and `Goobie Woobies` (`ba122571-9577-4435-8b4b-e0049c5f450c`). Each has zero stage runs. The approved behavior is explicit rejection: no automatic repair, deletion, or historical reinterpretation was performed. An owner-approved manual correction of those unbound schedules is required before applying the pending delta to that target.
+
+Focused `go test -count=1 ./internal/app ./internal/eventun`, `go test -race -count=1 ./internal/app ./internal/eventun ./api ./auth`, `go test -count=1 ./...`, and `go vet ./...` passed. `./scripts/verify.sh` passed protobuf formatting/lint/generation, Bun contract tests, Go formatting and module stability, all Go tests, vet, and linux/amd64 build. `./scripts/verify_schema.sh` passed canonical/delta timing/ranking/hash parity, valid and deliberately invalid preflight cases, direct-SQL constraints, unequal-duration maximum-end behavior, tied dense ranks with distinct ordinals, deterministic tie-boundary top-N/pagination, sealed qualifier-rank/hash evidence, existing serving/concurrency contracts, access plans, and benchmarks. Shell syntax and ShellCheck, `git diff --check`, phase-label searches, and SQL-location checks passed. Ascentun remained clean and unchanged. Nothing was staged, committed, pushed, deployed, or migrated.
+
+**Review hardening (2026-07-16):** The pending-delta preflight no longer permits accepted matches or match-specific placements to fall back to mutable live circuits when `rules_snapshot` is null; those rows now fail with an explicit owner-decision requirement. Frozen rules also require their protobuf-JSON stage to equal the run stage, treating an omitted stage as protobuf's zero default. Isolated PostgreSQL fixtures prove missing-snapshot accepted-match and placement rejection, omitted-zero stage mismatch rejection, and continued frozen-match identity rejection. The cutoff contract now inserts a qualifier-only decoy with no overall projection: deterministic selected players and `selection_rank` remain unchanged, their shared competitive `qualifier_rank` changes, and the resolution hash must change before the corrected rank is sealed. Wrapped Go cancellation and deadline errors now return canonical context text without wrapper diagnostics, while deliberate gRPC statuses retain public detail. The durable access-logging, interceptor-ordering, and error-boundary contract is recorded in `50_knowledge/ascent-rivals/eventun/api.md`. The full Go, race, vet, local generation/build verification, and PostgreSQL 16.14 schema contract suites passed again. No shared migration or deployment was performed.
+
+**Review checkpoint:** prove equivalent create/update and direct-SQL rejection, circuit gaps/duplicates/nonzero starts, frozen claim/runtime match acceptance, shared-rank versus deterministic-ordinal behavior, cutoff evidence/hash behavior, unequal qualifier durations, safe logging defaults, and an existing-row preflight.
+
+**Done when:** authored and frozen gauntlet rules agree with the runtime contract, persisted F14 ranking evidence has explicit semantics, essential authoring invariants fail closed, payloads are not logged by default, and legacy team writes have an approved containment decision.
+
+### F15A: Rehearse Historical Backfill And Cutover On Authentic Data
+
+**Depends on:** F11, F14R
+
+**Status:** Planned disposable rehearsal. This task does not deploy or mutate production.
+
+- [ ] Restore a disposable dev dataset that matches the deployed schema and remains representative of production scale. Use a production copy only if dev no longer provides an authentic baseline.
+- [ ] Apply the guarded pending delta and backfill synthetic batch, event, sequence, artifact, narrow fact, and serving-projection data in the disposable environment; classify historical statistics only if an approved scope model exists.
+- [ ] Record source rows/batches, output counts, source coverage, validation-manifest contents, representative outputs/query plans, total backfill time, lock duration, WAL, peak storage, and rollback/recovery behavior.
+- [ ] Measure the existing quiescent full serving rebuild against the restored history. Keep the row-oriented implementation if it fits the approved maintenance and capacity budget; open a separate set-based or shadow-table redesign only if the measurement fails.
+- [ ] Prove the destructive cutover remains fail-closed before validation and succeeds only after the exact historical-backfill manifest is accepted.
+
+**Review checkpoint:** stop for an explicit go/no-go decision on duration, lock/WAL/storage budget, output parity, recovery, and whether the existing rebuild remains acceptable.
+
+**Done when:** an authentic disposable history passes the complete migration, backfill, validation, plan, and recovery rehearsal with enough evidence to authorize the development cutover.
+
+### F15B: Complete The Event Cutover In Development
+
+**Depends on:** F15A
+
+**Status:** Planned development cutover. Production deployment is explicitly excluded.
+
+- [ ] Apply the accepted backfill and guarded destructive cutover to development, then validate counts, source coverage, representative outputs, query plans, and player-facing behavior.
+- [ ] Remove the duplicated legacy `server_event`/`client_event` logical APIs, remaining legacy event consumers, and obsolete SQL only after replacement population and development validation pass.
+- [ ] Extract only race, progression, insight, gauntlet, and transport code directly changed by the event cutover. Do not relocate the remaining `internal/` tree merely to satisfy a package-layout objective.
+- [ ] Refresh Eventun, Ascentun, and game-client generated contracts required by the replacement event model, including removal of the stale dormant Ascentun token-gating contract artifacts already scheduled for this boundary.
+- [ ] Run the full development smoke matrix and record the later production rollback/recovery procedure without executing it.
+
+**Done when:** the canonical schema and development environment contain only the replacement event model, Eventun and the development game client use only the new contract, and production release instructions are reviewable but unexecuted.
+
+### H01: Harden Runtime Resources And Service Boundaries
+
+**Depends on:** F15B
+
+**Status:** Planned. Required before T01/T02 implementation and before any production release; T00 design review may proceed in parallel.
+
+- [ ] Replace whole-RPC database connection ownership with query- or transaction-scoped acquisition. Do not acquire a connection for database-free endpoints and do not retain one while waiting on AccelByte or another external service.
+- [ ] Refactor manual and automatic reward fulfillment into short prepare and finalize transactions with the pool connection released during the external grant call.
+- [ ] Configure explicit pool limits, acquisition behavior, and pool telemetry from application configuration; select values from measured concurrency rather than an arbitrary large default.
+- [ ] Add header, read, write, and idle bounds to gateway and metrics HTTP servers.
+- [ ] Give progression and reward schedules an explicit singleton/reschedule or bounded-concurrency policy. Preserve progression's deliberate one-job-immediately-before-execution lease/token fencing, and make reward preselection a durable short claim or remove the ineffective autocommit lock.
+- [ ] Replace the mutable process-global AccelByte namespace with constructor-injected immutable configuration.
+- [ ] Introduce typed domain errors and stable transport mapping incrementally as packages are touched. Distinguish absence, constraint conflicts, authorization denial, and infrastructure failures without exposing raw database errors.
+- [ ] Keep this phase behavior-focused; package relocation is permitted only when needed to establish one of these boundaries.
+
+**Done when:** external latency cannot pin database capacity, scheduled work has a measured concurrency budget, HTTP resources are bounded, configuration is immutable after construction, and client-visible failures are stable without a broad package rewrite.
+
+### F15P: Deploy The Foundation Cutover To Production
+
+**Depends on:** F15B, H01, an owner-selected release window
+
+**Status:** Deferred and unscheduled. F15B completion does not authorize this task.
+
+- [ ] Refresh F15A evidence against an up-to-date authentic disposable baseline if schema, data scale, migration contents, or the accepted maintenance budget changed after rehearsal.
+- [ ] Execute the reviewed manual production migration, service release, and smoke-test checklist with the required quiescence and rollback checkpoints.
+- [ ] Confirm source/output manifests and player-facing behavior before accepting destructive cleanup.
+- [ ] After a successful production cutover, remove the consumed one-time `migration.sql` delta and retain the canonical clean schema as the source of truth.
+
+**Done when:** production runs the accepted replacement contract, smoke and reconciliation checks pass, rollback is no longer required, and the consumed temporary delta is removed.
 
 ### F16: Define Seasons, Statistics Scopes, And Telemetry Retention
 
@@ -677,10 +820,12 @@ Progression workers claim one due or lease-expired job immediately before each e
 
 ### T00: Refresh And Re-Approve The Team Solution Designs
 
-**Depends on:** F15, F04
+**Depends on:** F15B, F04
 
 - [ ] Update both team solution designs to the implemented auth, package, event, fact, and integration boundaries plus the explicitly deferred telemetry-lifecycle decisions.
 - [ ] Resolve remaining team progression, notification, cosmetic, wildcard, and competition-slot decisions.
+- [ ] Decide whether existing pre-alpha team state is migrated or discarded, and confirm containment of legacy team mutations until replacement is ready.
+- [ ] Revalidate the gauntlet capability matrix against the implemented F14R/F15B schema and approve the initial individual, team, mixed-allocation, invitation, qualification, and bracket use cases.
 - [ ] Capture current game-client routes, component hierarchy, navigation graph, and screenshots in the Ascent Rivals project.
 - [ ] Produce controller-first Pencil designs before adding game-client team routes.
 - [ ] Keep website work minimal and admin/progression configuration in the Eventun Extend App UI.
@@ -693,16 +838,25 @@ These remain planned until T00 re-approval.
 
 ### T01: Replace Team State And Membership
 
+**Depends on:** T00, H01
+
 - [ ] Generate team identity and derive owner from the authenticated creator.
-- [ ] Enforce one active team per player.
-- [ ] Store membership validity intervals instead of deleting history.
+- [ ] Store one explicit owner and enforce exactly one active owner per team. Transfer ownership or disband atomically under the team lock; ordinary owner leave remains distinct from disband.
+- [ ] Enforce at most one active team per player and nonoverlapping membership validity intervals instead of deleting history.
 - [ ] Separate visible title, management capability, and competition rank.
+- [ ] Replace numeric designation authorization directly; do not retain it as a hidden fallback after the new model is available.
+- [ ] Define deterministic migration or discard of existing team, membership, invite, and request rows before enabling replacement writes.
 - [ ] Keep create, disband, capability management, and roster administration on the website initially.
 
 ### T02: Add Team Read And Membership APIs
 
+**Depends on:** T01
+
 - [ ] Add browse/list, team detail, active roster, current-player team, open join, leave, invite, accept, decline, and typed transition outcomes.
-- [ ] Keep one deterministic `AddTeamMember` command rather than separate endpoints for every transition.
+- [ ] Keep one deterministic `AddTeamMember` command rather than separate endpoints for every transition. Derive the actor from authentication, lock team/membership/pending rows, evaluate one transition, and commit the state, audit, and notification intent atomically.
+- [ ] Treat an invite or request as valid only before its expiry boundary; permit a new action to renew or replace an expired pending row instead of preserving it through `ON CONFLICT DO NOTHING`.
+- [ ] Consume or cancel pending state transactionally with membership creation, mode changes, leave, removal, transfer, and disband. Prove concurrent accept/cancel/membership-mode changes cannot authorize stale state.
+- [ ] Define idempotent repeated-action outcomes and deterministic deletion/cleanup semantics for every pending and membership transition.
 - [ ] Expose team region, time zone, recruiting status, and approved Twitch or Discord watch links; keep editing on the website.
 - [ ] Defer pagination and put text search last because controller text entry is poor and teams remain small.
 - [ ] Do not add token-gated joins.
@@ -757,7 +911,8 @@ These form a second, mostly parallel implementation slice after the team experie
 
 ### G01: Replace Qualification With Competition Slots
 
-- [ ] Model stage entries as configurable slots owned by an individual, team, sponsor/community selection, or wildcard rule.
+- [ ] Keep F14 individual cutoff snapshots as selection evidence, then publish one unified field whose owners are players or teams and whose source is qualification, explicit assignment, bracket advancement, or a configured fallback.
+- [ ] Expand the published owners into concrete player-owned or team-owned stage-run slots; sponsor, community, and wildcard remain source policy or display labels rather than owner types.
 - [ ] Allow a team-owned slot to be occupied by one or more racers according to stage configuration.
 - [ ] Snapshot top-N team qualification contributors at cutoff.
 - [ ] Keep individual and team tournaments on one cohesive gauntlet model.
@@ -765,6 +920,8 @@ These form a second, mostly parallel implementation slice after the team experie
 ### G02: Add Frozen Team Qualification And Roster Control
 
 - [ ] Attribute qualification performances to membership at performance time.
+- [ ] Derive team/member qualifier and overall scores from F14 narrow match contributions within each team-attributed history; do not join a collapsed player score to current membership.
+- [ ] Include the F14 gauntlet projection revision plus a membership-attribution revision or exact interval fingerprint in every team cutoff preview and snapshot.
 - [ ] Configure top-N team contributors and fixed racers per team.
 - [ ] Let a manager control eligible racers or select an alternate admission rule.
 - [ ] Support configurable qualification points, team rank, first-come, or threshold admission where approved.
@@ -830,5 +987,8 @@ These form a second, mostly parallel implementation slice after the team experie
 - After F06B: confirm the complete served/Admin specification contains no auth-only read duplicates, while generated Unreal code contains the exact ten selected Client reads plus five Server operations and no Admin operations or Admin-only model types.
 - After F08: confirm disabled PoC integrations have zero core-runtime coupling.
 - After F12: compare fact derivation cost against the one-core PostgreSQL tier.
-- After F15: stop and re-review both team designs before team implementation.
+- After F14R: local verification confirms circuit identity, authoring constraints, rank semantics, cutoff evidence, safe logging defaults, and the approved unchanged legacy-team-write containment. Authentic rehearsal remains blocked until the three explicitly rejected unbound qualifier schedules are manually corrected or otherwise resolved by the owner.
+- After F15A: accept or reject the measured rebuild/backfill path before development cutover.
+- After F15B: stop and re-review both team designs; T00 may proceed while H01 is implemented.
+- After H01: confirm runtime resource boundaries before T01/T02 implementation or F15P production release.
 - After T00: select the exact initial team and gauntlet delivery cutoffs.

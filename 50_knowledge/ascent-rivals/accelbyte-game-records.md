@@ -45,6 +45,23 @@ Current known contents:
 
 `Courses` is the source of truth for official course configuration. The Eventun `course` table is not the authoritative owner for official courses or default lap counts. As Eventun becomes more integrated with AccelByte, Eventun-side logic that needs official course configuration should prefer this AccelByte game record or a controlled cache derived from it.
 
+Website visibility note (2026-07-15):
+
+- the record supplies an enabled feature state and per-course feature state;
+- Eventun currently derives its public `active` boolean from explicit active/enabled overrides when present, otherwise from equality between those feature-state values;
+- the current public Eventun course response does not expose the full source feature state and returns inactive rows as well as active rows;
+- consumers must not interpret every inactive row as archived, because alpha, internal, and other unreleased courses can also be inactive;
+- a public archive therefore requires an explicit server-side classification of previously public retired courses, while unreleased states remain hidden.
+
+Approved Website V2 visibility contract (2026-07-16):
+
+- AccelByte Cloud Save `Courses` owns the source metadata used for public classification;
+- a course whose feature state matches the configured enabled/production-ready state is `published`, provided it is not also marked archived;
+- an explicit per-course archive marker in the AccelByte metadata identifies a deliberately retired, previously public course as `archived`; archive state must never be inferred from inactivity or a non-production feature state;
+- alpha, internal, disabled, unknown, incomplete, and otherwise unreleased configurations are `hidden`;
+- conflicting or malformed source metadata fails closed to `hidden` until corrected;
+- the exact AccelByte source-field name for the archive marker can be chosen with the record-schema change, but the Website-facing projection uses the stable values `published` and `archived` only.
+
 ### `ProgressionSettings`
 
 Current known contents:

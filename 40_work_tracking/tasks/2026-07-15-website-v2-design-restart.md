@@ -1,0 +1,255 @@
+# 2026-07-15 Website V2 Design Restart
+
+**Status:** Active
+**Project:** Ascent Rivals Website V2
+**References:**
+- `30_designs/ascent-rivals/website/unified-design.md`
+- `30_designs/ascent-rivals/website/design-doc-roadmap.md`
+- `30_designs/ascent-rivals/website/information-architecture.md`
+- `30_designs/ascent-rivals/website/initial-release-scope.md`
+- `30_designs/ascent-rivals/website/terminal-ops-design-system.md`
+- [Ascent Website](https://github.com/ikigai-github/ascent-website)
+- [Ascentun](https://github.com/ikigai-github/ascentun)
+
+---
+
+## Goal
+
+Resume Website V2 design work, validate the technical and product direction one decision at a time, and update the existing design set before implementation planning begins.
+
+## Confirmed Scope Decisions
+
+- Website V2 combines the marketing and player-facing public experiences.
+- Website V2 is intended to replace both the current marketing site and Ascentun, rather than launch as a read-only companion.
+- The initial release must provide at least Ascentun's current non-blockchain functionality and add a stronger public statistics experience for pilots, courses, and teams.
+- All current non-blockchain operational workflows move to Website V2 at launch, including team creation/management, gauntlet creation/editing/deletion, sponsor administration, and media upload.
+- Website V2 follows the planned team feature work. Initial planning may assume fact-backed team data will be available by Website V2 launch, but the exact team-statistics modules remain provisional until the implemented team contracts can be reviewed.
+- Website V2 will be implemented as a greenfield project rather than by extending `ascent-website` or `ascentun`.
+- The existing websites are content, behavior, asset, and migration references only.
+- Token-gated teams are not part of Website V2.
+- Wallet linking and wallet management are not part of the initial Website V2 release.
+- All Accountun-related prize and reward data is deferred. Website V2 does not display, link, configure, fund, claim, pay out, or administer data-driven prizes/rewards in the initial release; verified code-authored promotional prize copy remains allowed on editorial event pages.
+- Marketing content remains code-authored from approved design mocks; no CMS is planned for the initial release.
+- Terminal Ops remains the visual starting point, but the next design pass should push it toward a stronger sci-fi identity while retaining industrial material cues and data readability.
+
+## Current Technical Facts
+
+- As of 2026-07-15, both `ascent-website` and `ascentun` use Next.js 16.2, React 19.2, TypeScript 6, Tailwind CSS 4, and Radix-based UI primitives.
+- `ascent-website` already owns the actively maintained marketing homepage, about, brand, tournament, and event content.
+- `ascentun` remains the reference for player, team, gauntlet, sponsor, and authentication behavior; its prize/reward behavior is explicitly outside Website V2 reference parity.
+- Eventun remains the primary website data service; Website V2 does not need to become a new domain backend.
+- Existing game-client API shapes are reusable but not frozen Website contracts. New or revised Website-oriented reads are allowed where page aggregation, chart series, filtering, pagination, visibility, or response composition differ.
+- Eventun F14 implements incremental pilot career, pilot-course career, course-record, leaderboard, match-history, and gauntlet serving paths in the current worktree. These are not production-ready until F14 review and the F15 historical backfill and cutover complete.
+- Fact-backed team statistics, team leaderboards, and event-time membership attribution are not implemented by F14. They remain planned Eventun T03 work after the F15/T00 checkpoint and are a backend dependency for credible launch team analytics.
+- Ascent Rivals uses AGS Shared Cloud, which exposes a subset of Private Cloud features and configuration. Every AccelByte-dependent Website design must be verified against current Shared Cloud documentation, the actual namespace, and a non-destructive smoke test.
+
+## Ordered Review Queue
+
+### 1. Framework and Repository Direction
+
+- [x] Use Next.js with React and TypeScript for Website V2.
+- [x] Use a new greenfield project rather than extending `ascent-website` or `ascentun`.
+- [x] Record the decision and rationale in the canonical unified design document.
+
+Recorded decision:
+
+- use a new greenfield Next.js/React/TypeScript project;
+- treat `ascent-website` and Ascentun as reference and migration sources only;
+- create custom Ascent Rivals components over unstyled accessible primitives rather than adopting starter-kit styling wholesale;
+- use code review and manual browser review as the default design-iteration loop;
+- add Storybook, automated screenshots, or visual-regression tooling only when repeated state coverage or regression risk justifies the added maintenance and AI-token cost.
+
+Decision criteria:
+
+- migration cost and reusable code;
+- developer familiarity and maintenance burden;
+- compatibility with designer handoff and generated component output;
+- correctness and observability support for AI coding agents;
+- component-isolation and visual-regression workflow;
+- public-page SEO and rendering;
+- Steam authentication and Eventun integration;
+- data-heavy interactive pages;
+- deployment portability;
+- visual-system freedom;
+- testing and operational complexity.
+
+Candidate UI libraries, styling conventions, and test tools remain separate implementation decisions. The framework decision does not require adopting a pre-styled component kit.
+
+### 2. Marketing Content and Information Architecture
+
+- [x] Inventory the current `ascent-website` routes and content against the proposed Website V2 route map.
+- [x] Keep `/` as the primary marketing landing page; use `/gauntlets` as the primary competition and player entry.
+- [x] Reserve `/gauntlets` for Eventun-backed competition and migrate code-authored tournament/editorial content to `/events`.
+- [x] Keep `/about` as a concise studio, mission, current-team, and verified-recognition page.
+- [x] Retain `/brand` as a public, repository-managed brand-kit route and revise its visual guidance after the Website V2 design system is approved.
+- [x] Decide the final relationship between `/`, `/game`, `/about`, `/brand`, `/tournaments` or `/events`, and the player/competition routes.
+- [x] Identify content to preserve, rewrite, merge, redirect, or retire.
+- [x] Define the code-authored content update convention without introducing a CMS.
+- [x] Record canonical URLs, redirects, metadata, and historical-event handling.
+
+Recorded direction:
+
+- retain the homepage's marketing and conversion purpose;
+- allow real gauntlet, player, record, partner, and community proof as supporting content without turning `/` into a dashboard;
+- use light additive personalization for logged-in visitors rather than a different homepage;
+- defer `/game` from the initial route map and create it later only if deeper game modes, systems, ships, courses, or worldbuilding provide material content beyond `/`;
+- use `/events` and `/events/[slug]` for code-authored LAN, showcase, sponsored-tournament, historical, and recorded-event content;
+- permanently redirect `/tournaments` and its MSI Grand Prix detail route to their `/events` equivalents at cutover;
+- keep Eventun-backed competition under `/gauntlets` and omit all prize/reward content and legacy workflow links from Website V2;
+- keep `/about` concise; move event appearances and recaps to `/events`, associate useful videos with event details, and link to YouTube for the broader vlog archive;
+- verify team, role, mission, and recognition content before migration;
+- retain `/brand` for verified logo downloads and usage rules; revalidate spacing and replace visual-system guidance only after the revised Terminal Ops direction is approved;
+- keep brand assets repository-managed and allow a future `/press` page to link to, rather than replace, `/brand`;
+- use plain TypeScript and TSX for initial marketing content, with short copy beside its component and long or structured content in route-local typed `content.ts` files;
+- use shared typed models only for genuinely repeated structures such as editorial events, keep metadata with route content, and allow bespoke sections when approved designs require them;
+- continue the approved mock and assets to implementation, code review, and manual responsive browser review workflow without adding CMS or MDX machinery;
+- preserve the current homepage's content categories but rewrite or verify its copy and media, and rebuild its layout and components from scratch;
+- treat the current homepage implementation, backgrounds, clipping treatments, and styling as references only, and add a restrained `/gauntlets` bridge for Website V2;
+- treat the current homepage, about, brand, tournament history, and MSI Grand Prix content as migration inputs requiring accuracy and route review.
+
+### 3. Terminal Ops Sci-Fi Design Review
+
+- [x] Review the existing homepage, gauntlet-detail, and marketing concept images against current product requirements.
+- [x] Define which industrial Terminal Ops elements remain canonical.
+- [x] Specify the stronger sci-fi additions through shape language, materials, imagery, light, typography, motion, and world-specific interface motifs.
+- [x] Avoid generic terminal, generic esports, crypto-luxury, and unreadable all-monospace outcomes.
+- [ ] Produce or commission revised mocks for marketing, a data-heavy player page, gauntlet detail, and mobile.
+- [ ] Approve, revise, or replace Terminal Ops after reviewing those mocks.
+
+Recorded visual foundation:
+
+- keep the terminal as the core in-world interface metaphor;
+- replace present-day Linux and filesystem imitation with an original, readable Ascent Rivals information and command language;
+- make the terminal a plausible source for gauntlet, team, pilot, planet, course, ship, and world information;
+- combine advanced display technology with rusted hard metal, welded or repaired plates, exposed fasteners, abrasion, heat staining, and scrapyard construction;
+- treat the existing static exploded diagram based on an old ship model as reference-only; use schematics later only with current approved game models or data and a stronger diagnostic, modular, or interactive purpose.
+- use a hybrid terminal interaction model: conventional navigation remains primary and accessible, while a global entity-query console supports optional readable commands such as `FIND`, `OPEN`, `SCAN`, and `TRACK`;
+- frame the interface as an access point into a distributed underground race-information network, while keeping exact authorities, orbital deployment, manufacturer roles, spectator culture, and betting as exploratory lore rather than Website V2 requirements;
+- use outlaw-race urgency as atmosphere only where supported by real timing or state, and do not fabricate live signals, shutdown pressure, viewer activity, or wagering data.
+- use amber/gold as the dominant emissive display color, with restrained green, cyan, and red for functional state; place it behind worn display glass with localized scan, bloom, and signal effects rather than constant CRT noise;
+- prioritize readability through a proportional body face and reserve condensed display or monospace typography for shorter roles;
+- compare Saira Semi Condensed plus IBM Plex Sans/Mono against an all-IBM Plex system, use Atkinson Hyperlegible Next as a readability benchmark, and retain Opinion Pro Condensed only if webfont licensing is verified;
+- validate typography using real marketing copy, a data table, terminal search results, ambiguous identifiers, and mobile labels before selecting a final system.
+- treat each page as one terminal system; establish a restrained persistent chassis, reserve heavy scrapyard framing for major modules, and use lighter rails and inset surfaces for ordinary information;
+- allow marketing pages more exposed machinery and cinematic depth while keeping player and competition pages calmer and data-forward;
+- derive cuts, seams, latches, recesses, and asymmetry from plausible fabricated construction rather than generic sci-fi decoration.
+- do not depend on bespoke planet art, illustrated course maps, or an ongoing custom-art pipeline;
+- prioritize current gameplay captures and video, then terminal-native graphics generated from real data, with material and signal treatments carrying pages that have limited imagery;
+- present planets through factual environment context, available in-game captures, and clearly procedural scan graphics rather than invented planet paintings;
+- treat the game's checkpoint-generated course trace as a strong terminal graphic when an approved export or website data contract exists, with course stills and factual metadata as the fallback;
+- treat Fab source assets as game-production inputs rather than standalone website art, and never expose raw source assets through the public site.
+- allow bespoke planet and course artwork later, but give initial components optional media slots and strong non-image fallbacks so art production cannot block functional routes;
+- use restrained functional motion for signal acquisition, actual data changes, course-trace drawing, and mechanical response; avoid constant flicker, repeated boot effects, long typing, or delayed content, and provide full reduced-motion behavior.
+
+### 4. Initial Replacement Product Scope
+
+- [x] Set replacement parity, rather than a read-only public companion, as the initial release target.
+- [x] Require at least Ascentun's current non-blockchain functionality.
+- [x] Include gauntlets, players, teams, courses, and grouped public entity search in the phase-one route model; keep the Eventun sponsor registry out of public routes and public search.
+- [x] Include Steam authentication, session handling, logout, and personalized overlays in the initial release.
+- [x] Make better pilot, course, and team statistics part of the initial release definition, using visualizations only where they communicate a relationship or trend more clearly than a table.
+- [x] Keep exact rankings, rosters, match history, and other scan-and-compare data in tables where tables are the clearer representation.
+- [x] Remove wallet, token-gating, and every Accountun-related prize/reward dependency, presentation module, action, and legacy link from initial Website V2 acceptance criteria.
+- [x] Confirm that all non-blockchain operational workflows also move at launch: team creation/management, gauntlet creation/editing/deletion, sponsor administration, and media upload.
+- [x] Approve the detailed parity and analytics matrix in `30_designs/ascent-rivals/website/initial-release-scope.md`.
+- [x] Sequence Website V2 after the team feature work and assume its fact-backed team reads will be available by launch; defer exact team-statistics presentation until those implemented contracts can be reviewed.
+- [x] Lead the pilot profile with identity and career summary rather than recent gauntlet results.
+- [x] Use Matches, Podiums, Podium Rate, and Average Circuit Points as the primary career-summary measures, with Results, Objectives, Combat, Activity, and Economy detail groups.
+- [x] Keep career-summary visualization optional; permit a compact podium-share graphic only when paired with exact counts and do not fabricate trends from aggregate totals.
+- [x] Use per-match circuit points as the first recent-performance visualization, default the chart to the dominant Ascent Mode cohort, allow optional course filtering, and show a rolling trend only for a sufficient comparable sample.
+- [x] Use an exact sortable course table plus an optional normalized gap-to-record view for one explicit leaderboard category; do not compare raw times across courses or imply percentile.
+- [x] Use `/courses` for discovery and `/courses/[code]` for canonical shareable detail, with leaderboard category preserved in query state.
+- [x] Default course leaderboards to `Race Finish`, followed by `Race Lap`, `Time Trial Finish`, `Time Trial Lap`, and loadout-challenge variants; keep source validation internal and do not use `Official`, `Server`, `Client`, or authority language in public labels.
+- [x] Name the inclusive low- and high-cost time-trial categories `3K Class` and `10K Class`, with concise help text stating the 3,000-or-less and 10,000-or-less loadout-value caps.
+- [x] Use `Race` as the mode-neutral public leaderboard context and foreground Ascent Mode in gameplay explanation because nearly all current races use it.
+- [ ] Add a race-mode leaderboard selector only after Eventun exposes mode-scoped records and ranks; preserve Classic and Deathmatch as future filter values.
+- [x] Treat AccelByte Cloud Save `Courses` as the course metadata and feature-state source of truth; use production-ready courses by default and expose only explicitly retired, previously public courses through an `Archived` filter.
+- [x] Define a server-side Website course-visibility contract: configured production-ready state maps to `published`, an explicit AccelByte retirement marker maps a previously public course to `archived`, all other or invalid states fail closed to hidden, and public reads expose only published/archived records.
+- [x] Show loadout value as a compact secondary leaderboard column on desktop; retain it in the primary mobile row for 3K/10K Class boards and move it into row details for ordinary Race and Time Trial boards.
+- [x] Allow purpose-built Website API requirements rather than forcing every page to consume the simpler game-client response shapes.
+- [x] Keep individual pilots, pilot profiles, and roster results more prominent than aggregate team analytics; retain fact-backed team stats in launch scope but re-evaluate their exact modules after the team implementation has been exercised and iterated on.
+- [x] Keep ordinary membership actions on `/teams/[id]` and use `/teams/[id]/manage` for metadata, media, roster administration, invitations, join requests, ownership transfer, and disbanding, reached through a permission-aware team-profile action.
+- [x] Show the public team membership mode to every audience using `Open`, `Request to Join`, and `Invite Only`; map the final new-team enum values to these stable labels after implementation review.
+- [x] Make gauntlet-detail priority state- and composition-aware: qualifiers and stages are independently optional, empty phases are omitted, and the next/current/result module is selected from the competition structure that actually exists.
+- [x] Use `Qualifier`, `Stage`, `Final`, and `Bracket` according to actual competition semantics; reserve `Final` for an explicitly deciding stage and `Bracket` for a published bracket graph.
+- [x] Defer a gauntlet broadcast module and `/watch`: current shoutcasting is a user launching the game as a spectator and streaming through a personal Twitch channel, with no canonical broadcaster, URL, or live-status contract. Allow only manually verified links on code-authored event pages.
+- [x] Defer the hosting and permission boundary for runtime stage-session creation, result submission/repair, and related operator controls until the initial bracket implementation is reviewed; keep ordinary non-prize gauntlet creation/editing/deletion in Website V2 scope.
+- [x] Use `Sponsor` for the Eventun-backed competition entity and `/sponsors`; reserve `Partner` for broader verified code-authored marketing relationships and defer `/partners` until distinct content justifies it.
+- [x] Preserve `/sponsors` and `/sponsors/[id]` as administrator-only operational replacement routes, not as public or general creator directory/profile routes; ordinary visitors see only approved sponsorship branding in gauntlet or code-authored marketing context.
+- [x] Treat sponsor tier as gauntlet-specific operational data that may influence in-game advertising placement, not as a global or public sponsor rank.
+- [x] Make direct gauntlet-owned `Billboard` upload the primary creator workflow and expose `Tileable` metadata for ribbon-style placements; retain reusable sponsor-entity association only as an optional advanced control scoped to gauntlet authoring.
+- [x] Keep initial media UI shallow: use generic labeled thumbnails for configured media purposes, assume square billboard creative, show three copies for the tileable preview, and defer dimension-derived aspect-ratio or slot matching.
+- [x] Preserve existing sponsor records, sponsor media, gauntlet–sponsor relationships, and tiers at Website V2 cutover rather than flattening them into direct gauntlet media.
+- [ ] Revisit game-client billboard placement separately: consider authored course slots, manual organizer or future sponsor selection, multiple shapes/aspect ratios, trackside and vehicle placements, and holographic variants.
+- [ ] If sponsorship expands beyond direct billboard uploads, evaluate a sponsor–gauntlet campaign model that separates stable sponsor identity from tournament-specific creative and placement.
+- [ ] Audit live `WideBillboard` media, then coordinate retirement of the unused purpose and game-client collection if no required data or consumer is found; preserve existing records until that decision.
+- [ ] Audit actual consumers of sponsor, gauntlet, and team media-purpose values and metadata before adding custom UI or retiring unused types.
+
+### 5. Knowledge-Base Reconciliation
+
+- [ ] Update the unified design, information architecture, page specs, and flow specs with confirmed scope decisions.
+- [ ] Remove retired token-gating branches instead of relying only on supersession warnings.
+- [x] Remove wallet requirements from the initial-release route and state matrices.
+- [x] Exclude legacy Ascentun prize/reward behavior entirely from Website V2 feature parity and defer the Accountun boundary for later redesign.
+- [x] Resolve the top-navigation contradiction: use one responsive top bar with stable `Gauntlets`, `Pilots`, `Teams`, `Courses`, and `Events` destinations, direct search/account utilities, priority-based `More` disclosure, and no persistent global side navigation or separate cross-site bridge control.
+- [x] Define page-local navigation: readable anchors for long pages and forms, tabs only for mutually exclusive panels, segmented controls for small filters, URL-backed shareable state, compact mobile jump menus, and no command syntax as the only label.
+- [x] Define the initial account menu as `My Career`, `My Team` with concise pending invitation/request status, conditional `Admin / Operations`, and a separated `Sign Out`; keep object creation/editing contextual and exclude wallets.
+- [x] Use a direct `Sign in with Steam` action with no one-option provider picker; treat Epic, Discord, and other providers as future identity/linking designs only after a concrete use case is approved.
+- [ ] Create a consolidated decision and open-question register.
+
+### 6. Page and Flow Specification Completion
+
+- [x] Rewrite the homepage page specification for the approved marketing-first direction.
+- [x] Use `Play Now` as the default hero conversion, allow reliable confirmed ownership to promote `Explore Gauntlets`, and never infer ownership or installation from sign-in alone.
+- [x] Keep homepage section order, module placement, responsive composition, and CTA region consistent across anonymous and authenticated states; limit personalization to content or actions inside existing slots.
+- [x] Allow one bounded optional race-network module: prefer meaningful active/upcoming gauntlet data, fall back to a recent verified gauntlet or code-authored event recap, and omit it rather than rendering stale, empty, or fabricated activity.
+- [ ] Create a `/game` page specification only if the route is later approved based on distinct content.
+- [ ] Update public page specifications against current Eventun contracts.
+- [x] Reconcile the `/gauntlets` discovery specification with current gauntlet and calendar contracts: unique entity directory, repeated-occurrence Schedule agenda, occurrence-based inclusion, nearest-event ordering, and Past history scope.
+- [x] Constrain gauntlet media composition: fixed media bays for ordinary directory cards, opaque information surfaces, image-light Schedule rows, and full-bleed `Background` treatment only for detail or a deliberately featured module with contrast review.
+- [x] Preserve Eventun's all-public gauntlet model: successful creation publishes immediately, Past remains public and searchable, and Website V2 does not infer hidden state from timing or game-client list omission.
+- [ ] Add or revise a bounded Website gauntlet-discovery projection with server-derived active/next/latest occurrence data, pagination, and optional explicit runtime/result state.
+- [x] Update the Steam authentication flow specification for the confirmed initial scope.
+- [x] Record AGS Shared Cloud as a cross-project platform constraint and identify the ambiguity between AccelByte's unsupported Shared Cloud web-login classification and Ascentun's custom `steamopenid` V4 platform-token flow.
+- [ ] Smoke-test the current Ascentun Steam OpenID exchange, refresh, cancellation, invalid/replayed assertion, linking, and Login Queue behavior against the intended Shared Cloud environment.
+- [ ] Obtain a durable AccelByte support answer or equivalent documentation confirming whether the custom `steamopenid` V4 grant is a supported Shared Cloud website contract; do not freeze Website V2 authentication until resolved.
+- [ ] If the custom grant is unsupported, review alternative website identity and authorization architectures before implementing authentication.
+- [ ] Specify any approved team, gauntlet, sponsor, or personalized flows.
+- [ ] Reconcile Website V2 gauntlet create/edit authoring with the post-team bracket work, including allocation rules, field publication, single-elimination generation, seeds, byes, versioned publication, and audited repair.
+- [x] Keep core gauntlet creation separate from bracket authoring rather than expanding the current single-page form into one combined operator form.
+- [x] Use one sectioned create/edit form rather than a wizard: Core Details, Competition Structure, Branding and Advertising, and Review and Save; do not imply draft persistence or autosave without a backend contract.
+- [x] Add a dedicated core gauntlet-authoring flow covering section navigation, validation, media-upload state, responsive behavior, failure handling, and the separation from brackets/runtime operations.
+- [x] Route successful gauntlet create and edit to a freshly revalidated `/gauntlets/[id]` detail page as the canonical manual-review checkpoint.
+- [x] Defer the bracket mutation permission boundary and hosting-surface decision until the initial bracket implementation can be reviewed; Eventun Extend App remains a candidate, not an approved boundary.
+- [ ] Require Website V2 to render the published bracket graph and public match state when bracket contracts ship, without assuming that public-site gauntlet creators can mutate the graph.
+- [ ] Keep deferred legacy workflows out of Website V2 acceptance criteria.
+
+### 7. Non-Functional Baseline
+
+- [ ] Define rendering and caching rules for marketing, public entity, and authenticated pages.
+- [ ] Define accessibility, responsive, image, font, motion, and performance requirements.
+- [ ] Define SEO metadata, structured data, canonical URL, redirect, and social-sharing rules.
+- [ ] Confirm hosting and deployment constraints.
+- [ ] Define analytics and error-observability requirements.
+
+### 8. Migration and Delivery Plan
+
+- [ ] Choose an incremental migration sequence that keeps the current marketing site and Ascentun available until their replacement routes are verified.
+- [ ] Map approved routes to source systems and existing or required Website APIs, then identify contract changes and new read models.
+- [ ] Define visual-system and shared-component implementation slices.
+- [ ] Define route-level acceptance criteria and verification evidence.
+- [ ] Define the cutover, redirect, rollback, and legacy-retirement plan.
+
+## Review Checkpoint
+
+Framework, marketing information architecture, visual direction, the replacement-release target, the detailed non-blockchain parity and analytics baseline, the server-side public course-visibility contract, and the shared responsive global and page-local navigation models are approved. Team presentation remains provisional until the preceding team feature work is implemented. The next review should reconcile the remaining page and flow specifications against this baseline before defining the non-functional and delivery plans.
+
+## Risks
+
+- Rewriting two current React applications into another framework creates cost without automatically improving the product.
+- Using the phrase "Ascentun parity" without an explicit exclusions list can accidentally reintroduce wallet, Accountun prize/reward, and retired token-gating behavior.
+- Treating team analytics as a frontend-only task would misattribute historical performance to current rosters and produce incorrect team results.
+- Requiring every analytics idea at launch could delay replacement indefinitely; the launch set must be limited to visualizations supported by bounded, production-cut-over Eventun reads.
+- Starting visual implementation before the stronger sci-fi direction is validated can lock in the weaker parts of the current Terminal Ops concepts.
+- Changing the root-route purpose without a migration and SEO decision can damage the current marketing funnel and historical links.
+- Treating a currently functional AccelByte endpoint as a supported Shared Cloud contract could leave Website V2 dependent on an undocumented or removable integration; the Steam flow requires explicit Shared Cloud verification before implementation freeze.

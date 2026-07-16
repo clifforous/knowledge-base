@@ -82,7 +82,7 @@ Completed or substantially drafted:
 - [[information-architecture]] defines the working route model, top-bar navigation direction, bridge rule, search architecture, and initial phase-1 page state matrix.
 - [[terminal-ops-design-system]] defines Terminal Ops as the primary working visual direction, with component inventory, navigation behavior, responsive collapse guidance, accessibility guardrails, and SEO guardrails.
 - Page specs exist for homepage, gauntlets, gauntlet detail, player directory, player profile, course leaderboards, teams, team profile, and sponsors.
-- Flow specs exist for authentication, wallet linking, and team lifecycle workflows.
+- Flow specs exist for authentication, wallet linking, team lifecycle, and core gauntlet authoring workflows.
 - Terminal Ops concept images and the original broad [[pencil-design-brief]] are preserved as durable reference artifacts.
 
 Still missing or incomplete:
@@ -91,7 +91,7 @@ Still missing or incomplete:
 - A consolidated open-question register.
 - A standalone content strategy.
 - A standalone responsive/accessibility/SEO baseline, unless the project accepts the distributed coverage in the design system and page specs.
-- Dedicated flow specs for gauntlet creation/editing, gauntlet prize/funding/claim workflows, and sponsor administration.
+- A dedicated sponsor-administration flow. Core gauntlet create/edit now has a flow spec; bracket authoring and runtime operations remain separate post-implementation decisions. Prize/reward flows are deferred outside Website V2.
 - A second Pencil pass against constrained page specs and Terminal Ops instead of another broad shell exploration.
 
 ## Outstanding Work
@@ -153,7 +153,7 @@ Phase-1 page state matrix should cover:
 - `/players/[id]`
 - `/teams`
 - `/teams/[id]`
-- `/sponsors`
+- administrator-only `/sponsors` and `/sponsors/[id]`
 - login
 - wallet linking
 - team management
@@ -226,7 +226,7 @@ Initial page spec priority:
 5. course leaderboard
 6. team profile
 7. directories for players and teams
-8. sponsors
+8. permissioned sponsor registry and administration
 9. game page
 
 Current drafts:
@@ -254,14 +254,12 @@ Create or finish flow notes for stateful interactions.
 Initial flows:
 
 - Steam auth: [[flows/authentication]]
-- wallet linking and verification: [[flows/wallet-linking]]
 - team creation: [[flows/team-lifecycle]]
 - team join request: [[flows/team-lifecycle]]
 - team invite accept/deny: [[flows/team-lifecycle]]
 - team management: [[flows/team-lifecycle]]
 - gauntlet creation/editing
 - logged-in gauntlet participation context
-- prize/funding/claim flows preserved from the current site
 
 Current drafts:
 
@@ -273,7 +271,6 @@ Current gaps:
 
 - gauntlet creation/editing
 - logged-in gauntlet participation context
-- gauntlet prize/funding/claim workflows
 - sponsor administration
 
 ### 6. Responsive strategy
@@ -392,7 +389,7 @@ Recommended order:
 3. Run the next Pencil pass against the completed core page specs. Status: prompt drafted in [[pencil-terminal-ops-follow-up-prompt]].
 4. Create the missing `/game` page spec. Status: not started.
 5. Create the responsive/accessibility/SEO baseline or explicitly accept distributed coverage. Status: partial.
-6. Create remaining user-flow specs for gauntlet/admin workflows. Status: partial.
+6. Create remaining user-flow specs for sponsor administration and later bracket/runtime operations. Status: partial.
 7. Create content strategy. Status: not started.
 8. Consolidate open questions. Status: not started.
 
@@ -410,7 +407,7 @@ Reason:
 - [x] Phase-1 page state matrix exists.
 - [x] Design system maps Terminal Ops tokens to canonical game palette.
 - [x] Component inventory covers the core Terminal Ops components.
-- [ ] User flows cover authenticated and admin workflows preserved from the current site. Missing: gauntlet/admin/prize-specific flows.
+- [ ] User flows cover authenticated and admin workflows preserved from the current site. Core gauntlet authoring is specified; sponsor administration and later bracket/runtime operations remain. Prize/reward flows are intentionally excluded.
 - [ ] Responsive strategy addresses navigation, tables, and two-column layouts.
 - [x] Accessibility guidance addresses terminal metaphor and box-drawing risks.
 - [ ] SEO baseline exists for public entity pages.

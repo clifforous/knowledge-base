@@ -841,7 +841,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun
+# Run from the Eventun repository root.
 go test ./internal/eventun -run 'Progression.*Goal|Admin.*Goal'
 bun run gen
 ```
@@ -870,7 +870,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun
+# Run from the Eventun repository root.
 go test ./internal/eventun -run 'ValidateGoal|UpdateGoalDefinition|PublishGoal|ArchiveGoal'
 bun run gen
 ```
@@ -900,7 +900,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun
+# Run from the Eventun repository root.
 go test ./internal/eventun -run 'Challenge.*Admin|ChallengePool'
 bun run gen
 ```
@@ -925,7 +925,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun
+# Run from the Eventun repository root.
 go test ./internal/eventun -run 'ChallengePoolImport'
 bun run gen
 ```
@@ -952,7 +952,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run codegen
 npm run build
 npm run lint
@@ -978,7 +978,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```
@@ -1008,7 +1008,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```
@@ -1035,7 +1035,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```
@@ -1062,7 +1062,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```
@@ -1112,7 +1112,7 @@ Tasks:
 Verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```
@@ -1138,14 +1138,14 @@ Manual verification in a development namespace:
 Backend verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun
+# Run from the Eventun repository root.
 go test ./...
 ```
 
 Frontend verification:
 
 ```bash
-cd /home/cgarvis/projects/genun/eventun/app
+# Run from the Eventun repository root/app directory.
 npm run build
 npm run lint
 ```

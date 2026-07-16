@@ -44,6 +44,8 @@ Current Eventun behavior:
 - team standings, team stage results, and runtime entrant snapshots are not implemented yet
 - team hierarchy/designated racer priority metadata is not implemented yet
 
+Eventun authoring rejects any stage circuit whose supplied `match_id` is not its exact array position. Every nonempty circuit therefore uses contiguous identities `0..N-1`; persistence enumerates the validated positions, and a claimed run retains those identities in its immutable rules snapshot.
+
 ## Identity
 
 A gauntlet stage runtime run is identified by:

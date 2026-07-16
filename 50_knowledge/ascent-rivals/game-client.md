@@ -2,6 +2,7 @@
 
 ## Related
 - [[overview]]
+- [[race-roster-rules]]
 - [[accelbyte-game-records]]
 - [[eventun/overview|eventun]]
 - [[eventun/api|eventun-api]]
@@ -59,6 +60,29 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - The current join flow locates the active public AccelByte session, calls Eventun `GetGauntletStageJoinStatus`, matches the exact `stage_run_id` and `session_id`, and lets `HGPlayRootMenu` join the approved session.
 - This is functional player-stage support, not a blank gauntlet-client stub. Team-qualified and mixed-allocation stages still need player/team slot ownership, provisional and locked roster, allocation-label, and team-standing response data and UI states.
 - `UHGChallengesSubsystem` already consumes Eventun `MyActiveChallenges` and exposes active challenge snapshots, progress, lanes, and reward previews. Team challenges can reuse its presentation patterns, but Eventun's current progression contracts and storage are player-scoped.
+
+## Current Shoutcasting And Streaming
+
+- Current gauntlet broadcasts are user-operated: a shoutcaster launches the game, joins as a spectator, and streams the running client through their own Twitch channel.
+- There is no first-party server-rendered gauntlet stream and no canonical Website/Eventun registry for broadcaster assignment, stream URL, or live status.
+- Existing gauntlet-stage design work does not yet provide a complete role-aware spectator/shoutcaster admission contract; the current manual spectator workflow must not be treated as proof that formal stage broadcast admission is solved.
+- Website surfaces therefore cannot automatically discover or safely label a gauntlet stream without a later registration, authorization, and status design.
+
+## Sponsor Advertising And Billboard Direction
+
+- Eventun and the current gauntlet form support two advertising-media owners: an associated sponsor entity and the gauntlet itself. Both media-purpose catalogs currently include `Billboard` and `WideBillboard`.
+- Current organizer practice commonly uploads campaign-specific billboard artwork directly to the gauntlet instead of creating and associating a reusable sponsor record.
+- When building runtime gauntlet data, `UHGGauntletSubsystem` copies associated sponsor `Billboard` and `CourseFlag` media with the sponsor id and tier from that sponsor–gauntlet relationship. It copies gauntlet-owned media with the synthetic sponsor id `Gauntlet` and tier `0`.
+- The subsystem also parses `WideBillboard` media into `FHGGauntletData.WideBillboards`, but the reviewed game-client source only populates and sorts that array; no runtime consumer of `WideBillboards` was found.
+- `UHGCourseServerSubsystem` populates course advertising from `FHGGauntletData.Billboards`, groups those images by tier and sponsor identifier, balances sponsor/image usage, and respects tier placement limits where possible.
+- Ribbon billboard entities require `ImageDefinition.Tileable = true`. That value is parsed from the media metadata; a separate `WideBillboard` purpose is not used for this compatibility decision.
+- A sponsor's tier therefore belongs to its relationship with one gauntlet and affects automatic placement only for sponsor-associated assets. It is not a global sponsor rank or stable public presentation hierarchy.
+- Current production use is predominantly square billboard artwork. Earlier media-purpose and metadata design anticipated more placement types and possible dimension-based aspect-ratio matching, but that is not an established runtime/content workflow.
+- The current automatic billboard handling is expected to receive a separate game-client/content design pass. Direct gauntlet `Billboard` uploads remain the required initial Website workflow because campaign artwork may be unique to one tournament. Website V2 should expose `Tileable` as a purpose-specific control rather than requiring raw metadata editing; its preview only needs to show three adjacent copies of the square artwork.
+- Candidate direction includes author-defined advertising locations per course, manual selection from compatible locations, multiple billboard shapes/aspect ratios, trackside placements, vehicle-mounted advertising, and holographic treatments.
+- If sponsors later need stable identity beyond billboard assets, a future sponsor–gauntlet campaign model could keep tournament-specific creative and placement choices on the relationship rather than treating one global sponsor asset set as reusable everywhere.
+- Organizers may perform manual selection initially. Direct sponsor selection remains only a candidate until sponsor identity, authorization, asset approval, preview, and publication workflows are designed.
+- Website V2 should preserve direct gauntlet billboard upload and retain sponsor-entity association as an optional advanced capability, without treating spatial billboard placement as an initial Website requirement. Existing `WideBillboard` records should remain intact at cutover, but new `WideBillboard` authoring should be withheld pending a live-data audit and coordinated cleanup decision.
 
 ## Service Relationship
 - Consumes competition domain state represented by [[eventun/overview|eventun]].

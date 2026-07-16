@@ -8,6 +8,7 @@ Status: Draft
 - [[../information-architecture]]
 - [[../terminal-ops-design-system]]
 - [[../tone-and-voice]]
+- [[../flows/gauntlet-authoring]]
 - [[gauntlets-index]]
 - [[sponsors-index]]
 - [[../../../../50_knowledge/ascent-rivals/competition-runtime-terms|competition-runtime-terms]]
@@ -19,7 +20,7 @@ Status: Draft
 
 Define the IA and page requirements for a single gauntlet.
 
-The page should behave like an event operations console: it explains the gauntlet, shows what phase is active, exposes standings and qualification state, and keeps prizes/sponsors visible without making the page feel like an admin form.
+The page should behave like an event operations console: it explains the gauntlet, shows what phase is active, exposes standings and qualification state, and keeps sponsors visible without making the page feel like an admin form.
 
 ## Route
 
@@ -54,10 +55,9 @@ Secondary:
 
 - make qualifier and finals/stage status clear
 - keep personal logged-in status visible when relevant
-- preserve standings, stats, sponsor display, prize flows, and admin actions from the current site
+- preserve standings, stats, sponsor display, and approved non-prize admin actions from the current site
 - support multiple gauntlet models without making early pages feel empty
 - protect qualifier-versus-heat terminology
-- provide a future landing surface for stream embeds when a tournament is broadcast
 
 ## Supported Gauntlet Models
 
@@ -68,7 +68,7 @@ V1 should support:
 - qualifier-only gauntlets that behave like matchmaking windows
 - stage-only or bracket-only events
 - traditional gauntlets with qualifiers plus finals/stages
-- sponsored prize events
+- sponsored events
 
 Later:
 
@@ -81,6 +81,40 @@ Design guardrail:
 
 - avoid showing empty sections just because the generic model supports them
 - show only the sections that apply, but keep the page-local nav stable enough that users can learn the page
+
+### Prize and Reward Boundary
+
+Prize and reward data is Accountun-related and is entirely deferred from Website V2.
+
+- do not request or display prize pools, reward descriptions, distribution rows, funding, claims, payouts, or wallet requirements;
+- do not expose prize or reward state in public metadata, personalized overlays, gauntlet administration, or sponsor modules;
+- do not add Website V2 links into legacy prize/reward workflows during the initial release;
+- a related code-authored `/events/[slug]` page may contain verified promotional prize copy, but `/gauntlets/[id]` remains free of Accountun-driven prize modules and state;
+- revisit the complete product and system boundary later rather than preserving a partial presentation.
+
+### Composition and State Rules
+
+Qualifiers and stages are independent optional parts of a gauntlet. The page must derive its composition from the actual gauntlet data rather than assume a fixed qualifier-to-final funnel.
+
+- a qualifier-only gauntlet shows qualifier scheduling, scoring, standings, and its concluded result without an empty finals section;
+- a stage-only gauntlet leads with the next or current stage and never invents qualification status;
+- a gauntlet with both follows the currently relevant qualifier, between-phase, or stage state;
+- a bracket-backed gauntlet shows the published graph and match state when the bracket read contract exists;
+- if neither qualifiers nor stages exist, render only the factual briefing and available actions or results, and treat the missing competition structure as a sparse/data-quality state rather than fabricating sections.
+
+State-specific priority means changing emphasis, not creating separate page types:
+
+- upcoming: show the next applicable qualifier or stage schedule, entry requirements, and format;
+- active qualifier: show that qualifier's remaining time, standings, and personal position where available;
+- between qualification and a stage: show the resolved or provisional field and the next scheduled stage where supported;
+- active stage or bracket: show the current stage/match, current results, and advancement state;
+- completed: show the authoritative final result for the composition that actually ran.
+
+Website contract guidance:
+
+- a server-provided current phase/component is preferable once bracket and stage-run state becomes richer;
+- if Website V2 derives state from timestamps and arrays initially, keep the algorithm centralized and test qualifier-only, stage-only, combined, sparse, and exact-boundary cases;
+- do not use `live` unless a reliable backend state supports it.
 
 ## Current V1 Data Availability
 
@@ -178,29 +212,6 @@ V1 caution:
 - use recent match summary as a supporting module if useful
 - do not confuse match-internal heats with gauntlet qualifiers
 
-### Prize data
-
-Available:
-
-- prize configuration
-- funding
-- participation rewards
-- distribution rows
-- results
-- payouts
-- dust claim status and claim action
-
-Sources:
-
-- `GET /v1/admin/gauntlet/{gauntletId}/prize`
-- `GET /v1/gauntlet/{gauntletId}/prize/dust/claim/status`
-- `POST /v1/gauntlet/{gauntletId}/prize/dust/claim`
-
-V1 caution:
-
-- current prize model is mostly currency/item oriented
-- presentation should leave room for future sponsored physical prizes without pretending the API already supports every prize type
-
 ### Stage operations
 
 Available/admin-oriented:
@@ -216,19 +227,23 @@ Sources:
 
 V1 caution:
 
-- stage operations are admin/creator surfaces, not public page clutter
+- stage operations are operator surfaces, not public page clutter;
+- defer the hosting and permission boundary for stage-session creation, result submission/repair, and related runtime controls until the initial bracket implementation clarifies the operator workflow;
+- this deferral does not change the Website V2 requirement to preserve ordinary non-prize gauntlet creation, editing, and deletion.
 
 ## V1 Page Structure
 
 Default first-view priority:
 
 1. event identity and current operational status
-2. active/upcoming qualifier or finals/stage state
+2. the active or next applicable qualifier, stage, or bracket state
 3. logged-in personal status
-4. standings entry points
-5. sponsors and prizes
+4. standings or results that exist for the gauntlet's actual composition
+5. sponsors and media
 
 This respects the product priority that qualifiers and finals matter most while still giving the page enough identity to orient the user.
+
+Use readable in-page anchors for the gauntlet's long public document. `Overview` is always present; add `Qualifiers`, `Stages`, `Bracket`, `Standings` or `Results`, and `Sponsors` only when the corresponding structure or approved identity actually exists. Do not render empty navigation destinations to preserve a universal template. On compact layouts, use a labeled section jump menu. Command-like Terminal Ops copy may accompany the controls visually but cannot replace these plain-language labels.
 
 ## 1. Gauntlet Briefing
 
@@ -246,7 +261,6 @@ Content:
 - first/final event time
 - scoring summary
 - sponsor strip
-- prize indicator
 - primary action to view active standings or qualifier
 
 Tone examples:
@@ -278,14 +292,11 @@ V1 possible content:
 - qualification points
 - qualifiers played/counted
 - qualification/final eligibility if endpoint/state supports it
-- dust claim status if prize data supports it
-- wallet-required warning for claims if needed
 
 Sources:
 
 - `GET /v1/gauntlet/{gauntletId}/standings/player/{playerId}`
 - `GET /v1/gauntlet/{gauntletId}/qualifier/{qualifierId}/standings/player/{playerId}`
-- `GET /v1/gauntlet/{gauntletId}/prize/dust/claim/status`
 
 Design guidance:
 
@@ -332,7 +343,10 @@ Content:
 
 Terminology:
 
-- use `Stage`, `Final Stage`, or `Bracket` depending on data and product language
+- use `Stage` as the general label for a scheduled non-bracket competition unit;
+- use `Final` or `Final Stage` only when the competition explicitly identifies that stage as the deciding final;
+- use `Bracket` only when a published bracket graph exists;
+- do not infer a bracket merely from stage win/loss prerequisites;
 - use `Heat` only for match-internal runtime rounds in a stage match
 
 V1 visual model:
@@ -346,10 +360,10 @@ Purpose:
 
 - show current competitive order
 
-Required views:
+Required when applicable:
 
-- overall standings
-- qualifier standings
+- overall standings when the competition read returns them
+- qualifier standings only when qualifiers exist
 
 Useful columns:
 
@@ -381,66 +395,39 @@ Purpose:
 
 Content:
 
-- sponsor logos/names
-- sponsor tier if available
-- sponsor profile links
-- sponsor-specific prize callouts if supported
+- approved sponsor logos/names for this gauntlet
+- no public relationship-tier or billboard-placement data
+- no links to the permissioned sponsor registry/detail routes
 
 Placement:
 
 - sponsor strip in briefing
 - richer sponsor module lower on the page if there is enough content
 
-## 7. Prize Manifest
+Data boundary:
 
-Purpose:
+- use the approved sponsor display projection embedded in or composed for the public gauntlet response;
+- do not fetch unrestricted sponsor records through public list/detail endpoints;
+- tier remains gauntlet-specific operational data that may influence in-game advertising placement;
+- direct gauntlet `Billboard` media, including tileable artwork, does not establish a named sponsor relationship and must not generate this module by itself;
+- omit the sponsor section when there is no explicit approved sponsor identity to present.
 
-- show rewards and claim/admin state
+## Deferred Watch / Broadcast
 
-Public content:
+Current operational reality:
 
-- prize pool or reward summary
-- distribution/placement rows
-- participation rewards where public
-- funding summary if public
-- result/payout summary after completion if public
+- a shoutcaster launches the game, joins as a spectator, and streams the running client through their own Twitch channel;
+- Eventun and Website V2 do not currently own a canonical broadcaster assignment, stream URL, or trustworthy live-status signal;
+- this is a user-operated broadcast workflow, not a first-party gauntlet stream service.
 
-Logged-in content:
+Initial Website V2 boundary:
 
-- claim eligibility
-- claim action
-- wallet requirement
+- do not add a gauntlet broadcast module or `/watch` route;
+- do not discover, embed, or label personal streams automatically;
+- a code-authored editorial event page may include a manually verified Twitch, YouTube, or later VOD link when organizers deliberately provide one;
+- revisit gauntlet streaming only after broadcaster authorization, spectator admission, stream registration, status, moderation, and ownership are designed.
 
-Admin/creator content:
-
-- setup prize
-- add funding
-- report results
-- mark payouts planned/paid
-
-Guardrail:
-
-- do not overfit the design to only currency prizes
-- leave room for sponsored hardware or showcase rewards as future presentation data
-
-## 8. Watch / Broadcast
-
-V1:
-
-- optional module only if a YouTube/Twitch/VOD link exists
-
-Later:
-
-- embedded Twitch or YouTube stream
-- live chat or lightweight interaction if product scope expands
-- bounties/betting are future concepts, not V1 requirements
-
-Placement:
-
-- near finals/stages when live
-- lower on the page or behind `Watch` section when only VODs exist
-
-## 9. History / Past Winners
+## 7. History / Past Winners
 
 V1:
 
@@ -477,32 +464,29 @@ Design guardrail:
 - destructive actions should not be visually adjacent to primary public actions
 - require confirmation
 
-### Prize/Admin Actions
+### Stage/Admin Actions
 
-Visible only to authorized users.
+Hosting decision deferred until after initial bracket implementation.
 
-Actions:
+Candidate operations:
 
-- setup prize
-- add funding
-- report results
-- mark payout planned
-- mark payout paid
 - create stage session
-- report stage results
+- submit or repair stage results
+- resolve runtime failures where an explicit operator action exists
 
 Guardrail:
 
-- keep admin actions near their relevant object
-- do not turn the public page into an operations dashboard for anonymous users
+- these controls remain restricted operator tooling wherever they are ultimately hosted;
+- do not assume they belong on Website V2 merely because the public gauntlet page displays stage state;
+- do not turn the public page into an operations dashboard.
 
 ## Auth and Permission States
 
 | State | Behavior |
 |---|---|
-| Anonymous | can view briefing, qualifiers, stages/finals, standings, sponsors, public prizes, media |
-| Logged-in player | same plus personal rank, qualification context, claim status, wallet warnings where supported |
-| Gauntlet creator/admin | same plus edit, delete, prize, stage-session, and result actions |
+| Anonymous | can view briefing, qualifiers, stages/finals, standings, sponsors, and media |
+| Logged-in player | same plus personal rank and qualification context where supported |
+| Gauntlet creator/admin | same plus ordinary non-prize edit/delete actions; runtime stage tooling remains subject to the post-bracket hosting and permission decision |
 
 ## Empty / Loading / Error States
 
@@ -513,10 +497,8 @@ Required states:
 - no stages/finals
 - no standings yet
 - no sponsors
-- no prize data
 - failed standings fetch
 - failed qualifier standings fetch
-- failed prize fetch
 - media missing
 
 Tone:
@@ -524,7 +506,6 @@ Tone:
 - `No qualifier windows published.`
 - `No final stage scheduled.`
 - `Standings sync pending.`
-- `Prize manifest unavailable.`
 
 ## Responsive Behavior
 
@@ -557,15 +538,11 @@ Public gauntlet pages should support:
 - Open Graph image from gauntlet media if available
 - canonical URL
 
-Do not expose private player-specific eligibility or claim data in metadata.
+Do not expose private player-specific eligibility data in metadata.
 
 ## Open Questions
 
-- What data should determine whether a gauntlet is qualifier-only, stage-only, traditional, invite-only, or team-based in the UI?
-- Should stage/final presentation use the word `Stage`, `Final`, or `Bracket` by default?
-- Should prize details be public by default or partially hidden until results/claims are active?
-- Should watch embeds appear directly on gauntlet detail pages before the dedicated `/watch` page ships?
-- Which stage operations are phase-1 web requirements versus admin-only future tooling?
+- After the initial bracket implementation, should bracket generation, publication, and repair remain admin-only in the Eventun Extend App UI or become a permissioned Website V2 management surface?
 
 ## Next Steps
 

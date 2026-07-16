@@ -3,7 +3,7 @@
 Date: 2026-04-14
 Status: Draft
 
-Foundation supersession (2026-07-13): wallet linking may remain relevant to prizes and other wallet features, but every token-gated team-join branch in this draft is retired. Eventun removed the TapTools-shaped token catalog and team-gate API; do not use team membership as a wallet-linking entry point unless a provider-neutral replacement is separately designed.
+Website V2 exclusion (2026-07-15): this entire flow is deferred and must not be implemented or linked from Website V2. Wallet, prize, reward, funding, claim, and payout behavior requires a later Accountun boundary review. The remaining document is future/historical design input only, not an initial-release specification.
 
 ## Related
 - [[authentication]]
@@ -33,7 +33,7 @@ This flow covers:
 - linking wallet addresses to the logged-in player
 - renaming a linked wallet
 - unlinking a wallet
-- contextual prompts from token-gated or prize-related surfaces
+- contextual prompts from prize or reward-related surfaces
 
 This flow assumes the user is already authenticated with Steam.
 
@@ -55,7 +55,6 @@ Wallet state is private account state by default.
 
 Public pages can show wallet-related prompts only when they are contextual and necessary, such as:
 
-- token-gated team join requirements
 - prize claim requirements
 - gauntlet reward eligibility requirements
 
@@ -63,45 +62,34 @@ Public pages should not expose a player's wallet addresses by default.
 
 ## Current Ascentun Implementation Notes
 
-Current implementation files:
+Retained implementation files at `589d0e2`:
 
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/page.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-verified-card.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-cardano-connect-card.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-midnight-connect-card.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-action-button.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-name-dialog.tsx`
-- `/home/cgarvis/projects/genun/ascentun/app/(logged-in)/player/me/wallets/wallet-forget-dialog.tsx`
-- `/home/cgarvis/projects/genun/ascentun/lib/wallet/cardano/client.ts`
-- `/home/cgarvis/projects/genun/ascentun/lib/wallet/cardano/hooks.ts`
-- `/home/cgarvis/projects/genun/ascentun/lib/wallet/midnight/client.ts`
-- `/home/cgarvis/projects/genun/ascentun/lib/wallet/midnight/hook.ts`
-- `/home/cgarvis/projects/genun/ascentun/app/api/wallet/cardano/link/verify/route.ts`
-- `/home/cgarvis/projects/genun/ascentun/app/api/wallet/midnight/link/verify/route.ts`
-- `/home/cgarvis/projects/genun/ascentun/app/api/player/me/wallet/[address]/route.ts`
+- [verified-wallet card](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/%28logged-in%29/player/me/wallets/wallet-verified-card.tsx)
+- [Midnight connection card](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/%28logged-in%29/player/me/wallets/wallet-midnight-connect-card.tsx)
+- [wallet action button](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/%28logged-in%29/player/me/wallets/wallet-action-button.tsx)
+- [wallet name dialog](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/%28logged-in%29/player/me/wallets/wallet-name-dialog.tsx)
+- [forget-wallet dialog](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/%28logged-in%29/player/me/wallets/wallet-forget-dialog.tsx)
+- [shared wallet hooks](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/lib/wallet/hooks.ts)
+- [Midnight wallet client](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/lib/wallet/midnight/client.ts)
+- [Midnight wallet hook](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/lib/wallet/midnight/hook.ts)
+- [Midnight wallet utilities](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/lib/wallet/midnight/utils.ts)
+- [Midnight verification route](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/api/wallet/midnight/link/verify/route.ts)
+- [player wallet route](https://github.com/ikigai-github/ascentun/blob/589d0e2ecb9a6c1153c4e7a259c6ee5fe0bdea57/app/api/player/me/wallet/%5Baddress%5D/route.ts)
 
 Current behavior:
 
-- wallet management is a protected page under `/player/me/wallets`
-- the page shows `Verified Wallets`
-- the page shows `Browser Detected Wallets`
+- Ascentun no longer defines the `/player/me/wallets` page, so there is no current end-user wallet-management screen
+- Cardano detection, connection, verification, and auto-connect code was removed in `589d0e2`; the README explicitly marks Cardano wallet linking as disabled
+- shared wallet cards/dialogs, Midnight connector code, the Midnight verification route, and the player-wallet mutation route remain in source but are not assembled by a current page route
 - current linked wallet shape is `address` and `name`
-- Cardano browser wallets are detected through Mesh
-- Cardano wallet install links mention Eternl, Lace, and Vespr
-- Cardano connect flow reads a change address
-- Cardano verify flow signs the CSRF token and posts address, signature, key, and name
-- server verifies the Cardano data signature before linking the wallet
 - Midnight Lace is shown only when `window.midnight.mnLace` exists
 - Midnight connect flow gets one or more wallet addresses
 - Midnight link flow currently posts wallet addresses and name without a Cardano-style signature challenge
-- linked wallet changes refresh the session so the account menu and guards see current wallet state
-- linked wallets can be renamed
-- linked wallets can be unlinked with a confirmation dialog
 
 Current implementation gaps / production cautions:
 
-- the current route is tied to the old `/player/me/wallets` structure; the new project can choose a cleaner private route
-- Cardano linking has a cryptographic signature proof
+- no current Ascentun route exposes the retained wallet components; treat them as partial reference code rather than a functioning flow
+- the removed Cardano path is historical evidence only and must not be presented as current behavior
 - Midnight linking currently behaves more like wallet-address association through the connector than signature verification
 - production security should decide whether Midnight requires a stronger ownership proof before labeling it `verified`
 - wallet management is visually account/admin-like in the current app and should be restyled into the Terminal Ops shell
@@ -126,7 +114,6 @@ Entry points:
 
 - avatar/account menu
 - own player profile wallet action
-- token-gated team join prompt
 - prize claim prompt
 - login redirect after attempting a wallet-required action
 

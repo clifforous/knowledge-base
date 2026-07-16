@@ -2,6 +2,7 @@
 
 Date: 2026-04-13
 Status: Draft
+Career-summary priority confirmed: 2026-07-15
 
 ## Related
 - [[../unified-design]]
@@ -20,10 +21,10 @@ Status: Draft
 
 Define the first page-level specification for the public player profile route.
 
-This spec is intentionally V1/V2-aware:
+This spec distinguishes initial-release requirements from later extensions:
 
-- V1 should use data that Eventun/OpenAPI and the current `ascentun` implementation already expose or strongly imply.
-- V2 ideas can be captured but should not block the first Nuxt build.
+- the initial release should use reviewed Eventun contracts and preserve or improve the current `ascentun` behavior;
+- later ideas can be captured but should not block Website V2 replacement readiness.
 
 ## Route
 
@@ -86,6 +87,8 @@ Guardrail:
 ## Current V1 Data Availability
 
 This section is based on the current `ascentun` code and OpenAPI data.
+
+Foundation readiness note (2026-07-15): Eventun F14 implements incremental pilot career, pilot-course career, current-record, player-rank, and bounded match-history reads in the current worktree. Website V2 launch use remains gated on F14 review and the F15 production historical backfill and cutover.
 
 ### Player identity
 
@@ -157,7 +160,11 @@ Source:
 
 ### Course metadata
 
-Available:
+Authoritative source:
+
+- AccelByte Cloud Save `Courses`
+
+Currently exposed through Eventun's controlled cache:
 
 - course code
 - display name
@@ -176,6 +183,7 @@ Source:
 Terminology note:
 
 - course metadata may include default/known heats and laps for the course/ruleset, but heats remain match-internal runtime units.
+- the Website must use the approved server-side AccelByte projection: production-ready courses are `published`, only an explicit AccelByte archive marker makes a previously public course `archived`, and all alpha, internal, unknown, conflicting, or otherwise unreleased courses remain hidden. A false Eventun `active` boolean alone must never expose course metadata.
 
 ### Leaderboard data
 
@@ -184,7 +192,7 @@ Available:
 - top leaderboard entries grouped by course
 - player-specific leaderboard rank/time by course
 - client/server finish and lap categories
-- low-cost/high-cost variants
+- 3K Class and 10K Class variants, using the current inclusive loadout-value caps
 - loadout value on leaderboard ranks
 
 Sources:
@@ -240,35 +248,43 @@ V1 caution:
 - generic public player profile should show a match-history overview if the endpoint is available.
 - detailed match-summary drill-in and heat breakdown views are out of V1 scope for the player profile.
 
-### AccelByte medals and badges
+### Eventun medals and progression
 
-Available conceptually:
+Available:
 
-- in-game medals
-- in-game badges
+- public player medal totals, including medal name, augment relationship, count, and dimensions;
+- player progression goals, counters, and completions.
 
-Current/legacy source:
+Sources:
 
-- AccelByte, using the logged-in player's token where supported
+- `GET /v1/player/{playerId}/medals`
+- `GET /v1/player/{playerId}/progression`
 
-Supersession note:
+Product boundary:
 
-- The Eventun medals/progression requirements draft proposes moving official gameplay medal facts and progression goals to Eventun. If that project proceeds, official Eventun medal totals should replace this earlier AccelByte-medal assumption for gameplay medals. AccelByte-only badges, trophies, or platform recognitions remain separate unless explicitly migrated.
+- Eventun owns official gameplay medal totals and progression state exposed through these reads;
+- AccelByte-only badges, trophies, or platform recognition remain separate unless explicitly migrated;
+- medals are valid supporting recognition, but they do not replace the career summary as the profile lead.
 
 V1 caution:
 
-- Eventun does not currently appear to own medals or badges.
-- The site can potentially show medals and badges for the logged-in user's own profile if AccelByte exposes them through that user's token.
-- Do not assume public medal or badge counts are available for other players unless AccelByte or Eventun exposes a safe public lookup.
+- render only known medal definitions and factual Eventun totals;
+- do not synthesize achievement labels from aggregate career statistics;
+- decide later whether progression goals and completions belong on the public profile or a logged-in personal surface.
 
-## V1 Page Structure
+## Initial Page Structure
 
-Default first-view priority:
+Confirmed first-view priority:
 
 1. identity and career context
-2. career totals
+2. career summary as the lead statistics module
 3. course stats and course placements
-4. optional strengths, only if they can be derived cleanly from best lap or best finish data
+4. recent performance and exact match history
+5. gauntlet results and optional strengths when the data supports them cleanly
+
+The profile must remain complete and useful when the pilot has no recent gauntlet participation. Recent competition results support the career story; they do not replace it as the page lead.
+
+Page-local navigation uses readable anchors for the long profile document, with labels such as `Overview`, `Courses`, `Recent Results`, `Gauntlets`, and `Medals` when those sections are supported. Conditional strength callouts do not require their own destination. Keep a supported section and show its honest no-data state when the pilot merely lacks results; omit a destination only when the section is structurally unavailable. Compact layouts replace the anchor row with a labeled section jump menu.
 
 ## 1. Player Header / Briefing
 
@@ -321,20 +337,31 @@ Purpose:
 
 Recommended V1 stats:
 
-- matches played
-- podium finishes
-- average circuit points
-- total circuit points
-- kills, if combat contribution belongs in the public overview
-- obelisks
-- total play time
-- total credits
+Headline measures:
+
+- matches played;
+- podium finishes;
+- podium rate, derived as podium finishes divided by matches played;
+- average circuit points.
+
+Grouped detail:
+
+- `Results`: total circuit points and supporting result totals;
+- `Objectives`: total and average obelisks;
+- `Combat`: total and average kills, deaths, and crashes;
+- `Activity`: matches played and total play time;
+- `Economy`: total and average credits.
 
 Display guidance:
 
-- use grouped stat cards rather than one flat grid of every value
-- group by `Results`, `Course Objectives`, `Economy`, `Time`
-- avoid foregrounding deaths, crashes, or other negative-interesting stats in the default overview
+- show the four headline measures as exact, immediately scannable values;
+- use grouped detail rather than one flat grid of every value;
+- show podium rate with its exact numerator and denominator, not only a percentage;
+- an optional compact podium-versus-non-podium segmented bar may reinforce that relationship;
+- do not require a chart when the exact headline values communicate the summary more clearly;
+- avoid decorative gauges, radar charts, and sparklines synthesized from aggregate totals;
+- keep deaths and crashes in the secondary Combat group rather than foregrounding them in the headline summary;
+- use an em dash or explicit unavailable state when matches played is zero; do not report a false zero-percent podium rate.
 
 Terminal Ops component:
 
@@ -360,11 +387,25 @@ V1 content per course:
 - average finish
 - average circuit points
 - podium finishes
+- pilot time and current course-record time for the selected leaderboard category, when both exist
+- normalized gap to the current record for the selected category
 
 Interaction:
 
 - sort by leaderboard placement, best finish, best lap, matches played, average circuit points, podiums
-- filter active courses if needed
+- filter published courses by default and expose archived courses only through explicit historical context when needed
+- select one explicit player-facing leaderboard category for cross-course comparison
+
+Cross-course visualization:
+
+- keep a sortable exact table as the canonical representation;
+- optionally show a horizontal gap-to-record view for the selected category;
+- calculate each gap within its own course as `(pilot time - record time) / record time` and display it as a percentage slower than the record;
+- show the exact pilot time, record time, and ordinal rank with each bar;
+- lower gap is better, and a current record holder displays a zero-percent gap;
+- omit courses without both a pilot result and a valid current record;
+- do not infer percentile because the leaderboard response does not expose the full population size;
+- never combine Race/Time Trial or finish/lap categories without an explicit user selection.
 
 Terminal Ops component:
 
@@ -428,12 +469,12 @@ V1 content:
 
 - per-course personal leaderboard rank and time
 - category variants:
-  - client finish
-  - client lap
-  - client low-cost finish/lap
-  - client high-cost finish/lap
-  - server finish
-  - server lap
+  - Race Finish
+  - Race Lap
+  - Time Trial Finish
+  - Time Trial Lap
+  - 3K Class Finish/Lap
+  - 10K Class Finish/Lap
 
 Design caution:
 
@@ -450,6 +491,28 @@ Terminal Ops component:
 Purpose:
 
 - show recent play history and link toward deeper analysis later
+
+### Recent Performance Visualization
+
+Initial decision:
+
+- show circuit points for each match across the latest bounded match history;
+- treat matches as a discrete ordered sequence rather than implying continuous sampling;
+- use Ascent Mode as the initial comparable cohort because it represents nearly all current races;
+- retain race mode on every underlying history item so Classic and Deathmatch results are not mislabeled;
+- defer a visible race-mode selector until it provides useful sample sizes, while keeping it as a future filter;
+- provide an optional course filter for a more directly comparable cohort;
+- show exact circuit points, course, race mode, placement, and match time through accessible labels or interaction;
+- add a rolling trend only when enough comparable matches exist and label the window size;
+- omit the chart when the selected cohort is too small, while retaining the exact match-history table;
+- do not chart lap or finish times across different courses;
+- do not smooth missing matches into fabricated values.
+
+Recommended form:
+
+- a compact dot or column series for per-match circuit points;
+- an optional rolling trend line over the selected comparable cohort;
+- podium results may receive a restrained categorical marker, but placement does not become a second quantitative axis.
 
 V1 decision:
 
@@ -538,15 +601,14 @@ Only when the viewed player is the logged-in user.
 
 V1 possible:
 
-- wallet link
 - team invite/request state
 - link to team management or team page
 - profile/account actions if supported
-- AccelByte medals and badges for the logged-in user if available
+- Eventun medals and progression links where included in the approved profile scope
 
 Placement decision:
 
-- own-profile wallet and team actions should appear on the public profile page when the logged-in user is viewing their own profile
+- own-profile team and account actions should appear on the public profile page when the logged-in user is viewing their own profile
 - these actions can also remain reachable from the avatar/account menu, but the profile page should not require users to hunt through global account navigation
 
 V1 not currently primary:
@@ -568,7 +630,7 @@ V2:
 |---|---|
 | Anonymous | can view public profile, public stats, course stats, leaderboards, public match history if enabled |
 | Logged-in other player | same as anonymous plus account/avatar top bar and comparison affordances if available |
-| Logged-in own profile | public profile plus wallet/team/account action overlays and own AccelByte medals/badges if available |
+| Logged-in own profile | public profile plus team/account action overlays and own medals/badges where supported |
 | Admin | same as logged-in, plus admin-only moderation/actions only if product decides they are needed |
 
 ## Empty / Loading / Error States
@@ -652,11 +714,15 @@ These ideas are valuable but should not block V1 if unsupported:
 
 1. V1 should include a match-history overview, but not a match-detail page.
 2. V1 should include course leaderboard placements using player-specific leaderboard data where available.
-3. Medals and badges are real in-game systems and must not be faked from incomplete aggregate stats. Earlier profile work assumed AccelByte ownership; the Eventun medals/progression requirements draft supersedes that assumption for future official gameplay-medal tracking if implemented.
+3. Eventun owns official gameplay medal totals and progression reads. These facts may support the profile but must not be faked or inferred from incomplete career aggregates; AccelByte-only recognition remains a separate source.
 4. V1 strength modules should be limited to best finish and best lap unless richer normalized data becomes available.
 5. Avoid negative or joke-framed stats for now.
-6. The default layout should prioritize identity and career totals first, then course stats. Strength modules are welcome only where the data supports them cleanly.
-7. Own-profile wallet and team actions should appear on the public profile page for the logged-in user.
+6. The default layout prioritizes identity and a career summary first, then course stats, recent performance, and match history. Recent gauntlet participation must not determine whether the profile feels complete.
+7. Own-profile team and account actions should appear on the public profile page for the logged-in user.
+8. The career lead uses Matches, Podiums, Podium Rate, and Average Circuit Points as headline values. Full career totals remain available in Results, Objectives, Combat, Activity, and Economy groups.
+9. Career-summary visualization is optional. Podium share is the only approved initial aggregate visualization because it has a clear matches-played denominator; charts must not be fabricated from aggregate totals that contain no time series.
+10. The initial recent-performance chart shows per-match circuit points from bounded history, requires a race-mode filter, supports an optional course filter, and adds a rolling trend only for a sufficient comparable sample.
+11. Cross-course pilot performance uses an exact sortable table plus an optional normalized gap-to-record view for one explicit leaderboard category. Raw times from different courses are never placed on one shared scale.
 
 ## Next Steps
 

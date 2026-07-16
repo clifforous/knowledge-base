@@ -3,7 +3,7 @@
 Date: 2026-04-13
 Status: Draft
 
-Foundation supersession (2026-07-13): `token_gated` filters and indicators in this draft are retired. Eventun removed the supporting catalog, schema, and API surface; the current directory contract supports only `open`, `request`, and `invite` membership modes.
+Membership direction confirmed: 2026-07-15. The stable public concepts are `Open`, `Request to Join`, and `Invite Only`. Exact backend enum names remain subject to the new team implementation. Token-gated membership is not part of Website V2.
 
 ## Related
 - [[../unified-design]]
@@ -39,7 +39,7 @@ Current app route equivalent:
 
 Final route direction:
 
-- use plural route groups in the Nuxt site
+- use plural route groups in Website V2
 - preserve redirects from old singular routes if public links already exist
 
 ## Audience
@@ -78,7 +78,6 @@ Available:
 - media
 - players
 - primary and secondary colors
-- gate token policy ids
 
 Source:
 
@@ -100,19 +99,17 @@ Source:
 
 ### Membership modes
 
-Available:
+Stable public labels:
 
-- `open`
-- `invite`
-- `request`
-- `token_gated`
-
-Current labels:
-
-- `Open To Join`
+- `Open`
+- `Request to Join`
 - `Invite Only`
-- `Request To Join`
-- `Token Gated`
+
+Contract note:
+
+- the new team implementation is expected to preserve roughly these three modes;
+- map its reviewed enum values to these player-facing labels rather than exposing raw backend strings;
+- show the public membership label consistently to anonymous and logged-in visitors.
 
 ### Create team
 
@@ -201,7 +198,6 @@ Card content:
 - member count
 - membership mode
 - color accent from team colors
-- token-gated indicator if relevant
 
 Optional V1:
 
@@ -314,7 +310,6 @@ These ideas are valuable but should not block V1:
 ## Open Questions
 
 - Should anonymous users see a `Sign in to create team` CTA, or should create-team actions appear only after login?
-- Should token-gated teams show token policy names/images in the directory, or only on the detail page?
 - Should teams be sorted alphabetically, by member count, by recent activity, or by featured/manual ordering?
 - Should `/teams` eventually include a `My Team` panel for logged-in users?
 

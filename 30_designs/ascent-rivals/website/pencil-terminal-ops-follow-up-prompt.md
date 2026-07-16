@@ -2,6 +2,7 @@
 
 Date: 2026-05-11
 Status: Draft
+Navigation contract reviewed: 2026-07-16
 
 ## Related
 - [[unified-design]]
@@ -33,7 +34,7 @@ The pass should test whether Terminal Ops can support:
 - gauntlet detail hierarchy
 - contextual page navigation
 - mobile shell behavior
-- the marketing-to-competition bridge in a compact global top bar
+- the approved shared destination model in a compact responsive top bar
 
 ## Required Outputs
 
@@ -46,7 +47,7 @@ Produce four static mocks:
 
 Optional if time allows:
 
-- one quick desktop homepage refinement showing the current top-bar bridge behavior
+- one quick desktop homepage refinement showing the current top-bar collapse behavior
 
 ## Prompt To Paste Into Pencil
 
@@ -85,7 +86,7 @@ Required brand palette:
 - in-progress/info: #63B8E8
 
 Palette guardrails:
-- Gold is an accent, command, active, CTA, and reward color. Do not turn the whole site into black-and-gold luxury styling.
+- Gold is an accent, command, active, and CTA color. Do not turn the whole site into black-and-gold luxury styling.
 - Avoid purple-neon esports drift.
 - Use off-white text instead of pure white.
 - Keep auxiliary colors mostly in statuses, alerts, charts, ranks, badges, and telemetry.
@@ -107,12 +108,18 @@ Avoid:
 
 Global navigation requirement:
 - Use top-bar-based global navigation.
-- Always include brand/prompt identity, search, login/avatar, and a visible bridge between marketing and competition/player areas.
-- On competition/player pages, include a bridge label such as Game, Marketing, or About Ascent.
-- On marketing pages, include a bridge label such as Competition, Pilot Portal, or Gauntlets.
-- The label is still open; propose a practical visual treatment.
+- Keep the semantic destination order stable across every page: Gauntlets, Pilots, Teams, Courses, Events.
+- Always keep brand/home, search, and login/avatar directly accessible. Show a `More` or menu trigger whenever a destination is hidden.
+- On wide desktop, show all five destinations only when they fit cleanly without wrapping or compressed labels.
+- As width decreases, move Events and then other destinations from the right side of the ordered list into `More`.
+- Keep About and Brand in `More` and the footer. Put authorized sponsor operations in the account/admin menu.
+- Do not add a separate marketing/competition bridge label; brand/home and Gauntlets provide that continuity.
+- Show a direct `Sign in with Steam` action for anonymous users, not a provider dropdown. Compact layouts may shorten the visible label to `Sign In` beside the Steam icon while preserving the full accessible meaning.
 - Page-local navigation should handle deep sections. Do not use a permanent global side nav.
 - Contextual side panels are allowed inside data-heavy pages when they help scanning.
+- Default long entity pages and forms to readable section anchors; use true tabs only for mutually exclusive panels and segmented controls only for small module-level filters.
+- On mobile, replace long section rows with a labeled jump menu. Do not rely on hidden horizontal scrolling.
+- Command-like text may add visual character but cannot replace ordinary visible labels or accessible names.
 
 Mock 1: desktop player profile
 - Route: /players/[id]
@@ -165,10 +172,8 @@ Mock 3: desktop gauntlet detail refinement
   - finals/stages/brackets area
   - standings
   - sponsors
-  - prize manifest
   - schedule
-  - watch/broadcast placeholder only if it does not dominate V1
-- Preserve standings, stats, sponsor display, prize context, and admin action affordances.
+- Preserve standings, stats, sponsor display, and non-prize admin action affordances.
 - Permissioned actions should appear in-page, not as permanent global nav.
 - Test both a rich active gauntlet and a sparse/upcoming gauntlet treatment if possible.
 
@@ -188,7 +193,7 @@ Mock 4: mobile shell state
   - search
   - menu
   - login/avatar
-- If the marketing/competition bridge cannot stay visible, it must be the first item in the opened menu.
+- Put the complete primary destination list in the opened menu, beginning with Gauntlets and preserving the approved order.
 - Mobile does not need desktop density, but it must remain usable.
 - Test data-table handling, two-column collapse, local section navigation, and touch target sizing.
 
@@ -218,11 +223,11 @@ Deliver the pass as static mocks with short rationale notes for each screen:
 Review the Pencil output against these questions:
 
 - Does Terminal Ops still work when the page is data-dense?
-- Does the top-bar bridge make the unified site feel connected rather than split?
+- Does the stable top bar make the unified site feel connected without overcrowding wide or compact layouts?
 - Can the player profile show strengths without inventing unsupported stats?
 - Does the leaderboard page remain scannable?
 - Does the gauntlet detail page correctly distinguish qualifiers from heats?
-- Does mobile preserve search, account access, and the bridge path?
+- Does mobile preserve brand/home, search, account access, and the complete destination path?
 - Is the style gritty and physical enough without becoming unreadable?
 
 ## Follow-Up After Pencil Output

@@ -17,10 +17,10 @@
 
 ## Review Snapshot
 
-Product/team sources were reviewed through 2026-07-10. Eventun and Ascent Rivals foundation changes are incorporated through 2026-07-13:
+Product/team sources were reviewed through 2026-07-10. The migration audit refreshed committed implementation state through accepted F13 work on 2026-07-14, the unstaged F14 Eventun implementation was incorporated on 2026-07-15, and the current correction rechecked both repositories on 2026-07-15:
 
-- `github.com/ikigai-github/eventun` at `34b4286`
-- `github.com/ikigai-github/ascentun` at `deca852`
+- `github.com/ikigai-github/eventun` on `teams` at committed base `5aaaea2`, with the current correction in the review worktree
+- `github.com/ikigai-github/ascentun` on `dev` at `a0a40ad`; the locally recorded `main`, `origin/main`, and `origin/dev` refs identify the same commit
 - Ascent Rivals game-client/server source, focused on gauntlet stage admission, session joins, team presentation, minimap behavior, party integration, and inbox behavior
 
 This note captures implementation facts for the next teams design iteration. It should not be read as final product design.
@@ -48,6 +48,10 @@ Ascentun exposes the current team lifecycle:
 - team management for owners, managers, and admins
 - roster role changes, manual rank edits, member removal, owner transfer, and disband
 - pending invite and pending join-request management
+
+The active create/edit forms intentionally filter out `token_gated`, but the checked-in Ascentun contract is not fully synchronized with Eventun: `api.json`, team types/constants, and two unused gate-token actions still expose the retired mode and endpoints. Treat those as stale disabled artifacts to delete during the next coordinated contract refresh, not as supported behavior or a reason to restore the Eventun gate.
+
+The current active route/component graph calls the legacy create, update, membership, invitation, ownership-transfer, roster rank/designation, and disband writes. No tracked workflow or deployment metadata, authenticated deployment history, or runtime access evidence was available in the review, so checked-in reachability is fact while deployment and production use remain unproven. On 2026-07-15 the owner explicitly selected temporary-risk option 2: leave those writes unchanged until the team-authority work, with no feature flag, compatibility layer, temporary safety patch, or numeric-designation extension. A future authority integration may replace this workflow through a breaking Ascentun change.
 
 Current implication: team `rank` exists and is editable, but it is only ordinary roster metadata today. It is not yet materialized into gauntlet-stage candidate lists or enforced by Eventun as a team-stage admission order.
 
@@ -103,11 +107,11 @@ Eventun supports a simple team-restricted stage shape:
 - `GauntletStage.allowed_teams` is included in the generated API shape.
 - stage admission returns the player's current `team_id`, `team_name`, and `team_tag` when available.
 
-When Eventun admission is called, eligibility is live-evaluated rather than snapshot-based:
+When Eventun admission is called, runtime and non-qualification restrictions remain live-evaluated, while pure individual qualification now uses a run-bound immutable cutoff:
 
 - unrestricted open stages allow any human player after run/session/phase checks.
 - invite stages allow an explicitly invited player, a member of an allowed team, or a member of an allowed group.
-- qualification stages require the player to qualify individually and may also require allowed-team, allowed-group, or stage win/loss filters.
+- a first qualification stage-run claim locks the gauntlet before the run row, requires the latest sealed individual cutoff to match the live configuration hash/revision/schema/projector tuple, and binds its exact snapshot id plus a complete rules snapshot; a same-session retry returns the stored binding without rechecking the later live projection, and admission replaces both rank fields plus every snapshot-carried points/count field while configured-match validation/completion count consume the frozen circuit and allowed-team, allowed-group, and stage win/loss filters remain live.
 - allowed teams on non-invite stages act as an additional restriction.
 
 Current Ascent Rivals dedicated-server code skips the Eventun admission call for pure unrestricted stages. Restricted team stages do call Eventun, but the unrestricted fast path currently bypasses Eventun's already-completed-stage check and admission audit row; see [[eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]].
@@ -148,9 +152,13 @@ Current implication: team stage winners are not computed as teams. Final accepte
 The current PostgreSQL model has additional constraints relevant to both team progression and gauntlets:
 
 - the foundation implementation adds stable match-batch ids, event ids, producer sequence, source classification, artifact association, and idempotent acceptance while preserving source/event-type partitions
-- accepted batches now derive one current narrow match/heat/player/progression fact graph transactionally; detailed lap/checkpoint rows remain only in raw partitions, and current product reads have not yet moved to these facts
+- accepted batches now derive one current narrow match/heat/player/progression fact graph and idempotent serving projections transactionally; detailed lap/checkpoint rows remain only in raw partitions
 - leaving a team deletes `team_player`, so membership at historical event time cannot be reconstructed
-- gauntlet leaderboard and qualifier materialized views still refresh hourly, are stale between refreshes, and are not a stable final-selection snapshot; the approved direction is incremental per-match qualification contributions and retained best-sequence projections followed by an immutable cutoff snapshot
+- F13 now consumes normalized progression facts through idempotent contributions and bounded, lease-backed workers
+- F14 now maintains ordinary player record/career and gauntlet contribution/projection tables synchronously, with accepted-batch serialization followed by ordered player and gauntlet locks plus a gap-free semantic revision shared by accepted changes, configuration changes, repairs, and rebuilds; the fingerprint includes the top-level projection configuration and every exact contribution/evidence identity, while only proven identical no-ops preserve the revision; batch/player and qualifier-leading child indexes bound fact-repair and qualifier-deletion cascades
+- all eight leaderboard and four gauntlet native materialized views, their refresh procedure, and the hourly pg_cron schedule are retired from the canonical schema and product reads
+- individual circuit-points qualification cutoff preview/publish/replace creates immutable versioned entry, qualifier, and selected-match evidence at an exact projection revision/schema/projector tuple; first stage-run claim binds only a snapshot current with the locked live tuple, same-session retry returns that stored binding, and runtime uses the frozen cutoff/circuit; allocation and update share gauntlet-before-stage lock order, update preserves all stage parents with run/history rows and edits open/invite stages in place, and a full-replacement omission of a run-backed stage fails before mutation, while the stricter cutoff-configuration freeze applies only to qualification-bound stages
+- F15 has not started: legacy `server_event` and `client_event` relations, remaining legacy reads, and the `internal/` package tree remain; no production backfill or destructive event cutover is complete
 - stage admission invokes broad `gauntlet_stats` calculation and filters to one player rather than reading a resolved slot
 - `gauntlet_stage_placement` includes `stage_run_id` but its primary key is still gauntlet, stage, and player
 - progression jobs now use token-fenced two-minute leases, bounded exponential backoff, five-attempt dead-lettering, and one-at-a-time claiming; all fact application, challenge rebuilding, goal evaluation, completion, and reward-record creation serialize on the player row
@@ -180,11 +188,11 @@ The visible gauntlet detail page shows stage requirement, start time, race mode,
 
 Current implication: Ascentun cannot currently author team gauntlet stages or bracket-filtered stages through the visible form. It can preserve some hidden/default fields in the submitted object, but that is not an operator workflow.
 
-### Stale seed data
+### Development seed data
 
-`eventun` has a temporary seed gauntlet named `Team Battles` with `gauntlet_stage_team` rows. That seed file also references old `gauntlet_stage` columns such as `threshold_metric` and `max_per_team` that do not match the current schema.
+`eventun` retains an optional `Team Battles` development fixture with `gauntlet_stage_team` rows. The fixture now matches the current schema and is not part of automatic or production initialization.
 
-Current implication: treat the seed as evidence of an old team-battle stub, not as runnable current source of truth.
+Current implication: the fixture is runnable development data, but it remains evidence of a simple allowed-team stub rather than implemented team qualification, scoring, slots, or brackets.
 
 ## Not Implemented Yet
 
@@ -237,8 +245,8 @@ The following are not implemented in the reviewed code:
 
 ## Recommended Near-Term Order
 
-1. Use the implemented compact complete-match facts as inputs; add membership validity intervals and stage-run-scoped result identity.
-2. Add incremental qualification contributions, retained best-sequence projections, and configurable top-N team standings.
+1. Use the implemented compact complete-match facts and F14 individual gauntlet contributions as inputs; add membership validity intervals and stage-run-scoped result identity.
+2. Add membership-attributed team qualification contributions and configurable top-N team standings without collapsing history through current membership.
 3. Resolve allocation rules into concrete player-owned and team-owned racer slots.
 4. Add indexed admission plus dedicated-server provisional occupancy, replacement, and roster lock.
 5. Add owner-level result rules before enabling more than one racer per team.

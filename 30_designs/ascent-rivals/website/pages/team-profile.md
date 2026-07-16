@@ -2,8 +2,9 @@
 
 Date: 2026-04-13
 Status: Draft
+Analytics priority confirmed: 2026-07-15 — individual pilots, their profiles, and the roster remain more prominent than team aggregates until the implemented team feature has been reviewed through real iteration.
 
-Foundation supersession (2026-07-13): all token-gated team states and controls in this draft are retired. Eventun now supports only `open`, `request`, and `invite` membership modes; former gated teams transition to invite-only until a provider-neutral asset-source contract is separately approved.
+Membership direction confirmed: 2026-07-15. The stable public concepts are `Open`, `Request to Join`, and `Invite Only`. Exact backend enum names remain subject to the new team implementation. Token-gated membership is not part of Website V2.
 
 ## Related
 - [[../unified-design]]
@@ -41,9 +42,10 @@ Current app route equivalent:
 
 Final route direction:
 
-- use plural route groups in the Nuxt site
-- keep management affordances attached to the team context
-- implementation can use a sub-route such as `/teams/[id]/manage`, but the public page should expose the entry point when authorized
+- use plural route groups in Website V2;
+- use `/teams/[id]` for the public profile, roster, membership state, join/request/leave actions, and public performance context;
+- use `/teams/[id]/manage` for metadata, media, roster administration, invitations, join requests, ownership transfer, and disbanding;
+- expose a contextual `Manage Team` action on the public profile when the current user is authorized.
 
 ## Audience
 
@@ -67,7 +69,8 @@ Secondary:
 - preserve current join, leave, invite, request, and management flows
 - expose membership rules without confusing players
 - keep management actions near the relevant team object
-- leave room for future team stats, trophies, medals, and gauntlet history
+- include fact-backed team stats at Website V2 launch when the preceding team contracts support them, but keep them secondary and provisional
+- keep individual pilots and links to their profiles prominent
 - avoid presenting unsupported team aggregates as if they exist
 
 ## Current V1 Data Availability
@@ -83,7 +86,6 @@ Available:
 - media
 - players
 - primary and secondary colors
-- gate token policy ids
 
 Source:
 
@@ -169,13 +171,10 @@ Available:
 - update membership mode
 - update primary/secondary colors
 - update media
-- update token gate policies
 
 Sources:
 
 - `PUT /v1/team/{teamId}`
-- `POST /v1/team/{teamId}/gate/token`
-- `DELETE /v1/team/{teamId}/gate/token/{policyId}`
 
 ### Ownership / disband
 
@@ -196,9 +195,12 @@ Sources:
 Default first-view priority:
 
 1. team identity and membership status
-2. roster
-3. relevant join/leave/manage action for the current user
-4. future stats/gauntlet/trophy sections only if supported
+2. relevant join/leave/manage action for the current user
+3. roster and individual pilot profile links
+4. fact-backed team performance context after the implemented contracts have been reviewed
+5. gauntlet/trophy sections only when their ownership and result semantics are supported
+
+The public profile uses readable section anchors, initially `Overview` and `Roster`, with `Stats`, `Gauntlets`, and `Trophies` added only when the post-team implementation supports those sections. The dedicated management route uses a section index for Team Info, Media, Roster, Invites, Join Requests, and Ownership/Disband. Do not use tabs to hide one long unsaved form; tabs are acceptable later only if the panels have independent loading, validation, and save behavior. Compact layouts use a labeled section jump menu.
 
 ## 1. Team Briefing
 
@@ -212,15 +214,14 @@ Content:
 - team name
 - team tag
 - member count
-- membership mode
+- public membership mode: `Open`, `Request to Join`, or `Invite Only`
 - team colors as accent, not full-page takeover
-- token-gated indicator if relevant
 
 Tone examples:
 
 - `Crew profile`
 - `Roster signal acquired`
-- `Membership gate active`
+- `Membership: Invite Only`
 
 Terminal Ops components:
 
@@ -237,14 +238,14 @@ Purpose:
 
 Anonymous:
 
-- show `Sign in with Steam` or `Login to Join` if joining is plausible
+- always show the public membership mode;
+- show `Sign in with Steam` or `Login to Join` when an open or request-based action becomes available after authentication.
 
 Logged-in player without team:
 
-- `Join Team` for open teams
-- `Request to Join` for request teams
-- wallet/token guidance for token-gated teams
-- no join action for invite-only teams unless invited state is available and applicable
+- `Join Team` for `Open` teams;
+- `Request to Join` for `Request to Join` teams;
+- show `Invite Only` without a join/request action unless a valid invitation provides an `Accept Invite` action.
 
 Logged-in player on this team:
 
@@ -263,35 +264,11 @@ Admin/manager:
 
 Design guidance:
 
+- show the same membership label to every audience; authentication and team state change the action, not the public description
 - membership actions should live near the team briefing
 - destructive actions such as leave/disband should be visually separated and confirmed
 
-## 3. Token Gate Notice
-
-Only for token-gated teams.
-
-Purpose:
-
-- explain wallet/token requirements clearly
-
-Content:
-
-- required token policy ids
-- token names/images if token metadata is available
-- wallet connection status for logged-in users
-- link to wallet connection
-
-Tone examples:
-
-- `Wallet token required`
-- `Gate token not detected`
-
-Guardrail:
-
-- do not make token-gated membership look like pay-to-win
-- describe it as access control, not competitive advantage
-
-## 4. Roster
+## 3. Roster
 
 Purpose:
 
@@ -322,32 +299,36 @@ Terminal Ops components:
 - `PilotIdentityCell`
 - `TeamDesignationPill`
 
-## 5. Team Stats
+## 4. Team Stats
 
-V1 status:
+Website V2 initial-release direction:
 
-- placeholder or omitted unless supported by reliable data
+- include a concise fact-backed team performance section after the preceding Eventun team work is implemented and reviewed;
+- keep the section below the roster and subordinate to individual pilot identity and performance;
+- treat the exact metrics and visualization as provisional until the team feature has been used and iterated on;
+- omit unsupported modules rather than approximating them from current-roster lifetime totals.
 
 Reason:
 
 - current team responses include roster and metadata, not team aggregate performance
-- deriving team stats by fetching every player career would be expensive and potentially misleading
+- deriving team stats by fetching every current player career would misattribute historical results as well as create inefficient Website reads
 
-V2 candidate content:
+Candidate content after contract review:
 
-- team gauntlet standings
-- aggregate medals
-- trophies from team-based finals
-- course strengths across members
-- team podiums
-- team recent match/event history
+- pilot results attributed to the team at performance time
+- current-roster leaderboard comparison that preserves each pilot's individual result
+- team gauntlet standings only when the competition computes team results
+- course strengths based on an approved team metric
+- recent team-represented match/event history
+- aggregate medals or trophies only when their team ownership semantics exist
 
 Design guidance:
 
-- leave room for this section in mocks
-- do not invent numbers for V1 implementation specs
+- do not let a speculative team score outrank the exact roster or individual pilot links
+- distinguish `results earned while representing this team` from true team-format standings or wins
+- re-evaluate placement and prominence after the team implementation has undergone product iteration
 
-## 6. Gauntlet Results
+## 5. Gauntlet Results
 
 V1 status:
 
@@ -360,7 +341,7 @@ V2:
 - invite-only/team tournament results
 - trophy case
 
-## 7. Trophies and Medals
+## 6. Trophies and Medals
 
 V1 status:
 
@@ -370,13 +351,12 @@ V2:
 
 - team trophies for team finals
 - event medals
-- historical prize placements
 
 Guardrail:
 
 - do not fake official trophies or medals from incomplete data
 
-## 8. Manage Team
+## 7. Manage Team
 
 Visible when:
 
@@ -395,14 +375,16 @@ Management areas:
 - roster
 - invites
 - join requests
-- token gates
 - ownership transfer
 - disband/delete
 
-Implementation note:
+Route decision:
 
-- management can be a page-local section, modal workflow, or `/teams/[id]/manage` sub-route
-- it should remain visibly attached to the team profile, not treated as a separate admin product
+- use the dedicated `/teams/[id]/manage` route;
+- keep ordinary join, request, leave, and membership-status actions on `/teams/[id]`;
+- link back to the public profile and preserve the team identity/chassis so management does not feel like a disconnected admin product;
+- do not expose management navigation to unauthorized or anonymous users;
+- use explicit confirmation for ownership transfer, disband, and other destructive operations.
 
 ## Team Management Details
 
@@ -482,7 +464,7 @@ Guardrail:
 | State | Behavior |
 |---|---|
 | Anonymous | can view public team briefing and roster; can sign in to join if relevant |
-| Logged-in player without team | can join open teams, request request-based teams, or see wallet/token guidance for token-gated teams |
+| Logged-in player without team | can join `Open` teams, request `Request to Join` teams, or accept a valid invitation; `Invite Only` otherwise has no direct membership action |
 | Logged-in player on another team | can view team but cannot join until leaving current team |
 | Logged-in member | can view own team state and leave if not Prime |
 | Manager/Prime | can manage roster, invites, requests, media, membership mode, colors, and ownership/disband where allowed |
@@ -499,7 +481,6 @@ Required states:
 - no pending invites
 - no pending join requests
 - media missing
-- token metadata unavailable
 
 Tone:
 
@@ -507,7 +488,6 @@ Tone:
 - `Roster empty.`
 - `Pending queue clear.`
 - `Team registry sync failed.`
-- `Gate token metadata unavailable.`
 
 Guardrail:
 
@@ -519,7 +499,7 @@ Desktop:
 
 - hero/status area with action rail
 - roster table
-- management sections as tabs or panels
+- dedicated management route with sections or tabs for authorized users
 
 Tablet:
 
@@ -563,8 +543,6 @@ These ideas are valuable but should not block V1:
 
 ## Open Questions
 
-- Should management be a page-local section or a dedicated `/teams/[id]/manage` route in the Nuxt app?
-- Should the public page show membership mode for all teams, or only if the user can act on it?
 - Should team rank mean in-team ordering, competitive team ranking, or both?
 - Should `Prime`, `Nexus`, `Vector`, and `Echo` remain public labels, or should we add plain-language helper text?
 - What is the first source of truth for team trophies and team gauntlet standings?

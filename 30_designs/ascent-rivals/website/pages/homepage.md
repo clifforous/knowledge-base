@@ -1,674 +1,491 @@
 # Ascent Rivals Homepage Page Spec
 
 Date: 2026-04-14
-Status: Draft
+Status: Approved content hierarchy; copy, assets, and visual design open
+Last reviewed: 2026-07-16
 
 ## Related
+
 - [[../unified-design]]
 - [[../information-architecture]]
 - [[../terminal-ops-design-system]]
 - [[../tone-and-voice]]
 - [[gauntlets-index]]
+- [[gauntlet-detail]]
 - [[player-directory]]
 - [[player-profile]]
 - [[course-leaderboards]]
 - [[teams-index]]
-- [[sponsors-index]]
 - [[../../../../50_knowledge/ascent-rivals/eventun/api|eventun-api]]
-- [[../../../../50_knowledge/ascent-rivals/eventun/data-model|eventun-data-model]]
+- [[../../../../50_knowledge/ascent-rivals/accelbyte-platform|AccelByte platform]]
 
 ## Purpose
 
-Define the IA and page requirements for the unified site's root route.
+Define the content hierarchy, behavior, and acceptance requirements for the Website V2 root route.
 
-The homepage should be the competition/player-side command center for Ascent Rivals while still providing a clear bridge into the marketing/game-discovery side of the site.
+The homepage is a marketing and conversion page first. It should explain Ascent Rivals, demonstrate the game through real footage and factual systems, establish the revised Terminal Ops sci-fi atmosphere, and give visitors clear next actions.
 
-It should help players and followers answer:
+The page may include one restrained module drawn from current competition or recent editorial event content. That module supports the marketing story; it does not turn the homepage into a dashboard.
 
-- what is happening now
-- which gauntlets are active or upcoming
-- who and what is worth checking
-- where to search for a player, team, course, sponsor, or gauntlet
-- how to reach the game/marketing overview if they are new
+## Approved Decisions
+
+- Keep `/` as the primary marketing and conversion homepage.
+- Use `Play Now` as the default primary conversion action.
+- Keep the same section order, module placement, responsive composition, and primary layout for anonymous and authenticated visitors.
+- Authentication may change copy, actions, and player-specific data inside an existing slot, but it must not insert, remove, reorder, or resize homepage sections merely because the visitor signed in.
+- If a signed-in player's ownership is reliably confirmed, replace the repetitive primary conversion emphasis with a more useful `Explore Gauntlets` action and retain a smaller Steam play/launch action where appropriate.
+- Do not treat sign-in alone as proof of ownership and do not claim to know whether the game is installed.
+- Allow one compact, optional `From the Race Network` module after the core gameplay and ship explanation.
+- Prefer a current or upcoming public gauntlet for that module; fall back to a recent verified competition or code-authored event recap; omit the module when no strong content exists.
+- Keep global entity search in the shared top bar rather than recreating a large homepage search console.
+- Do not add homepage status telemetry, a generated system log, multiple leaderboard panels, or a sequence of data widgets.
+- Build the content hierarchy so the page remains complete when all dynamic competition content is unavailable or intentionally omitted.
 
 ## Route
 
-Working route:
+- Canonical route: `/`
+- Current source reference: the `ascent-website` root page
+- Primary competition destination: `/gauntlets`
+- Editorial event destination: `/events`
 
-- `/`
-
-Current app route equivalent:
-
-- current `ascentun` root page
-
-Current app behavior:
-
-- shows Ascent Rivals branding
-- provides search-everywhere for gauntlets, teams, players, and admin-only sponsors
-- prefetches courses but does not include courses in the current search command
-
-Final route direction:
-
-- keep `/` as the adaptive homepage
-- bias the page toward competition utility for returning users
-- retain enough brand context that anonymous visitors understand where they are
-- use top-bar navigation to bridge to the marketing/game side, likely `/game`
+The current marketing implementation is a content, media, and conversion reference only. Website V2 should rebuild the layout and components from scratch.
 
 ## Audience
 
 Primary:
 
-- returning players
-- followers tracking players, teams, gauntlets, and course records
-- logged-in players looking for quick re-entry
+- new visitors discovering the game;
+- prospective players deciding whether to play;
+- press, creators, partners, and community members seeking a concise product overview.
 
 Secondary:
 
-- new visitors who landed on the player-side surface first
-- sponsors
-- press/community viewers
-- admins checking public state
+- returning players looking for current competition;
+- followers seeking recent races, tournaments, teams, pilots, or records;
+- signed-in players re-entering the Website experience.
 
 ## Page Goals
 
-- preserve the current search-first utility of `ascentun`
-- make the page feel less empty than a single search box
-- provide a high-signal snapshot of active Ascent Rivals competition state
-- introduce the game brand without replacing the dedicated marketing pages
-- surface current and upcoming gauntlets as the primary player action path
-- surface course records and pilot highlights as lightweight stat entry points
-- avoid promising live presence, real-time feeds, or season systems before APIs exist
-- keep admin tooling out of the homepage unless there is a critical public-state issue
+- communicate the core game proposition quickly;
+- give `Play Now` a clear and trustworthy destination;
+- explain the combination of high-speed racing, combat, and Ascension Mode;
+- demonstrate ships and customization with current approved game media;
+- introduce the industrial-planet and outlaw-race atmosphere without presenting exploratory lore as settled canon;
+- show that organized competition exists when credible content is available;
+- route interested visitors to gauntlets, events, courses, community channels, and deeper public pages;
+- remain readable, responsive, and persuasive without custom planet paintings or illustrated course maps.
 
-## Page Positioning
+## Non-Goals
 
-The homepage is not the full marketing landing page.
+- a logged-in player dashboard;
+- a real-time race-control display;
+- a comprehensive gauntlet directory;
+- player, team, or course leaderboards;
+- an activity feed generated to create false motion;
+- a news CMS or editorial publishing system;
+- wallet, token, prize, reward, or betting functionality;
+- detailed lore claims that have not been approved elsewhere.
 
-It is closer to:
+## Approved Content Hierarchy
 
-- race-control dashboard
-- pilot command center
-- competition operations lobby
-- public status console
+The initial homepage uses the following seven-part hierarchy. Sections may overlap visually in a final design, but the narrative order should remain recognizable.
 
-The marketing bridge should remain visible in the global top bar.
+1. Hero and primary conversion
+2. Gameplay and Ascension Mode
+3. Ships and customization
+4. Optional race-network proof
+5. Worlds, planets, and courses
+6. Events and community
+7. Final conversion and next actions
 
-Possible bridge labels:
+## 1. Hero and Primary Conversion
 
-- `Game`
-- `About Ascent`
-- `Marketing`
-- `Learn the Game`
+### Purpose
 
-The exact label should be finalized during navigation mock review.
+- identify Ascent Rivals immediately;
+- communicate high-speed sci-fi racing and combat;
+- provide the primary conversion action without requiring the visitor to understand gauntlets or the competition system first.
 
-## Current V1 Data Availability
+### Required Content
 
-### Search entities
+- Ascent Rivals logo or wordmark;
+- one concise headline;
+- one short explanatory statement;
+- current approved gameplay footage, cinematic capture, or a strong non-image fallback;
+- primary CTA;
+- one secondary action when it improves the decision rather than competing with it.
 
-Available from current app integrations:
+### Default CTA State
 
-- gauntlets
-- teams
-- players
-- sponsors
-- courses
+For anonymous visitors, signed-in users without a reliable ownership result, and confirmed non-owners:
 
-V1 direction:
+- primary: `Play Now`;
+- destination: the current approved Steam store, access, or install destination;
+- optional secondary: `Explore Gauntlets`.
 
-- include gauntlets, teams, players, sponsors, and courses in the new homepage search
-- group results by entity type
-- use public sponsor results if sponsor pages are public in the new site
-- avoid admin-only sponsor visibility unless sponsor data truly remains private
+If the product's actual Steam availability requires different wording at implementation time, replace `Play Now` with an accurate conversion label such as `Wishlist on Steam` or `Request Access`. Do not use conversion copy that contradicts the current release state.
 
-Current implementation gap:
+### Confirmed-Owner CTA State
 
-- current `HomeSearchCommand` does not include courses even though courses are prefetched
-- current `HomeSearchCommand` only includes sponsors for admins
+When all of the following are true:
 
-### Gauntlets
+- the visitor is authenticated;
+- the account is linked to the relevant Steam identity;
+- ownership of the intended Ascent Rivals Steam application is confirmed through an approved server-side source;
 
-Available:
+then the hero may use:
 
-- gauntlet id
-- title
-- subtitle
-- media
-- sponsors
-- qualifier and stage timing
-- first and final event times
-- region
-- colors and ticker
+- primary: `Explore Gauntlets`;
+- secondary: `Play on Steam` or another accurate Steam action.
 
-Source:
+Ownership personalization changes the actions, not the hero narrative or overall page structure. If ownership lookup fails, times out, is unavailable in Shared Cloud, or cannot distinguish the relevant application, render the default state without an error panel.
 
-- `GET /v1/gauntlet`
+The personalized actions must occupy the same CTA region and follow the same responsive rules as the default actions. Do not create an owner-specific hero layout.
 
-Homepage usage:
+The implementation must not claim that the game is installed or that a browser action can launch it unless the final Steam integration actually supports that behavior.
 
-- active gauntlet cards
-- upcoming gauntlet cards
-- current/upcoming/past counts
-- system-log entries derived from start/end timing
+### Design Guidance
 
-### Courses and leaderboards
+- use the revised gritty sci-fi Terminal Ops visual language without making the hero resemble a modern Linux terminal;
+- let the terminal feel like an in-world race-information system embedded in worn industrial machinery;
+- prioritize readable copy and gameplay proof over decorative diagnostic text;
+- avoid a long boot sequence, typing effect, or delayed CTA;
+- preserve immediate CTA access on mobile.
 
-Available:
+## 2. Gameplay and Ascension Mode
 
-- course metadata
-- top leaderboard entries by course/category
-- player id/name/avatar
-- rank
-- time in milliseconds
-- loadout value
+### Purpose
 
-Sources:
+- explain what the player does;
+- distinguish Ascent Rivals from a conventional racing game;
+- foreground the mode that represents almost all current racing activity.
 
-- `GET /v1/course`
-- `GET /v1/leaderboard?limit={n}`
+### Required Ideas
 
-Homepage usage:
+- high-speed circuit racing;
+- combat and survival pressure during the race;
+- podium placement as the first competitive objective;
+- the post-podium Ascension challenge, where remaining racers attempt to reach the designated zone without being destroyed.
 
-- course record cards
-- fastest finish and fastest lap highlights
-- link to `/courses`
-- link to player profiles from record holders
+Classic and Deathmatch race modes may be acknowledged later where relevant, but they should not dilute the homepage's initial Ascension Mode explanation.
 
-### Players
+### Presentation
 
-Available:
+- use one concise narrative sequence rather than a dense rules document;
+- pair the explanation with current gameplay footage or stills;
+- make the transition from race to Ascension visually understandable;
+- do not expose client/server authority details, event-validation behavior, or other anti-cheat-sensitive implementation information.
 
-- player id
-- name
-- avatar URL
-- team summary
-- podium finishes
-- matches played
-- average circuit points
-- public aggregate stats
+## 3. Ships and Customization
 
-Source:
+### Purpose
 
-- `GET /v1/player`
+- show the player's vehicle fantasy;
+- demonstrate meaningful visual and loadout variation;
+- retain one of the strongest content categories from the current marketing site.
 
-Homepage usage:
+### Content
 
-- pilot highlights
-- top podium pilots
-- high average circuit point pilots
-- new/recently active pilots only if supported by timestamps or activity data
+- current approved ship models or gameplay captures;
+- concise customization or loadout explanation;
+- factual manufacturer, class, performance, or equipment context only where supported by current game content;
+- optional terminal-native comparison or diagnostic graphics derived from real ship data.
 
-Guardrail:
+### Guardrails
 
-- label rankings by the visible metric instead of claiming an overall best player
+- do not reuse the current static exploded-ship image as a primary Website V2 feature;
+- do not expose Fab source assets or present marketplace assets as bespoke website art;
+- do not invent manufacturer lore merely to fill the module;
+- avoid implying that loadout value alone determines competitive strength.
 
-### Teams
+## 4. Optional Race-Network Proof
 
-Available:
+### Purpose
 
-- team id
-- name
-- tag
-- colors
-- media
-- roster context where exposed
-- public aggregate stats where available
+- show that Ascent Rivals has a real competitive ecosystem;
+- give returning or already-convinced visitors a direct path to current activity;
+- add timely proof without making the page depend on a constant event schedule.
 
-Source:
+### Placement and Scale
 
-- `GET /v1/team`
+Place this module after the game and ship proposition. It should be one bounded feature area, not a dashboard section followed by additional gauntlet, leaderboard, pilot, and telemetry panels.
 
-Homepage usage:
+Recommended maximum:
 
-- search result grouping
-- optional team spotlight
-- high-level team count
+- one featured item;
+- up to two compact supporting links when the design remains clean at desktop and mobile widths;
+- one clear route to either `/gauntlets` or `/events` based on the featured content.
 
-### Sponsors
+### Selection Priority
 
-Available:
+Select the strongest available item in this order:
 
-- sponsor list and sponsor detail data
-- sponsor media
-- sponsor links
-- related gauntlet context where modeled
+1. an active public gauntlet with a reliable active state and useful current context;
+2. an upcoming public gauntlet with a meaningful schedule or entry state;
+3. a recently completed public gauntlet with verified final context or results;
+4. a recent code-authored `/events` tournament, showcase, LAN, or recap;
+5. no module.
 
-Sources:
+The fallback is not an empty gauntlet card or fabricated network status. The marketing page must close the gap cleanly when the section is absent.
 
-- `GET /v1/sponsor`
-- `GET /v1/sponsor/{sponsorId}`
+### Terminology
 
-Homepage usage:
+Use a broad section label such as `From the Race Network` only if the final tone review approves it.
 
-- optional sponsor strip
-- sponsor-backed gauntlet badges
-- search result grouping
+Within the module, label the content type explicitly:
 
-### High-level status counts
+- `Gauntlet` for Eventun-backed competition;
+- `Event Recap`, `Tournament`, `Showcase`, or another accurate editorial label for code-authored `/events` content.
 
-V1-safe counts:
+Do not call an editorial event a live gauntlet, and do not label a scheduled gauntlet `Live` based solely on its planned start and end timestamps.
 
-- registered players
-- teams
-- active or upcoming gauntlets
-- active courses
-- sponsors
+### Dynamic Gauntlet Content
 
-Do not show in V1 unless backed by a real source:
+Allowed fields include:
 
-- players online
-- live races in progress
-- live viewers
-- current season standings
-- real-time system events
+- title and verified media;
+- current public state;
+- next relevant time;
+- qualifier, stage, final, or bracket context only when that structure exists;
+- concise participation context for a signed-in player when supported;
+- approved sponsor branding provided in the public gauntlet context;
+- link to `/gauntlets/[id]` and the broader `/gauntlets` route.
 
-## V1 Page Structure
+Gauntlets may omit qualifiers or stages. The teaser must use the same state- and composition-aware rules as the gauntlet-detail page rather than rendering empty phases.
 
-Default first-view priority:
+### Editorial Fallback
 
-1. hero / command briefing
-2. search everywhere
-3. active and upcoming gauntlets
-4. high-level status strip
-5. course records
-6. pilot highlights
-7. generated system log
+A recent tournament or event recap may be used when it tells a stronger story than current gauntlet data. Editorial content remains code-authored and must link to `/events/[slug]`.
 
-## 1. Command Hero
+Use verified copy, media, dates, and outcomes. A sponsored event may contain manually approved promotional content, but the homepage must not recreate deferred data-driven prize or reward functionality.
 
-Purpose:
+### Failure and Empty Behavior
 
-- establish the Ascent Rivals identity
-- make the page feel branded without turning it into a full marketing page
-- direct visitors to the most important next actions
+- omit the module if the query fails and no approved editorial fallback is available;
+- do not show a large error panel on the marketing homepage;
+- do not block rendering of any other section;
+- do not reserve a visually obvious empty space;
+- log the operational error through the Website observability path once that baseline is defined.
 
-Content:
+## 5. Worlds, Planets, and Courses
 
-- Ascent Rivals logo or wordmark
-- cinematic or illustrated background art if available
-- concise command-style headline
-- short game/competition descriptor
-- primary CTA to `Gauntlets`
-- secondary CTA to `Search`
-- tertiary bridge CTA to `/game` or equivalent marketing overview
+### Purpose
 
-Tone examples:
+- give the races a sense of place;
+- introduce industrial planets, improvised competition, and scrapyard construction as atmosphere;
+- lead interested visitors toward the public course experience.
 
-- `Race control online`
-- `Competition signal acquired`
-- `Find pilots, gauntlets, teams, and course records`
+### Initial Content Strategy
 
-Design guidance:
+The team does not currently have a dedicated planet-art or course-map pipeline. Initial presentation should therefore prioritize:
 
-- use `BrandGold` and `BrandDarkBlue` as anchors
-- background art can be atmospheric and gritty, but must not overpower search and competition state
-- avoid relying on a large bespoke cinematic image as the only way the page works
-- support a later current-season module without requiring it in V1
+1. current gameplay captures and video;
+2. factual environment and course descriptions;
+3. terminal-native procedural graphics generated from approved data;
+4. checkpoint-derived course traces if a Website data contract becomes available;
+5. strong material and typographic composition when no suitable image exists.
 
-Terminal Ops components:
+Planet paintings and bespoke course illustrations are later enhancements, not launch dependencies.
 
-- `HeroBriefing`
-- `StatusTelemetryBar`
-- `CommandAction`
+### Lore Boundary
 
-## 2. Search Everywhere
+The interface may imply a distributed underground race-information network and improvised races on industrial worlds. Orbital arrival, manufacturers, authorities, spectators, and betting remain exploratory context until separately approved as canon. Do not state invented political, economic, or wagering facts as established lore.
 
-Purpose:
+## 6. Events and Community
 
-- preserve the current homepage's strongest utility
-- make entity lookup fast for returning users
+### Purpose
 
-Required V1 entity groups:
+- demonstrate real-world participation and community activity;
+- preserve useful event, video, partner, and social content from the current marketing site;
+- give visitors ways to follow the project beyond the game client.
 
-- Gauntlets
-- Players
-- Teams
-- Courses
-- Sponsors
+### Content
 
-Search behavior:
+- selected recent or historically important `/events` entries;
+- useful videos associated with those events;
+- a link to the broader YouTube archive where appropriate;
+- verified community and social destinations;
+- optional code-authored partner recognition;
+- approved awards, press, showcase, or event proof only after accuracy review.
 
-- grouped result sections
-- fast keyboard-first interaction
-- clear empty state
-- route to entity detail pages
-- top-bar search and homepage search should use the same search model where practical
+If Section 4 already uses a code-authored event as its fallback, avoid repeating the same event in this section. Section 6 may then emphasize community channels, video, or a different historical proof point.
 
-Design guidance:
+### Sponsor and Partner Boundary
 
-- search should feel like a command console, not a generic site search box
-- placeholder copy should name the entities users can search
-- result rows should show avatars/media where available
-- result rows should use plural Nuxt routes such as `/players/[id]`, `/teams/[id]`, `/gauntlets/[id]`, `/sponsors/[id]`
+- `Sponsor` refers to an Eventun-backed gauntlet relationship and appears only in its approved gauntlet context;
+- `Partner` refers to a broader manually verified marketing relationship;
+- the homepage must not expose permissioned sponsor registry pages, operational tier, or sponsor-management controls.
 
-Tone examples:
+## 7. Final Conversion and Next Actions
 
-- `Search pilot, team, gauntlet, course, sponsor`
-- `No matching signal`
-- `Entity index synced`
+### Purpose
 
-## 3. Active and Upcoming Gauntlets
+- close the marketing narrative;
+- repeat the primary action after the visitor has seen the product proof;
+- offer a concise choice for visitors who are interested but not ready to play.
 
-Purpose:
+### Actions
 
-- make the homepage useful immediately for competition-aware visitors
-- route players toward the most important current activity
+Default:
 
-Content:
+- `Play Now`;
+- `Explore Gauntlets`;
+- one appropriate community or follow action.
 
-- current gauntlets
-- upcoming gauntlets
-- status chip
-- next relevant time
-- sponsor strip when present
-- prize indicator when available
-- route to `/gauntlets/[id]`
-- link to `/gauntlets`
+Confirmed owner:
 
-Logged-in overlays:
+- `Explore Gauntlets`;
+- optional `View My Career` or `View My Team` when the session supplies a valid destination;
+- a smaller accurate Steam play/launch action.
 
-- user's current rank where available
-- qualification status where available
-- finals eligibility where available
-- reward/claim indicator where available
+Do not turn the final CTA into a grid of every site destination.
 
-Guardrails:
+## Logged-In Personalization
 
-- do not split the homepage into many empty gauntlet sections if there are few active events
-- do not imply a gauntlet is live unless derived from real timing/state
-- use `qualifier` only for gauntlet-level qualification windows, not match heats
+Personalization is additive and compact.
 
-## 4. High-Level Status Strip
+Allowed initial behavior:
 
-Purpose:
+- ownership-aware hero and final CTA changes when ownership is reliably confirmed;
+- participation context inside the selected gauntlet teaser;
+- direct `My Career` or `My Team` re-entry through the approved account menu;
+- one concise invitation, join-request, or relevant competition status where an existing module naturally supports it.
 
-- give the page a quick read on the state of the game ecosystem
+Do not:
 
-V1-safe telemetry:
+- replace the marketing homepage with a private dashboard;
+- insert, remove, reorder, or resize sections based only on authentication state;
+- move team or gauntlet management controls into the page;
+- infer ownership from login alone;
+- infer game installation;
+- create a personalized empty state when public content would work.
 
-- player count
-- team count
-- active/upcoming gauntlet count
-- active course count
-- sponsor count
-- latest leaderboard sync timestamp if available
+## Data and Content Ownership
 
-Later telemetry:
+### Repository-Authored Content
 
-- players online
-- live race count
-- live tournament status
-- current season state
-- concurrent viewers
+Use code-authored typed content for:
 
-Design guidance:
+- hero and feature copy;
+- gameplay, ship, world, and course explanations;
+- editorial events and recaps;
+- verified partners, community links, and videos;
+- CTA labels and destinations that depend on release state.
 
-- use compact status tiles or a telemetry bar
-- do not create fake real-time numbers
-- if data is snapshot-based, label it as snapshot or latest sync
+No CMS is required for the initial release.
 
-Tone examples:
+### Eventun Content
 
-- `Pilot registry`
-- `Active gauntlets`
-- `Courses indexed`
-- `Leaderboard sync`
+Use public Website-oriented Eventun reads for a selected gauntlet and authenticated overlays. The homepage should not assemble its teaser by issuing many client-side entity requests.
 
-## 5. Course Records
+A purpose-built projection may be added if it materially improves:
 
-Purpose:
+- public visibility filtering;
+- composition-aware current state;
+- featured-item selection;
+- bounded media and sponsor context;
+- signed-in participation overlay;
+- cache behavior.
 
-- expose competitive stats without requiring users to know which course page to open
-- route time-focused players to `/courses`
+### AccelByte Content
 
-Content:
+AccelByte Cloud Save `Courses` remains the course metadata source of truth. Only the approved server-side `published` projection may reach ordinary homepage presentation. Hidden, alpha, internal, malformed, or otherwise unreleased course configurations must not be exposed.
 
-- fastest finish record
-- fastest lap record
-- selected featured courses or top courses with records
-- player avatar/name for record holder
-- course name
-- time
-- category label
-- link to course leaderboard
-- link to player profile
+Any ownership check used for CTA personalization must be verified as available and supported in the Ascent Rivals Shared Cloud deployment. Keep publisher credentials or Web API keys server-side and fail back to the anonymous conversion state.
 
-Design guidance:
+## Loading, Failure, and Content-Absence Rules
 
-- keep this as highlights, not a full leaderboard
-- do not show all leaderboard categories at once
-- if records are missing, show a useful link to the course leaderboard page instead of an empty table
+- render repository-authored marketing content without waiting for optional live data;
+- do not delay the hero CTA on authentication or ownership checks;
+- allow ownership-aware CTA enhancement after the base hero is available without causing disruptive layout movement;
+- keep a compact stable skeleton only where the optional race-network module is expected to render;
+- omit optional content cleanly after a bounded failure or empty response;
+- do not use fake terminal noise as a loading state;
+- one failed optional integration must never blank the homepage.
 
-## 6. Pilot Highlights
-
-Purpose:
-
-- give player-focused visitors another reason to browse
-- showcase players through positive, data-backed metrics
-
-V1 highlight types:
-
-- top podium pilots
-- high average circuit point pilots
-- fastest course record holders
-- best finish or best lap specialists
-
-Avoid:
-
-- deaths, crashes, or other negative callouts
-- total kills as a strength module
-- playtime as a strength module
-- claims that are not supported by the available data
-
-Design guidance:
-
-- label each list by metric
-- keep highlight cards small enough that gauntlets and search remain dominant
-- route all player highlights to `/players/[id]`
-
-## 7. Generated System Log
-
-Purpose:
-
-- create the sense of a live operations console using real site data
-- provide a compact recent-activity feed before a true event-feed API exists
-
-V1 model:
-
-- generated from current snapshot data
-- not a real-time feed
-- labeled as latest sync or operations log
-
-V1-safe log entry sources:
-
-- gauntlet started based on start time
-- qualifier window opened or closed based on timing
-- finals scheduled based on stage/final time
-- sponsor attached to a gauntlet if data exists
-- course leaderboard updated if sync timestamp exists
-- new gauntlet created if created timestamp exists
-
-Example entries:
-
-- `Starforge Tournament 02: qualifier window open`
-- `MSI Circuit Cup: final stage scheduled`
-- `Course records synced: Aztlan Run`
-- `Sponsor signal attached: NovaForge`
-
-Guardrails:
-
-- do not fabricate events for ambience
-- do not say `live` unless there is live state
-- do not describe a heat as a qualifier
-
-Terminal Ops components:
-
-- `SystemLog`
-- `TimestampLabel`
-- `StatusChip`
-
-## 8. Sponsor / Partner Strip
-
-Purpose:
-
-- acknowledge sponsors without making the homepage feel like an ad wall
-
-V1 status:
-
-- optional
-- useful if sponsor data is public and media is present
-
-Content:
-
-- sponsor logo/name
-- link to sponsor detail
-- relationship to current gauntlets where available
-
-Design guidance:
-
-- keep sponsor presence secondary to player utility
-- avoid generic ad-card treatment
-
-## Logged-In Variant
-
-Logged-in users should see personal context layered into the same public homepage.
-
-Recommended V1 additions:
-
-- avatar menu remains visible in the top bar and never collapses away
-- link to `My Career`
-- link to wallet state if wallet linking is required or incomplete
-- link to `My Team` or team request/invite status where available
-- personal status on active gauntlet cards where available
-- personal placement on course record modules where available
-
-Guardrail:
-
-- avoid creating a separate private dashboard unless a workflow truly requires privacy
-
-## Admin / Creator Variant
-
-Admin and creator affordances should be restrained.
-
-Allowed V1 additions:
-
-- `Create Gauntlet` entry point if user has gauntlet creator/admin permission
-- critical admin alert if public data is broken or pending moderation
-- admin actions in the avatar/admin menu
-
-Avoid:
-
-- turning the homepage into an operations dashboard
-- showing sponsor CRUD, team moderation, or prize-admin controls globally
-
-## Empty States
-
-No gauntlets:
-
-- show search, course records, player directory, and game bridge
-- copy example: `No active gauntlets detected`
-
-No leaderboard data:
-
-- show course entry point and explain that records will appear after timing data syncs
-- copy example: `Course timing board awaiting records`
-
-No players:
-
-- show search empty state and game bridge
-- copy example: `Pilot registry awaiting first signal`
-
-No sponsor media:
-
-- hide sponsor strip instead of showing broken or placeholder-heavy sponsor cards
-
-## Loading States
-
-Use skeletons or terminal-style loading states for:
-
-- search index
-- gauntlet cards
-- course record cards
-- status telemetry
-- system log
-
-Copy guidance:
-
-- prefer precise loading labels such as `Syncing gauntlet index`
-- avoid fake terminal noise
-
-## Error States
-
-Search index error:
-
-- keep the rest of the page usable
-- provide retry if practical
-
-Gauntlet feed error:
-
-- show a compact panel with route to `/gauntlets`
-
-Leaderboard error:
-
-- hide course records or show a compact retry state
-
-Global error guardrail:
-
-- never let one failed module blank the entire homepage
-
-## Responsive Notes
+## Responsive Requirements
 
 Desktop:
 
-- primary design target
-- can use hero plus two-column or modular grid composition
-- search should remain prominent above the fold
+- support cinematic depth and wider media while retaining a clear reading order;
+- keep the optional race-network module bounded rather than expanding into a dashboard grid;
+- prevent CTA, metadata, or supporting links from consuming excessive horizontal space.
 
 Tablet:
 
-- collapse dense modules into stacked panels
-- preserve top-bar bridge and login/avatar visibility
+- stack narrative and media regions without reversing their semantic order;
+- reduce decorative chassis and material layers before reducing content readability.
 
 Mobile:
 
-- marketing-quality hero must still work
-- search remains near the top
-- gauntlet cards stack before secondary stats
-- login/avatar should not collapse away
-- secondary top-bar links can collapse into a menu
+- keep the hero proposition and primary CTA visible without a long ornamental preamble;
+- use one-column section flow;
+- make the race-network feature work as one card with supporting links below it;
+- retain global login/account and navigation access;
+- avoid horizontal data tables and dense status strips.
 
-## SEO Requirements
+## Accessibility Requirements
 
-The homepage should support:
+- use a proportional, readable body font and reserve display or monospace faces for short labels;
+- maintain semantic heading order matching the narrative hierarchy;
+- provide captions or equivalent context for essential video information;
+- provide useful poster images and non-video fallbacks;
+- ensure every CTA has an explicit accessible name and destination;
+- do not communicate gauntlet state, ownership, or availability through color alone;
+- respect reduced-motion preferences and never gate content behind animation;
+- keep text legible over gameplay media and textured industrial surfaces.
 
-- clear title and description for Ascent Rivals
-- Open Graph image using the strongest available brand art
-- links to core public entity routes
-- crawlable text describing the game and competition surface
+## SEO and Sharing
 
-V1 meta direction:
+Required:
 
-- title: `Ascent Rivals`
-- description should mention players, gauntlets, teams, and course records
+- canonical `/` URL;
+- accurate page title and description centered on the game proposition;
+- crawlable text explaining racing, combat, and Ascension Mode;
+- approved Open Graph image and social description;
+- crawlable links to `/gauntlets`, `/events`, `/courses`, and other relevant public destinations;
+- structured data only where it truthfully matches the product and visible content.
 
-## V2 / Later Enhancements
+Do not make frequently changing gauntlet content the only meaningful text in the page title, description, or social preview.
 
-Later homepage modules:
+## Acceptance Criteria
 
-- current season or circuit overview
-- player online count from presence/telemetry API
-- live races or matches in progress
-- true event/activity feed API
-- live stream or watch CTA
-- personalized recommended gauntlets
-- news/announcements if an authoring model exists
-- public social/live-stream signals for players
-- richer sponsor/event campaign modules
+- the first view identifies Ascent Rivals, communicates the game proposition, and exposes an accurate primary conversion action;
+- the default primary CTA is `Play Now` while the game is currently available through that action;
+- signed-in state alone never changes the CTA as though ownership were known;
+- confirmed ownership may change the primary CTA to `Explore Gauntlets` without creating a separate homepage;
+- anonymous, authenticated, and confirmed-owner states preserve the same section order and responsive layout;
+- ownership lookup failure falls back silently to the default state;
+- the page explains racing, combat, podium placement, and the Ascension challenge accurately;
+- current approved gameplay and ship media are used instead of the obsolete exploded-ship treatment;
+- the page works without custom planet art or illustrated course maps;
+- at most one bounded race-network proof module appears;
+- current/upcoming gauntlet data is preferred only when it is meaningful and reliably classified;
+- recent verified competition or `/events` content may replace gauntlet data without being mislabeled;
+- the optional module disappears cleanly when no strong content is available;
+- no fake live state, viewer state, system activity, wagering, or authority pressure is presented;
+- global search remains available through the shared shell without dominating the homepage;
+- all core narrative and conversion content remains usable when Eventun, AccelByte, or authentication personalization is unavailable;
+- mobile preserves the narrative order, CTA access, readable content, and global account control.
 
-## Open Questions
+## Deferred Enhancements
 
-- Should the root homepage always be competition-first, or should anonymous first-time visitors get a more marketing-heavy order?
-- Should `/game` become the canonical marketing landing route, or should a future `/marketing` or `/about` route own that bridge?
-- What source, if any, should power homepage news/announcements without adding a CMS?
-- Which data field should define a gauntlet as `featured`?
-- Should the system log be purely generated in the frontend, generated by Eventun, or eventually replaced by a real event-feed endpoint?
+- bespoke planet and course art;
+- richer checkpoint-derived course visualization after a data contract exists;
+- live race or broadcast modules after a canonical stream and live-state contract exists;
+- deeper personalized recommendations;
+- presence, current player count, viewer count, or real-time activity feeds;
+- a `/game` route when distinct deeper content justifies it;
+- CMS-backed news or editorial authoring.
+
+## Open Implementation Questions
+
+- Which supported server-side source, if any, can reliably confirm Steam ownership in the Shared Cloud architecture?
+- What is the accurate Steam conversion label and destination at Website V2 launch?
+- Should the selected race-network item be chosen through explicit code-authored curation, an Eventun feature marker, or a deterministic state/recency rule?
+- What bounded Website API projection best supplies the optional gauntlet teaser and signed-in overlay?
+- Which current gameplay captures, videos, ship images, event media, partner approvals, and community links survive the migration audit?
+
+## Review Checkpoint
+
+The marketing-first purpose, seven-part narrative hierarchy, default `Play Now` conversion, confirmed-owner CTA variation, and bounded optional race-network module are approved. Exact copy, media, ownership source, content-selection mechanism, API projection, responsive composition, and revised visual mock remain implementation-planning or design-production work.

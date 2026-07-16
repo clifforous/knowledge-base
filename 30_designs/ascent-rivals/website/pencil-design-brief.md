@@ -1,7 +1,9 @@
 # Ascent Rivals Pencil Design Brief
 
 Date: 2026-04-10
-Status: Draft
+Status: Superseded exploratory brief
+
+Do not use this file as the active Pencil prompt. It preserves the initial shell exploration, including decisions that have since changed. Use [[pencil-terminal-ops-follow-up-prompt]], [[information-architecture]], and [[terminal-ops-design-system]] for the current Next.js, scope, and responsive top-navigation direction.
 
 ## Related
 - [[unified-design]]
@@ -106,7 +108,7 @@ The new site is a single Nuxt application that must eventually support:
 - teams
 - gauntlets and events
 - public stats
-- sponsor visibility
+- contextual sponsor branding and permissioned sponsor operations
 - Steam-authenticated user context
 - wallet linking after login
 - later lore and watch surfaces
@@ -242,7 +244,7 @@ Tier guidance:
 ### Palette usage guidance
 
 - dark-first visual system
-- gold should feel like a brand accent and reward metal, not a constant flood fill
+- gold should feel like a brand accent and warm metal, not a constant flood fill
 - use off-white rather than pure white on dark backgrounds
 - use auxiliary colors primarily for rank, states, charts, badges, and category accents
 - avoid drifting into purple-dominant cyberpunk or generic black-and-gold luxury branding
@@ -328,7 +330,7 @@ Each shell concept should include:
 ### Screen set D: optional marketing/editorial support
 
 - `/game`
-- sponsor list or partner strip treatment
+- code-authored partner strip treatment
 
 If Pencil can only produce a smaller set first, prioritize:
 
@@ -347,7 +349,8 @@ If Pencil can only produce a smaller set first, prioritize:
 - `/players/[id]`
 - `/teams`
 - `/teams/[id]`
-- `/sponsors`
+
+Administrator-only `/sponsors` registry/detail screens belong to the operational workflow set, not the initial public Pencil page set. Gauntlet creators use direct billboard uploads first and may receive a scoped advanced sponsor picker.
 
 ## Nice-to-Have Phase-1 Pages
 
@@ -366,35 +369,27 @@ If Pencil can only produce a smaller set first, prioritize:
 
 The root homepage is now better defined in [[pages/homepage]].
 
-It should be explored as an adaptive player/competition command center with enough brand context to orient new visitors.
+It should be explored as the primary marketing and conversion page, with the gritty sci-fi Terminal Ops system framing a readable product narrative rather than a dashboard.
 
-It should not become the full marketing page.
+Approved content order:
 
-### Anonymous homepage priorities
+1. hero and primary conversion
+2. gameplay and Ascension Mode
+3. ships and customization
+4. one optional bounded race-network proof module
+5. worlds, planets, and courses
+6. events and community
+7. final conversion and next actions
 
-Current module priority:
+Use `Play Now` as the default conversion label when accurate for the release state. Reliable confirmed ownership may promote `Explore Gauntlets` inside the same CTA region. Sign-in alone does not prove ownership or installation.
 
-1. command hero with Ascent Rivals branding and a visible bridge to `/game`
-2. search everywhere
-3. active and upcoming gauntlets
-4. high-level status strip
-5. course record highlights
-6. pilot highlights
-7. generated system log from real snapshot data
-8. optional sponsor strip
+Anonymous, authenticated, and confirmed-owner states use the same section order, module placement, and responsive composition. Personalization may change content or actions only inside an existing slot.
 
-### Logged-in homepage priorities
+Do not add a homepage telemetry strip, generated system log, leaderboard grid, or separate logged-in command-center layout. Keep global entity search in the shared top bar.
 
-Current module priority:
+The optional race-network module may feature one meaningful current/upcoming gauntlet, a recent gauntlet, or an explicitly labeled code-authored event recap. Omit it when no strong content exists.
 
-- search everywhere
-- gauntlets with personal rank or participation context
-- course leaderboard placement where available
-- career, wallet, and team links through the avatar menu
-
-The design should show how one shell can accommodate both without feeling schizophrenic.
-
-The output should solve this through shell treatment and composition, not by fully designing every homepage block in implementation detail.
+The output should establish the hierarchy, material system, readable typography, media treatment, CTA region, optional competition proof, and consistent anonymous/authenticated composition without fully designing every implementation state.
 
 ## Entity Page Guidance
 
@@ -463,12 +458,16 @@ Key design challenge:
 
 Current preferred structure:
 
-- emphasize current gauntlets
-- emphasize upcoming gauntlets
-- provide a separate route or section for past gauntlets
-- optionally highlight featured events
+- default `Gauntlets` view lists each entity once in a combined `Current & Upcoming` scope;
+- current occurrence windows sort first, then remaining gauntlets by nearest future occurrence;
+- `Past` is a URL-backed secondary scope;
+- alternate `Schedule` view is a chronological agenda that may repeat one gauntlet for multiple qualifier or stage occurrences;
+- a long-lived gauntlet is not current during gaps between its actual occurrences;
+- avoid separate empty Current and Upcoming bands.
 
-Calendar can remain a later or secondary exploration.
+Use a responsive agenda rather than a month grid initially. Schedule timing does not justify a `Live` label without an explicit runtime or broadcast state.
+
+For ordinary gauntlet-directory cards, place verified artwork in a fixed-ratio media bay beside the information panel on wider layouts and above it on narrow layouts. Keep essential text on an opaque or near-opaque surface rather than overlaying variable uploaded art. The existing gauntlet `Background` media may be used as cropped source art, but reserve full-bleed atmospheric treatment for gauntlet detail or one deliberately featured module with a strong scrim and contrast review. Keep Schedule rows image-light and never use per-row background art.
 
 ### Gauntlet detail
 
@@ -479,9 +478,8 @@ Current content priority:
 3. personal logged-in status
 4. hero and branding
 5. sponsors
-6. prize pool or prizes
-7. watch stream
-8. past winners or history
+6. watch stream
+7. past winners or history
 
 Standings are still required, but they do not need to dominate the whole page if qualification and finals presentation are stronger organizing structures.
 
@@ -624,7 +622,7 @@ Use the in-game brand palette as the foundation:
 - Light text: #E8E4D8
 - Secondary light text: #B9B3A6
 
-The tone should feel industrial, gritty, high-speed, competitive, and cinematic. It should not look like a generic esports template, a SaaS dashboard, or a crypto-luxury black-and-gold site. Keep the overall mood dark-first, with gold used as a brand accent and reward metal rather than everywhere.
+The tone should feel industrial, gritty, high-speed, competitive, and cinematic. It should not look like a generic esports template, a SaaS dashboard, or a crypto-luxury black-and-gold site. Keep the overall mood dark-first, with gold used as a brand accent and warm metal rather than everywhere.
 
 Push harder into gritty sci-fi cues:
 - armored panels

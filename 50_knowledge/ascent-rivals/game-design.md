@@ -75,10 +75,13 @@ For custom games, the lobby leader can change the course, heats, bots, and bot d
 
 The **Race Course** is the actual competitive arena. This is where the driving, flying, combat, and race-start loadout adjustment flow occur.
 
-The project currently emphasizes two primary game modes on race courses:
+The project supports three race-course modes:
 
-- Classic Race
 - Ascent Mode
+- Classic Race
+- Deathmatch Race
+
+Nearly all current races use Ascent Mode. Classic Race and Deathmatch Race remain available but are rarely used. Player-facing surfaces should therefore prioritize Ascent Mode while preserving race mode as a data dimension for future selection and historical accuracy.
 
 ---
 
@@ -110,6 +113,10 @@ Why this matters:
 - the mode has a strong lore justification tied to authorities/corporate shutdown pressure
 
 This is one of the game’s most distinctive designs.
+
+### Deathmatch Race
+
+Deathmatch Race is supported but rarely used. Its detailed mechanics are not yet documented in this knowledge base; public product copy should not infer them from the mode name.
 
 ---
 

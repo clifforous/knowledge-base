@@ -2,9 +2,12 @@
 
 Status: Solution design draft
 Date: 2026-07-10
+Last updated: 2026-07-15
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
+
+Foundation alignment: team implementation remains gated by F15 and T00. Membership validity and correction semantics below are required inputs to the team qualification capability described in [[team-gauntlets-and-brackets-solution-design]].
 
 ## Related
 
@@ -135,12 +138,14 @@ The team record remains the durable social identity and should hold or reference
 | `team_id` | Eventun-generated stable identifier |
 | `name` and `short_name` | Display identity |
 | `owner_player_id` | Explicit owner; do not infer ownership only from title order |
-| `membership_mode` | Open, request, invite-only, or existing website-only token mode |
+| `membership_mode` | Open, request, or invite-only; token-gated membership is removed and unsupported |
 | `region_code` | Optional recruiting and scheduling metadata |
 | `time_zone` | Optional IANA time-zone identifier |
 | `recruiting_status` | Open, selective, or closed presentation state |
 | `watch_url` and `community_url` | Validated Twitch, Discord, or approved destination |
 | `title` and `description` | Public team presentation |
+
+Every active team has exactly one explicit owner. Ownership transfer locks the team and relevant active memberships, changes the owner atomically, and cannot leave zero or multiple owners. Disband is a separate owner-only terminal transition; ordinary owner leave does not implicitly disband or choose a replacement.
 
 Region, time zone, recruiting state, links, and uploaded team media are edited on the website.
 
@@ -150,6 +155,7 @@ The current delete-on-leave model must become validity-based before progression 
 
 | Field | Purpose |
 |---|---|
+| `membership_interval_id` | Stable identity retained through correction and referenced or copied by attribution evidence |
 | `team_id` and `player_id` | Membership identity |
 | `joined_at` | Inclusive membership start |
 | `left_at` | Null while active; exclusive end after departure |
@@ -158,7 +164,7 @@ The current delete-on-leave model must become validity-based before progression 
 | `created_by` and `ended_by` | Audit actors |
 | `reason` | Join, invite, removal, leave, transfer, or administrative correction |
 
-For this pre-alpha iteration, the existing row may be migrated into an interval table or replaced by an active-membership table plus immutable history. The chosen shape must enforce at most one active team membership per player.
+For this pre-alpha iteration, the existing row may be migrated into an interval table or replaced by an active-membership table plus immutable history. The chosen shape must enforce at most one active team membership per player and nonoverlapping validity intervals. Historical correction must retain an audit trail and advance an attribution revision, or produce an equivalent exact interval fingerprint, so a team qualification preview cannot publish against silently changed membership evidence.
 
 ### Titles And Capabilities
 
@@ -197,7 +203,10 @@ The operation should:
 3. evaluate exactly one transition;
 4. apply it transactionally;
 5. return a typed outcome;
-6. append audit and notification intent in the same transaction.
+6. append audit and notification intent in the same transaction;
+7. treat invitations and join requests as valid only before their expiry boundary;
+8. renew or replace expired pending state when the actor repeats a valid action rather than preserving the stale row;
+9. consume or cancel pending state atomically with membership, membership-mode, leave, removal, ownership-transfer, and disband transitions.
 
 Recommended outcome values:
 
