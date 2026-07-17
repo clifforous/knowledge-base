@@ -338,7 +338,7 @@ Do not expose operations controls globally or change the discovery layout by rol
 
 ## Website API Projection Requirement
 
-Website V2 may initially join current gauntlet and calendar reads server-side, but the preferred durable contract is a bounded Website-oriented projection that provides:
+Website V2 may initially join current gauntlet and calendar reads server-side. If a dedicated Website-oriented projection is useful, it should return one compact, complete collection of public gauntlet summaries rather than a server-paginated directory. Each summary provides:
 
 - authoritative server time;
 - unique public gauntlet summary;
@@ -350,9 +350,18 @@ Website V2 may initially join current gauntlet and calendar reads server-side, b
 - optional explicit runtime/result state when available;
 - bounded public media and sponsor context;
 - optional signed-in participation overlay;
-- stable pagination/cursor behavior.
+- no nested detail data that the index does not render.
 
-The server should derive ordering fields once. Do not let browser clocks independently classify the same gauntlet differently around time boundaries.
+The server should derive timing state and occurrence candidates once. Do not let browser clocks independently classify the same gauntlet differently around time boundaries. The browser then performs the approved stable ordering, title search, scope filtering, and any later supported filters over the returned collection.
+
+Initial directory presentation is client-side:
+
+- fetch the compact collection once;
+- filter and search without network round trips;
+- use ordinary page controls, progressive reveal, infinite-style loading, or list virtualization as interchangeable rendering choices over the same local collection;
+- do not add server pagination until measured collection size, transfer cost, parsing cost, or memory use demonstrates a real problem.
+
+Client-side progressive reveal reduces rendered DOM work but does not reduce the initial response size. Keep the collection payload compact and cacheable rather than confusing UI lazy loading with data pagination.
 
 The Schedule projection should include the bounded gauntlet identity needed for each occurrence so the Website does not issue one detail fetch per repeated gauntlet.
 
@@ -442,6 +451,7 @@ Mobile:
 - public cards contain no sponsor tier, prize, reward, wallet, or token-gating content;
 - Past gauntlets remain publicly readable, searchable, and linked through the Past scope;
 - the Website does not infer private, hidden, or unpublished state from schedule timing;
+- the initial directory fetches one compact public collection and searches, filters, sorts, and incrementally presents it client-side;
 - ordinary directory cards do not place essential text directly over gauntlet artwork;
 - the Schedule agenda does not use per-row background images;
 - the schedule agenda remains usable on mobile without a month grid.
@@ -455,4 +465,4 @@ Mobile:
 
 ## Review Checkpoint
 
-The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past` scopes, all-gauntlets-public visibility, occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived terminology guardrails, and constrained media composition are approved. Detailed styling, explicit runtime/result lifecycle, media-purpose priority, and the exact Website API projection remain open.
+The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past` scopes, all-gauntlets-public visibility, client-side collection interaction, occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived terminology guardrails, and constrained media composition are approved. Detailed styling, explicit runtime/result lifecycle, media-purpose priority, and whether a dedicated compact Website API projection is worthwhile remain open.

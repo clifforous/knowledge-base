@@ -10,6 +10,7 @@
 - [[eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]]
 - [[website]]
 - [[game-design]]
+- [[../../30_designs/ascent-rivals/mmr-v2-design-and-implementation-plan|mmr-v2-design-and-implementation-plan]]
 - [[lore]]
 - [[../../30_designs/ascent-rivals/teams-solution-design|teams-solution-design]]
 - [[../../30_designs/ascent-rivals/team-experience-and-progression-solution-design|team-experience-and-progression-solution-design]]
@@ -24,6 +25,13 @@ Primary gameplay execution surface for racing/combat sessions, player experience
 - player, ship, loadout, and progression systems
 - in-game UI routes and interaction flows
 - stats tracking and end-of-match progression handling
+
+## Current Skill Rating Role
+
+- The statistics historically named MMR are not currently used for matchmaking, admission, rewards, qualification, or a public competitive rank.
+- The only identified game-runtime consumer is the item recommender. It uses skill rating to choose a recommendation archetype only after uncertainty is below its confidence threshold; otherwise it falls back to career rank.
+- The current model family is Weng-Lin Plackett-Luce, but the v1 implementation and accumulated values are not approved for continued use because tie handling, participant selection, asynchronous loading, and persistence can corrupt results.
+- [[../../30_designs/ascent-rivals/mmr-v2-design-and-implementation-plan|MMR v2]] retains the model family, resets every account to the configured new-player defaults, and limits the initial replacement to authoritative Ascent results for the item recommender.
 
 ## Current Identified Telemetry Producer
 - Client/local and dedicated-server paths record one complete-match envelope from `MatchStart` through terminal `MatchEnd`, with stable batch/event identities, zero-based producer sequence, and game-build context.

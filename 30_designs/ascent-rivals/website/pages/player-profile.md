@@ -1,8 +1,10 @@
 # Ascent Rivals Player Profile Page Spec
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved career and recent-races model; visual design and contract implementation open
 Career-summary priority confirmed: 2026-07-15
+Recent-races review confirmed: 2026-07-16
+Gauntlet-history review confirmed: 2026-07-16
 
 ## Related
 - [[../unified-design]]
@@ -200,11 +202,11 @@ Sources:
 - `GET /v1/leaderboard`
 - `GET /v1/leaderboard/player/{playerId}`
 
-### Match history
+### Recent races
 
 Available:
 
-- player match history
+- recent dedicated multiplayer race results
 - course code
 - match id
 - race mode
@@ -228,6 +230,14 @@ Source:
 
 - `GET /v1/match/history/{playerId}`
 
+Current scope and limitations:
+
+- the read uses canonical server match facts and does not represent client-only time trials, Career Cup, or other single-player activity;
+- the default response contains the newest 100 matches, with an optional maximum-result limit and no cursor;
+- time-trial and Career Cup history are not initial Website history features; their retained best lap and best finish records remain visible through course/career records where supported;
+- current match-history rows are not season-attributed yet, but Eventun now owns an accepted nullable season model planned for additive implementation after the event cutover;
+- current scalar match-stat fields lose missing-value presence in the generated contract and must not be rendered as exact facts until that is corrected or explicitly represented.
+
 ### Match summary / heat breakdown
 
 Available for specific match summary contexts:
@@ -245,7 +255,7 @@ Sources:
 
 V1 caution:
 
-- generic public player profile should show a match-history overview if the endpoint is available.
+- generic public player profile should show a `Recent Races` overview if the endpoint and public-course filtering are available.
 - detailed match-summary drill-in and heat breakdown views are out of V1 scope for the player profile.
 
 ### Eventun medals and progression
@@ -279,12 +289,12 @@ Confirmed first-view priority:
 1. identity and career context
 2. career summary as the lead statistics module
 3. course stats and course placements
-4. recent performance and exact match history
-5. gauntlet results and optional strengths when the data supports them cleanly
+4. recent race results and exact recent-race history
+5. gauntlet history and optional strengths when the data supports them cleanly
 
 The profile must remain complete and useful when the pilot has no recent gauntlet participation. Recent competition results support the career story; they do not replace it as the page lead.
 
-Page-local navigation uses readable anchors for the long profile document, with labels such as `Overview`, `Courses`, `Recent Results`, `Gauntlets`, and `Medals` when those sections are supported. Conditional strength callouts do not require their own destination. Keep a supported section and show its honest no-data state when the pilot merely lacks results; omit a destination only when the section is structurally unavailable. Compact layouts replace the anchor row with a labeled section jump menu.
+Page-local navigation uses readable anchors for the long profile document, with labels such as `Overview`, `Courses`, `Recent Races`, `Gauntlets`, and `Medals` when those sections are supported. Conditional strength callouts do not require their own destination. Keep a supported section and show its honest no-data state when the pilot merely lacks results; omit a destination only when the section is structurally unavailable. Compact layouts replace the anchor row with a labeled section jump menu.
 
 ## 1. Player Header / Briefing
 
@@ -486,51 +496,83 @@ Terminal Ops component:
 - `DataTable`
 - `LocalSectionNav` or segmented category filter
 
-## 6. Match History
+## 6. Recent Races
 
 Purpose:
 
-- show recent play history and link toward deeper analysis later
+- show a bounded, factual history of recent multiplayer races without implying complete account activity or unsupported improvement analysis
 
-### Recent Performance Visualization
+Scope:
+
+- initial fetch: at most the newest 100 public-course matches from `GET /v1/match/history/{playerId}`;
+- included activity: server-backed multiplayer races;
+- excluded activity: time trials, Career Cup, and other client/local single-player play;
+- retained single-player facts: best lap and best finish remain visible through course/career record surfaces rather than this history;
+- presentation and filtering are client-side over the returned recent collection;
+- this is an intentionally bounded `Recent Races` product view, not server-paginated lifetime history.
+
+### Recent Circuit Points Visualization
 
 Initial decision:
 
-- show circuit points for each match across the latest bounded match history;
+- show raw circuit points for each usable Ascent Mode match across the latest bounded race history;
 - treat matches as a discrete ordered sequence rather than implying continuous sampling;
-- use Ascent Mode as the initial comparable cohort because it represents nearly all current races;
-- retain race mode on every underlying history item so Classic and Deathmatch results are not mislabeled;
-- defer a visible race-mode selector until it provides useful sample sizes, while keeping it as a future filter;
-- provide an optional course filter for a more directly comparable cohort;
+- label the chart as recent results, not improvement, momentum, form, or a normalized performance trend;
+- retain the public race-mode label on every underlying history item so Classic and Deathmatch results are not mislabeled;
+- do not add a visible race-mode selector initially; the exact table still includes every supported race mode in the bounded collection;
+- allow an optional local course filter for exploration, without claiming that course filtering alone makes scoring configurations comparable;
 - show exact circuit points, course, race mode, placement, and match time through accessible labels or interaction;
-- add a rolling trend only when enough comparable matches exist and label the window size;
-- omit the chart when the selected cohort is too small, while retaining the exact match-history table;
+- do not add a rolling or smoothed trend line in the initial release;
+- revisit improvement only when Eventun supplies a backend-derived comparable value or the history contract includes the heat/rules/scoring context needed for an approved derivation;
+- omit the chart when the Ascent cohort is too small, while retaining the exact recent-races table;
 - do not chart lap or finish times across different courses;
 - do not smooth missing matches into fabricated values.
 
 Recommended form:
 
 - a compact dot or column series for per-match circuit points;
-- an optional rolling trend line over the selected comparable cohort;
 - podium results may receive a restrained categorical marker, but placement does not become a second quantitative axis.
 
 V1 decision:
 
-- include a match-history overview
+- include a recent-races overview
 - do not include a dedicated match-detail route or heat-breakdown drill-in in V1
 
-V1 content:
+Exact table:
 
-- recent match list
-- course
-- race mode
-- start time
-- placement
-- circuit points
-- best lap
-- best finish
-- kills and obelisks where useful
-- deaths and crashes only if the row has a detailed/expanded mode and the product wants complete stat parity
+- newest race first;
+- local date/time;
+- public course name;
+- public label `Ascent Mode`, `Classic Race`, or `Deathmatch Race` rather than a raw internal value;
+- placement and podium state when present;
+- circuit points when present;
+- best finish and best lap when present;
+- expandable secondary detail for kills, obelisks, credits, deaths, and crashes when present;
+- compact mobile row preserving date/course, placement, and circuit points before secondary detail.
+
+Public-data boundary:
+
+- include only matches whose course is `published` or `archived` through the approved server-side AccelByte course projection;
+- omit alpha, internal, unknown, conflicting, or otherwise hidden course matches before history reaches the browser;
+- do not send client version, replay record key, session id, match id, or other unrendered implementation fields to the public page;
+- a future match-detail or replay route requires a separate public contract and does not follow merely because identifiers exist in the source response.
+
+Missing-value contract:
+
+- prefer protobuf presence-preserving optional match-stat fields and verify their generated Go, gateway JSON/TypeScript, and selected Unreal shapes before relying on them;
+- current static evidence shows that existing optional protobuf scalars still become plain defaulted Unreal `int32`/`bool` fields, so optionality alone does not preserve presence for every generated consumer;
+- if any required consumer loses presence, add explicit availability metadata or an equivalent unambiguous contract rather than guessing in the UI;
+- zero may be treated as missing only for a field whose valid domain is strictly positive, such as placement or a completed lap/finish time;
+- zero is a legitimate value for kills, deaths, crashes, credits, obelisks, and circuit points, while `false` is a legitimate podium value; those fields require explicit presence when their source can be missing;
+- render an em dash or omit secondary detail when a value is missing, never a fabricated zero.
+
+Season direction:
+
+- keep the newest 100 races as the initial bound before season attribution is available;
+- once the Eventun season catalog and nullable match attribution ship, use backend season identity and windows rather than calculating seasons in the Website;
+- expect seasons to become the primary history grouping/boundary and expose only a bounded number of recent seasons;
+- preserve Eventun's distinction between regular seasons, explicit off-seasons, and unseasoned matches; explicit off-seasons remain absent from ordinary player history by default;
+- defer the exact default season, number of historical seasons, and treatment of unseasoned legacy matches until the implemented F16A contract can be reviewed.
 
 V1 caution:
 
@@ -545,29 +587,49 @@ V2:
 
 Terminology:
 
-- use `Match History` for match list
+- use `Recent Races` for the profile section and recent match list
 - use `Heat Breakdown` only inside match detail/drill-in views
 - do not call qualifiers heats
 
-## 7. Gauntlet Results
+## 7. Gauntlet History
 
 Purpose:
 
-- show tournament/gauntlet performance history
+- show public participation and results across gauntlets whose structures may differ substantially
+- distinguish current standings, qualifier performance, accepted stage results, and general participation without implying that every gauntlet produces a tournament finish
 
-V1 possible:
+Initial release:
 
-- player gauntlet stats if `GET /v1/gauntlet/stats/player/{playerId}` is available and usable
-- player-specific gauntlet leaderboards if available
+- use `Gauntlets` as the page-local navigation label and `Gauntlet History` as the section heading;
+- include active and completed public gauntlets only when the player has real public participation evidence;
+- place active entries with public results first, labeled `In Progress`, then order remaining entries by the player's latest actual participation time rather than the gauntlet's broad first-to-final time range;
+- link every entry to `/gauntlets/[id]` and show the gauntlet title plus ticker or concise date context where useful;
+- show current overall qualifier rank, qualification points, and qualifiers counted/played when qualifiers apply;
+- show an accepted stage placement and circuit points when a completed stage result exists;
+- otherwise use a factual participation fallback such as races played, podiums, and average circuit points;
+- use a compact responsive list whose result fields adapt to the gauntlet structure rather than forcing every entry into one rigid tournament-results table;
+- do not add an aggregate gauntlet chart in the initial release because qualifier-only, staged, playtest, and other gauntlet structures are not one comparable series.
 
-V1 caution:
+Result and privacy rules:
 
-- exact presentation depends on the current shape of gauntlet stats and standings responses
+- an overall qualifier rank is not a tournament finish;
+- use `Stage N` for an accepted stage result and use `Final` only when the competition contract explicitly identifies that stage as the deciding final;
+- do not expose invitations, eligibility, admission state, group assignment, or status-only rows on another player's public profile;
+- a `gauntlet_player_status` row alone is not sufficient public participation evidence;
+- zero is valid for points and several aggregate statistics, while rank and placement require explicit missing-value semantics rather than UI inference.
+
+Website API requirement:
+
+- add a compact player-gauntlet-history read instead of joining the existing broad gauntlet list with `PlayerGauntletStats` and issuing one `GauntletEventsPlayer` request per gauntlet;
+- return presentation metadata, lifecycle state, latest real player-activity time, qualifier summary when applicable, accepted stage placements when applicable, and the small aggregate participation fallback in one collection;
+- derive participation and ordering from canonical qualifier contributions, gauntlet match contributions, or accepted stage placements rather than configuration dates or invitation/status rows;
+- preserve current-versus-completed and missing-versus-zero distinctions in the contract;
+- keep the initial collection compact and unpaginated, with client-side display controls if the history eventually needs progressive reveal.
 
 V2:
 
 - trophies
-- finals placements
+- explicitly modeled final placements
 - historical event highlights
 - qualification progression over time
 
@@ -628,7 +690,7 @@ V2:
 
 | State | Behavior |
 |---|---|
-| Anonymous | can view public profile, public stats, course stats, leaderboards, public match history if enabled |
+| Anonymous | can view public profile, public stats, course stats, leaderboards, and public recent races |
 | Logged-in other player | same as anonymous plus account/avatar top bar and comparison affordances if available |
 | Logged-in own profile | public profile plus team/account action overlays and own medals/badges where supported |
 | Admin | same as logged-in, plus admin-only moderation/actions only if product decides they are needed |
@@ -640,7 +702,7 @@ Required states:
 - player not found
 - no course stats
 - no leaderboard placements
-- no match history
+- no recent races
 - no team
 - failed career fetch
 - failed leaderboard fetch
@@ -707,22 +769,27 @@ These ideas are valuable but should not block V1 if unsupported:
 - consistency metrics
 - survival rate by mode
 - detailed match pages with heat drill-ins
+- season-grouped race history after the implemented season contract is reviewed
 - recommendation cards
 - AccelByte owned items and battle pass progress
 
 ## Resolved Product Decisions
 
-1. V1 should include a match-history overview, but not a match-detail page.
+1. V1 should include a bounded `Recent Races` overview of multiplayer/server matches, but not a match-detail page. Time trials, Career Cup, and other single-player play are excluded; retained best lap and best finish records remain on course/career surfaces.
 2. V1 should include course leaderboard placements using player-specific leaderboard data where available.
 3. Eventun owns official gameplay medal totals and progression reads. These facts may support the profile but must not be faked or inferred from incomplete career aggregates; AccelByte-only recognition remains a separate source.
 4. V1 strength modules should be limited to best finish and best lap unless richer normalized data becomes available.
 5. Avoid negative or joke-framed stats for now.
-6. The default layout prioritizes identity and a career summary first, then course stats, recent performance, and match history. Recent gauntlet participation must not determine whether the profile feels complete.
+6. The default layout prioritizes identity and a career summary first, then course stats and Recent Races. Recent gauntlet participation must not determine whether the profile feels complete.
 7. Own-profile team and account actions should appear on the public profile page for the logged-in user.
 8. The career lead uses Matches, Podiums, Podium Rate, and Average Circuit Points as headline values. Full career totals remain available in Results, Objectives, Combat, Activity, and Economy groups.
 9. Career-summary visualization is optional. Podium share is the only approved initial aggregate visualization because it has a clear matches-played denominator; charts must not be fabricated from aggregate totals that contain no time series.
-10. The initial recent-performance chart shows per-match circuit points from bounded history, requires a race-mode filter, supports an optional course filter, and adds a rolling trend only for a sufficient comparable sample.
+10. The initial recent-races chart shows raw per-match circuit points for the dominant Ascent Mode cohort as discrete results, supports an optional local course filter, and has no rolling/improvement trend. The exact table contains all supported race modes in the bounded collection.
 11. Cross-course pilot performance uses an exact sortable table plus an optional normalized gap-to-record view for one explicit leaderboard category. Raw times from different courses are never placed on one shared scale.
+12. The initial recent-races bound is the newest 100 public-course matches. Eventun seasons are expected to become the later grouping/boundary, but exact Website season navigation waits for the implemented F16A contract.
+13. Public recent-race data excludes hidden course matches and unused implementation identifiers before reaching the browser.
+14. Match-stat presence must be preserved through the Website contract. Protobuf optionality is preferred when generation proves it survives; otherwise use explicit availability metadata. Zero-as-missing is forbidden where zero or false is a valid result.
+15. The public profile uses a `Gauntlet History` section. Active participation with public results appears before completed history; completed entries are ordered by actual player activity. Qualifier rank, stage placement, and generic participation remain distinct, and invitations or status-only state are never exposed as public history.
 
 ## Next Steps
 

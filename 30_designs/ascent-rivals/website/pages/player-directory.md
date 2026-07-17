@@ -1,7 +1,8 @@
 # Ascent Rivals Player Directory Page Spec
 
 Date: 2026-04-14
-Status: Draft
+Status: Approved inclusion, collection-loading, and core-card model; visual design open
+Last reviewed: 2026-07-16
 
 ## Related
 - [[../unified-design]]
@@ -38,7 +39,7 @@ Current app route equivalent:
 
 Final route direction:
 
-- use plural route groups in the Nuxt site
+- use plural route groups in the Next.js site
 - preserve redirects from old singular routes if public links already exist
 
 ## Audience
@@ -64,6 +65,18 @@ Secondary:
 - support lightweight sorting using data already exposed by Eventun
 - avoid overloading the directory with deep stats that belong on player profiles
 - leave room for future public social links without making them a V1 dependency
+
+## Approved Initial Decisions
+
+- Treat `/players` as a public pilot registry rather than a leaderboard.
+- Include every real pilot with a usable public identity, including new or inactive pilots with no matches.
+- Exclude only records explicitly classified by the source system as bots, test accounts, or internal identities; do not infer exclusion from a name pattern or zero activity.
+- Default to alphabetical ordering and make name/team search the primary interaction.
+- Keep podium finishes, matches played, and average circuit points as secondary card context and optional sorts rather than the directory's primary ranking.
+- Present team identity as `[TAG] Team Name` when space permits, reduce it to the tag on compact cards, and use `Independent` for an unaffiliated pilot.
+- Keep the pilot avatar as the card's only image; do not add the team avatar to ordinary player-directory cards.
+- Fetch one compact, unpaginated directory collection and perform search, filtering, sorting, and progressive display in the browser.
+- Reconsider server pagination only when measured query time, response transfer, parsing/hydration cost, memory use, or interaction latency becomes material.
 
 ## Current V1 Data Availability
 
@@ -130,6 +143,31 @@ Current app already supports:
 - sort by average circuit points
 - lazy loading / incremental display
 
+### Initial Website Collection Contract
+
+The current `GET /v1/player` response exposes substantially more data than the directory needs. Reuse it while the measured response remains inexpensive; otherwise add a compact unpaginated Website projection containing only fields rendered, searched, or sorted by the directory:
+
+- player id and public display name;
+- avatar URL;
+- public team id, name, and tag when present;
+- podium finishes, matches played, and average circuit points while those remain approved card/sort fields;
+- an optional public rank tier or other explicitly public rank summary when a supported contract exists.
+
+Do not include full career groups, match history, course history, nested team media, private account state, exact private ELO/MMR, wallet data, or other profile-detail payloads in the directory collection.
+
+If a future rating or MMR presentation is approved for public use, expose a deliberately defined public rank field. Do not leak an internal matchmaking value merely because it is convenient to add to the collection response.
+
+Client collection behavior:
+
+- fetch the complete compact directory collection once;
+- normalize searchable player/team text once and search locally without network round trips;
+- apply all initial sorts and filters locally;
+- use incremental card reveal or virtualization when useful to limit DOM work;
+- remember that rendering fewer local cards does not reduce the original transfer size;
+- use measured compressed bytes, fetch/query latency, parse and hydration cost, memory, and input responsiveness as the scale signals rather than a fixed row-count threshold.
+
+The initial release does not require server pagination for the player directory. Large theoretical counts such as 10,000 or 100,000 records are not themselves acceptance claims: compact records may remain practical, but long names and avatar URLs can still create a multi-megabyte response that must be evaluated on representative mobile hardware and networks.
+
 ## V1 Page Structure
 
 Default first-view priority:
@@ -174,7 +212,7 @@ V1 controls:
 
 - search by player name
 - search by team name
-- sort A-Z
+- sort A-Z as the default
 - sort Z-A
 - sort by podium finishes
 - sort by matches played
@@ -196,7 +234,9 @@ V1 card content:
 
 - avatar
 - player name
-- team name/tag if available
+- `[TAG] Team Name` when space permits
+- team tag alone on compact cards when available
+- `Independent` when the pilot has no team
 - podium finishes
 - matches played
 - average circuit points
@@ -205,13 +245,22 @@ V1 card content:
 Optional V1 card content:
 
 - small public rank tier if available from supported public rank data
-- team accent color, if visually useful and not noisy
+- one restrained team-color accent, such as a narrow rule or small marker, only when the supplied color remains legible in the Website palette
+
+Team identity styling:
+
+- use a neutral Website-controlled surface and text treatment for the team tag by default;
+- do not apply arbitrary team foreground and background colors as the full tag treatment;
+- never rely on a team color to communicate identity or membership;
+- do not render a separate team logo/avatar beside the pilot avatar in the ordinary card;
+- reserve richer team color and media treatment for `/teams/[id]` and other team-primary contexts.
 
 Do not include in V1 cards by default:
 
 - deaths
 - crashes
 - exact ELO
+- team avatar or logo
 - wallet state
 - private team invite/request state
 - owned items or battle pass data
@@ -312,7 +361,7 @@ Mobile:
 
 - stack search and sort controls
 - use compact player cards
-- preserve avatar, name, team, and one or two key stats
+- preserve pilot avatar, name, team tag or `Independent`, and one or two key stats
 - keep login/avatar visible in top bar
 
 ## SEO and Sharing
@@ -341,13 +390,26 @@ These ideas are valuable but should not block V1:
 - recently active sorting
 - public profile badges if backend/AccelByte exposes them safely
 
+## Acceptance Criteria
+
+- every source-classified real pilot with a usable public identity can appear regardless of match count or recency;
+- only explicitly classified bot, test, or internal identities are excluded;
+- the default directory order is alphabetical;
+- name and team search, supported sorts, and display pagination/progressive reveal do not require additional network requests;
+- the collection response contains only identity, search, card, and approved sort fields rather than full profile/history payloads;
+- podium finishes, matches played, and average circuit points remain secondary context rather than an implied player ranking;
+- exact private ELO/MMR, wallet state, private team state, and account data never enter the public directory payload;
+- a public rank summary appears only when an explicitly public and semantically defined source contract exists;
+- team identity uses `[TAG] Team Name` where space permits, tag-only compact treatment, and `Independent` when unaffiliated;
+- the pilot avatar is the card's only image, and arbitrary team foreground/background colors do not control tag legibility;
+- missing avatars and teams use stable fallbacks without excluding the pilot;
+- server pagination is not an initial requirement and is reconsidered from measured performance evidence.
+
 ## Open Questions
 
-- Should the V1 card show podiums/matches/average circuit points, or stay closer to avatar/name/team only?
 - Should player social links be unverified user-provided URLs, verified provider links, or both with a visible trust state?
 - Should a logged-in player manage public socials on their own profile page, an account menu/settings page, or both?
 - Should the directory support a `live now` Twitch indicator later, or should that live only on `/watch`?
-- Should player cards include team tag instead of team name when space is constrained?
 
 ## Next Steps
 

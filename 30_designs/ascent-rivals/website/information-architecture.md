@@ -464,14 +464,26 @@ Page specs:
 - [[pages/player-directory]]
 - [[pages/player-profile]]
 
+Directory contract:
+
+- include every real pilot with a usable public identity, including new or inactive pilots;
+- exclude bots, test accounts, or internal identities only through explicit source-system classification;
+- default to alphabetical order with client-side name/team search, sorting, filtering, and progressive display over one compact collection response;
+- keep full profiles and histories out of the directory collection;
+- show `[TAG] Team Name` when space permits, tag-only identity on compact cards, and `Independent` for unaffiliated pilots;
+- keep the pilot avatar as the ordinary directory card's only image and use neutral team-tag styling with at most a restrained accessible team-color accent;
+- reconsider server pagination only after measured query, transfer, parsing, memory, or interaction cost becomes material.
+
 Page-local sections:
 
 - Overview
 - Course Stats
-- Match History
-- Gauntlet Results
+- Recent Races
+- Gauntlets, containing the `Gauntlet History` section
 - Trophies and Medals
 - Rank History
+
+`Gauntlet History` includes active public participation before completed history, then sorts by the pilot's latest real activity. It adapts each entry to qualifier, accepted stage, or general participation facts; it does not expose invitations or other private participation state and does not label qualifier rank as a tournament finish.
 
 Personalized own-profile overlays:
 
@@ -482,6 +494,8 @@ Public privacy guardrail:
 
 - public rank tier is allowed
 - exact ELO remains private
+- Recent Races contains only published/archived-course multiplayer results and does not expose hidden course codes, client versions, replay keys, or raw match/session identifiers.
+- Time trials, Career Cup, and other single-player activity are not presented as recent-race history; retained best lap and best finish records remain on course/career surfaces.
 
 ## Course Leaderboards
 
@@ -625,7 +639,7 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 | `/gauntlets` | unique current/upcoming gauntlets, Past scope, and repeated-occurrence Schedule agenda | same layout plus personalized participation context when available | `Create Gauntlet` for creator/admin |
 | `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, and factual public result context; no Accountun-driven prize/reward data | same plus personal rank/qualification/eligibility context | ordinary non-prize edit/delete actions; runtime stage tooling remains a post-bracket hosting decision |
 | `/players` | player directory and search/filter | same | same, possible admin-only moderation/actions later |
-| `/players/[id]` | public profile, course stats, course placements, match-history overview, gauntlet results, trophies, rank tier | own profile may show team/account actions and own AccelByte medals/badges if available | admin-only actions later if needed |
+| `/players/[id]` | public profile, course stats, course placements, Recent Races, structure-aware Gauntlet History, trophies, rank tier | own profile may show team/account actions and own AccelByte medals/badges if available | admin-only actions later if needed |
 | `/courses` | production-ready course selector, explicit archived filter, course metadata, selected leaderboard, player profile links | same plus personal placement strip when available | no V1 admin actions unless course administration is added later |
 | `/courses/[code]` | public or explicitly archived course briefing, selected category records and leaderboard, pilot links; unreleased courses are not exposed | same plus personal placement when available | no initial admin actions unless course administration is later approved |
 | `/teams` | team directory, search/filter, membership-mode context | same plus create team when eligible and `My Team` context if useful | admin may see broader moderation affordances later |

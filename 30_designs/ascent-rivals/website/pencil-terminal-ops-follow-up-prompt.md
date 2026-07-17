@@ -135,10 +135,12 @@ Mock 1: desktop player profile
   - career overview
   - course stats
   - leaderboard placement module
-  - match-history overview, but no match-detail page
-  - gauntlet results
+  - `Recent Races` overview: an exact newest-first table for bounded public-course multiplayer results and an optional discrete raw circuit-points plot for recent Ascent Mode matches
+  - no rolling/improvement trend and no match-detail page
+  - `Gauntlet History`: a compact responsive list with active public participation first, then completed entries ordered by latest pilot activity; adapt each entry to qualifier facts, accepted stage placement, or a general participation summary without forcing one rigid result schema
+  - no aggregate cross-gauntlet chart, no qualifier rank presented as a tournament finish, and no invitation or eligibility state
   - trophies/medals only if clearly marked as backend-provided
-  - own-profile overlay area for wallet/team actions
+  - own-profile overlay area for approved team/account actions; no wallet module
 - Player principle:
   - The profile should not only reward the fastest or highest-ranked players.
   - It should help each player understand what they are good at.

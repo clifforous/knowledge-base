@@ -83,11 +83,14 @@ Do not replace every table with a chart. Select the representation based on the 
 The existing game-client reads are candidates for reuse, not a constraint that Website V2 must inherit every current response shape.
 
 - reuse current Eventun or AccelByte-backed reads when their semantics, authorization, payload, and query behavior fit the page;
-- add or revise server-side contracts when the Website needs different aggregation, chart-ready bounded series, filtering, pagination, public visibility, or page-level composition;
+- add or revise server-side contracts when the Website needs different authoritative aggregation, chart-ready bounded series, public visibility, or page-level composition; ordinary directory filtering or display pagination alone does not justify a new contract;
 - compute authoritative metrics and historical attribution in the owning backend, not in React components or from unrelated summary fields;
 - allow the Next.js server layer to handle authentication, caching, and composition without making it a new statistics or configuration source of truth;
 - avoid N+1 page loading and client-side joins when a bounded Website read model can return one internally consistent response;
-- require explicit units, metric definitions, population/scope, time windows, freshness, pagination, and null/no-data semantics where they affect interpretation;
+- default all initial collection experiences, including players and collection-style histories, to a complete compact response with client-side search, filtering, sorting, and UI pagination or progressive reveal;
+- keep collection projections shallow rather than transferring every entity's nested detail;
+- do not make server pagination an initial-release requirement; add it only when measured query, response, parsing/hydration, memory, or interaction costs justify it, with histories and feeds expected to reach that point first;
+- require explicit units, metric definitions, population/scope, time windows, freshness, and null/no-data semantics, plus pagination semantics only where server pagination is actually used;
 - enforce hidden/internal content and permission filtering before data reaches the browser.
 
 ## Initial Analytics Surfaces
@@ -101,12 +104,14 @@ Required baseline:
 - retain full totals in Results, Objectives, Combat, Activity, and Economy groups rather than one undifferentiated stat grid;
 - make visualization optional in the headline summary; a podium-share segmented bar is valid when paired with exact podium and match counts;
 - exact per-course record and career table;
-- recent match-history table;
+- exact recent-races table covering at most the newest 100 public-course multiplayer matches;
+- compact `Gauntlet History` with active public participation first and completed entries ordered by the pilot's latest actual activity;
+- structure-aware gauntlet facts that keep qualifier rank, accepted stage placement, and general participation distinct;
 - current course/category ranks where a player record exists.
 
 Candidate launch visualizations supported by bounded data:
 
-- per-match circuit points across bounded recent history, with a required race-mode filter, optional course filter, and rolling trend only for a sufficient comparable cohort;
+- raw per-match circuit points across the bounded recent Ascent Mode cohort, with an optional local course filter, no initial race-mode selector, and no rolling/improvement trend;
 - a cross-course gap-to-record view for one explicit leaderboard category, normalized within each course and paired with exact pilot time, record time, and ordinal rank;
 - an exact sortable per-course table as the canonical representation;
 - compact composition bars for clearly related counts only when the denominator and interpretation are explicit.
@@ -117,6 +122,15 @@ Not supported without additional contracts:
 - reliable population percentiles or distributions;
 - record-progression history when only the current winning record is retained;
 - checkpoint or segment analysis when website-safe geometry/detail is not exported.
+- improvement or form trends from raw match circuit points without backend-derived comparable values or sufficient heat/rules/scoring context.
+- one aggregate gauntlet-performance chart across unlike qualifier-only, staged, playtest, and future bracket structures.
+
+Gauntlet-history contract requirement:
+
+- use one compact Website-oriented player history read rather than an all-gauntlet join followed by per-gauntlet event requests;
+- include only canonical public participation evidence, not invitations, eligibility, admission state, or a status row by itself;
+- return gauntlet presentation metadata, active/completed state, latest player-activity time, applicable qualifier facts, accepted stage placements, and a small aggregate fallback;
+- use `Final` only when the gauntlet contract explicitly marks a deciding final.
 
 ### Course
 
@@ -173,7 +187,7 @@ Product-priority checkpoint:
 | Pilot career totals | Implemented in F14 worktree through `player_career_rollup` | Usable after F14 review and F15 production backfill/cutover |
 | Pilot-course career totals | Implemented in F14 worktree through `player_course_career_rollup` | Supports per-course profiles after F15 |
 | Current course records and ranks | Implemented in F14 worktree through `player_course_record` and leaderboard reads | Supports exact leaderboards and current placement after F15 |
-| Recent pilot match history | Moved to narrow facts in F14; response remains bounded | Supports recent tables and limited trends after F15; deeper history may need pagination/series contracts |
+| Recent pilot match history | Moved to narrow facts in F14; response remains bounded | Supports the Recent Races table and raw result plot after F15; improvement trends require a later comparable backend value or richer rules context |
 | Gauntlet stats and standings | Moved to incremental contributions/projections in F14 | Supports refreshed gauntlet pages after F15 |
 | Course metadata | AccelByte Cloud Save `Courses`, optionally delivered through a controlled Eventun cache | Use the approved server-side projection: configured production-ready state maps to `published`, an explicit AccelByte retirement marker maps a previously public course to `archived`, and every other or invalid state remains hidden |
 | Team metadata and current roster | Existing Eventun APIs | Supports directory, profile, roster, and management parity |

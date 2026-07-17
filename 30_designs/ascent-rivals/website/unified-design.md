@@ -381,7 +381,10 @@ All approved non-blockchain features from the current `ascentun` application sho
 
 ### Players
 
-- player directory
+- public pilot registry containing every real pilot with a usable public identity, including zero-match and inactive pilots
+- compact unpaginated directory collection with client-side name/team search, sorting, filtering, and progressive display
+- bot, test, and internal exclusion only through explicit source-system classification
+- player cards use one pilot avatar, responsive `[TAG] Team Name` identity, and `Independent` for unaffiliated pilots; team colors are restrained accents rather than arbitrary tag foreground/background fills
 - public player profile
 - player career stats
 - course-level player stats
@@ -574,19 +577,21 @@ The current default player-page structure is:
 
 - Overview
 - Course Stats
-- Match History
-- Gauntlet Results
+- Recent Races
+- Gauntlets, presented as `Gauntlet History`
 - Trophies and Medals
 - Rank History
 
 This can be implemented as tabs, stacked sections, or a responsive hybrid, but the information model should remain stable.
+
+The initial `Gauntlet History` is a compact structure-aware collection rather than one cross-gauntlet performance chart. Active gauntlets with real public player results appear first; completed entries follow in order of the player's latest actual participation. Qualifier standing, accepted stage placement, and generic race participation remain separate result types. Invitation, eligibility, admission, group, and status-only state are not public profile history. Eventun should provide this as one Website-oriented projection with presentation metadata and explicit result presence rather than require browser-side N+1 composition.
 
 Default first-view priority:
 
 - identity and career totals first
 - course stats and course placements second
 - optional best-lap/best-finish strength modules only when the data supports them cleanly
-- match-history overview later on the page, without a dedicated match-detail route in phase 1
+- `Recent Races` overview later on the page, without a dedicated match-detail route in phase 1
 
 ## Private Player Experience
 
@@ -742,7 +747,7 @@ Prize and reward data is Accountun-related and entirely deferred from Website V2
 - permit verified code-authored promotional prize copy on `/events/[slug]` without Accountun reads or live funding/eligibility/claim/payout implications;
 - revisit the product, authorization, and system boundary as one deliberate later design rather than preserving partial presentation.
 
-## Match History and Match Detail
+## Recent Races and Future Match Detail
 
 General standalone match-history browsing is not a priority as an independent site area.
 
@@ -750,6 +755,18 @@ Match history is more relevant when scoped to:
 
 - a specific player
 - a specific gauntlet
+
+The initial player-profile surface is `Recent Races`, not complete account activity:
+
+- at most the newest 100 server-backed multiplayer matches;
+- public published/archived courses only;
+- time trials, Career Cup, and other single-player play excluded, while retained best lap and finish records remain on course/career surfaces;
+- exact newest-first table as the canonical view;
+- optional discrete raw circuit-points chart for recent Ascent Mode matches, with no rolling/improvement trend;
+- client-side filtering and progressive display over the returned collection;
+- Eventun season grouping after the implemented season-attribution contract is reviewed.
+
+The Website response must preserve missing-versus-zero match-stat semantics and remove unused client version, replay, session, match, and hidden-course data before it reaches the browser.
 
 ### Likely future match-detail support
 
@@ -893,7 +910,7 @@ Primary website integration point for:
 - sponsor data
 - media metadata
 
-Existing game-client endpoints are reusable inputs, not a fixed Website contract. Extend Eventun or add purpose-built Website read endpoints when a page requires different aggregation, bounded series, filtering, pagination, visibility semantics, or response composition.
+Existing game-client endpoints are reusable inputs, not a fixed Website contract. Extend Eventun or add purpose-built Website read endpoints when a page requires different authoritative aggregation, bounded series, visibility semantics, or response composition. Ordinary directory filtering and pagination controls do not by themselves justify a new server contract.
 
 ### Website-facing read contracts
 
@@ -904,6 +921,16 @@ Existing game-client endpoints are reusable inputs, not a fixed Website contract
 - include explicit metric meaning, unit, scope, time window, freshness/as-of context, pagination, and null/no-data behavior where applicable;
 - preserve source-system visibility and permission rules on the server rather than filtering sensitive records only in the browser;
 - keep implementation and validation details that could assist event forgery or abuse out of public response metadata and UI copy.
+
+### Collection loading and pagination
+
+- Default every initial collection experience to one compact, cacheable response followed by client-side search, filtering, sorting, and display pagination.
+- This applies initially to gauntlets, courses, players, teams, and collection-style history modules; deliberately scoped recent/top-N data remains valid when it is the actual product view rather than disguised data pagination.
+- UI pagination, progressive reveal, infinite-style loading, and virtualization are presentation alternatives over the locally held collection; they do not require server pagination.
+- Exclude unneeded nested detail from collection responses so complete collection loading does not mean loading every entity's full page payload.
+- Do not require a server-side cursor or page contract in the initial release, including for histories.
+- Introduce server pagination only after measured database query time, response transfer, parse/hydration cost, memory, or interaction latency becomes material; histories and feeds are likely to reach that point first.
+- Do not use a fixed entity-count threshold as a substitute for measurements, and do not introduce server pagination solely for hypothetical future scale.
 
 ### Accountun
 
@@ -1033,7 +1060,7 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 
 - richer player overview
 - course stats
-- gauntlet results
+- structure-aware gauntlet history
 - trophies and medals
 - rank-history model
 

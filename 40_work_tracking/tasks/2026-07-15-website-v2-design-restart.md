@@ -38,7 +38,7 @@ Resume Website V2 design work, validate the technical and product direction one 
 - `ascent-website` already owns the actively maintained marketing homepage, about, brand, tournament, and event content.
 - `ascentun` remains the reference for player, team, gauntlet, sponsor, and authentication behavior; its prize/reward behavior is explicitly outside Website V2 reference parity.
 - Eventun remains the primary website data service; Website V2 does not need to become a new domain backend.
-- Existing game-client API shapes are reusable but not frozen Website contracts. New or revised Website-oriented reads are allowed where page aggregation, chart series, filtering, pagination, visibility, or response composition differ.
+- Existing game-client API shapes are reusable but not frozen Website contracts. New or revised Website-oriented reads are allowed where authoritative aggregation, chart series, visibility, or response composition differ; ordinary directory filtering and UI pagination remain client-side by default.
 - Eventun F14 implements incremental pilot career, pilot-course career, course-record, leaderboard, match-history, and gauntlet serving paths in the current worktree. These are not production-ready until F14 review and the F15 historical backfill and cutover complete.
 - Fact-backed team statistics, team leaderboards, and event-time membership attribution are not implemented by F14. They remain planned Eventun T03 work after the F15/T00 checkpoint and are a backend dependency for credible launch team analytics.
 - Ascent Rivals uses AGS Shared Cloud, which exposes a subset of Private Cloud features and configuration. Every AccelByte-dependent Website design must be verified against current Shared Cloud documentation, the actual namespace, and a non-destructive smoke test.
@@ -148,7 +148,7 @@ Recorded visual foundation:
 - [x] Include gauntlets, players, teams, courses, and grouped public entity search in the phase-one route model; keep the Eventun sponsor registry out of public routes and public search.
 - [x] Include Steam authentication, session handling, logout, and personalized overlays in the initial release.
 - [x] Make better pilot, course, and team statistics part of the initial release definition, using visualizations only where they communicate a relationship or trend more clearly than a table.
-- [x] Keep exact rankings, rosters, match history, and other scan-and-compare data in tables where tables are the clearer representation.
+- [x] Keep exact rankings, rosters, Recent Races, and other scan-and-compare data in tables where tables are the clearer representation.
 - [x] Remove wallet, token-gating, and every Accountun-related prize/reward dependency, presentation module, action, and legacy link from initial Website V2 acceptance criteria.
 - [x] Confirm that all non-blockchain operational workflows also move at launch: team creation/management, gauntlet creation/editing/deletion, sponsor administration, and media upload.
 - [x] Approve the detailed parity and analytics matrix in `30_designs/ascent-rivals/website/initial-release-scope.md`.
@@ -156,7 +156,9 @@ Recorded visual foundation:
 - [x] Lead the pilot profile with identity and career summary rather than recent gauntlet results.
 - [x] Use Matches, Podiums, Podium Rate, and Average Circuit Points as the primary career-summary measures, with Results, Objectives, Combat, Activity, and Economy detail groups.
 - [x] Keep career-summary visualization optional; permit a compact podium-share graphic only when paired with exact counts and do not fabricate trends from aggregate totals.
-- [x] Use per-match circuit points as the first recent-performance visualization, default the chart to the dominant Ascent Mode cohort, allow optional course filtering, and show a rolling trend only for a sufficient comparable sample.
+- [x] Use an exact newest-first `Recent Races` table for at most 100 public-course multiplayer matches; optionally show discrete raw Circuit Points for recent Ascent Mode matches, allow local course filtering, and do not claim or draw an improvement trend without a backend-derived comparable value or sufficient rules context.
+- [x] Use a structure-aware player `Gauntlet History`: active public participation first, completed entries by latest actual player activity, and distinct qualifier, accepted-stage, and general-participation summaries without an aggregate cross-gauntlet chart.
+- [x] Exclude gauntlet invitations, eligibility, admission, group assignment, and status-only rows from another player's public history; never present qualifier rank as a tournament finish or infer `Final` from stage order.
 - [x] Use an exact sortable course table plus an optional normalized gap-to-record view for one explicit leaderboard category; do not compare raw times across courses or imply percentile.
 - [x] Use `/courses` for discovery and `/courses/[code]` for canonical shareable detail, with leaderboard category preserved in query state.
 - [x] Default course leaderboards to `Race Finish`, followed by `Race Lap`, `Time Trial Finish`, `Time Trial Lap`, and loadout-challenge variants; keep source validation internal and do not use `Official`, `Server`, `Client`, or authority language in public labels.
@@ -208,7 +210,14 @@ Recorded visual foundation:
 - [x] Reconcile the `/gauntlets` discovery specification with current gauntlet and calendar contracts: unique entity directory, repeated-occurrence Schedule agenda, occurrence-based inclusion, nearest-event ordering, and Past history scope.
 - [x] Constrain gauntlet media composition: fixed media bays for ordinary directory cards, opaque information surfaces, image-light Schedule rows, and full-bleed `Background` treatment only for detail or a deliberately featured module with contrast review.
 - [x] Preserve Eventun's all-public gauntlet model: successful creation publishes immediately, Past remains public and searchable, and Website V2 does not infer hidden state from timing or game-client list omission.
-- [ ] Add or revise a bounded Website gauntlet-discovery projection with server-derived active/next/latest occurrence data, pagination, and optional explicit runtime/result state.
+- [ ] Decide whether joining current reads is sufficient or a compact unpaginated Website gauntlet-discovery projection is worthwhile; either approach must provide server-derived active/next/latest occurrence data and may later include explicit runtime/result state.
+- [x] Define `/players` as a public pilot registry: include every real usable identity, exclude bot/test/internal records only through explicit classification, default to alphabetical local search/sort, and use a compact unpaginated directory collection with only card/search fields.
+- [x] Keep player-directory team identity quiet: `[TAG] Team Name` where space permits, tag-only on compact cards, `Independent` when unaffiliated, no second team avatar, and only restrained accessible team-color accents.
+- [x] Exclude time trials, Career Cup, and other single-player activity from profile `Recent Races`; keep their retained best lap and best finish records on course/career surfaces.
+- [x] Use the newest 100 races as the initial recent-history bound and treat Eventun seasons as the later grouping/boundary; defer exact season navigation and unseasoned-history treatment until the implemented F16A contract is reviewed.
+- [ ] Preserve missing-versus-zero match-stat semantics through generated Go, gateway/TypeScript, and selected Unreal models; prefer protobuf optional fields when verified, otherwise add explicit availability metadata, and never use zero-as-missing where zero/false is valid.
+- [ ] Filter public Recent Races to published/archived courses and strip client version, replay key, session id, match id, and other unrendered implementation fields before the payload reaches the browser.
+- [ ] Add a compact Website-oriented player-gauntlet-history read with presentation metadata, lifecycle state, latest real activity time, qualifier facts, accepted stage placements, aggregate fallback facts, and explicit missing-value semantics; avoid per-gauntlet browser requests.
 - [x] Update the Steam authentication flow specification for the confirmed initial scope.
 - [x] Record AGS Shared Cloud as a cross-project platform constraint and identify the ambiguity between AccelByte's unsupported Shared Cloud web-login classification and Ascentun's custom `steamopenid` V4 platform-token flow.
 - [ ] Smoke-test the current Ascentun Steam OpenID exchange, refresh, cancellation, invalid/replayed assertion, linking, and Login Queue behavior against the intended Shared Cloud environment.
@@ -226,6 +235,7 @@ Recorded visual foundation:
 
 ### 7. Non-Functional Baseline
 
+- [x] Default every initial collection experience to one compact fetch with client-side search, filtering, sorting, and display pagination/progressive reveal; add server pagination only after measured query, transfer, parsing/hydration, memory, or interaction costs justify it.
 - [ ] Define rendering and caching rules for marketing, public entity, and authenticated pages.
 - [ ] Define accessibility, responsive, image, font, motion, and performance requirements.
 - [ ] Define SEO metadata, structured data, canonical URL, redirect, and social-sharing rules.
