@@ -3,11 +3,10 @@
 Date: 2026-04-21
 Status: Draft
 
-Foundation supersession (2026-07-13): the `token_gated` membership mode and every wallet/token eligibility flow in this draft are retired. Current team membership modes are `open`, `request`, and `invite`; existing gated teams transition to invite-only until a provider-neutral asset-source contract is separately designed.
+Scope correction (2026-07-17): Website V2 targets the greenfield Next.js/React application and supports only `open`, `request`, and `invite` membership modes. Legacy token-gated and wallet-eligibility behavior is retired and excluded.
 
 ## Related
 - [[authentication]]
-- [[wallet-linking]]
 - [[../unified-design]]
 - [[../information-architecture]]
 - [[../design-doc-roadmap]]
@@ -34,7 +33,6 @@ This note covers:
 - leave team
 - manage team
 - update team identity and membership mode
-- token-gated team eligibility
 - roster management
 - ownership transfer
 - disband team
@@ -43,11 +41,11 @@ This is a combined domain flow spec because team creation, membership, invites, 
 
 ## Implementation Target
 
-The new implementation target is a separate Nuxt/Vue/Reka UI project.
+The implementation target is the greenfield Next.js/React Website V2 application.
 
 The current `ascentun` app is a behavior and API reference only.
 
-Do not copy Next.js/shadcn implementation details directly unless the behavior still makes sense in the new Nuxt site.
+Do not copy legacy component or transport details directly unless the behavior still matches the implemented Eventun team contracts and approved Website V2 design.
 
 ## Product Decisions
 
@@ -61,7 +59,6 @@ V1 team lifecycle should support:
 - creating a team when eligible
 - joining or requesting to join from the team profile
 - invite-only teams through explicit invite acceptance
-- token-gated teams through wallet-aware eligibility
 - manager and owner actions on the team profile or a team-scoped manage route
 
 Private team state should be layered into the team experience, not moved into a separate product shell.
@@ -84,8 +81,8 @@ Current reference behavior:
 - admins can create a team for another eligible player
 - non-admin users create a team for themselves
 - team creation currently redirects to the manage view after success
-- public team detail shows login prompt, wallet prompt, join/request button, leave button, and manage button depending on user state
-- `open`, `request`, `invite`, and `token_gated` membership modes exist
+- public team detail shows login, join/request, leave, and manage actions depending on user state
+- `open`, `request`, and `invite` are the supported Website V2 membership modes; the legacy token-gated mode is excluded
 - self-join, join request, manager invite, and request acceptance all currently flow through the same backend add-member endpoint
 - managers can see pending invites and join requests
 - managers can cancel invites
@@ -97,13 +94,10 @@ Current reference gaps:
 
 - there is no clear player-facing invite inbox or invite acceptance UI in the current app
 - there is no clear player-facing cancel-request UI after a join request is sent
-- token-gated teams currently mix two concepts:
-  - management copy says eligibility is based on linked wallets
-  - public join button checks assets from the currently connected browser wallet
 
-The new Nuxt project should resolve those gaps explicitly instead of copying them.
+Website V2 should resolve the invite and request gaps explicitly instead of copying them.
 
-## Role Model
+## Ownership, Title, and Capability Model
 
 Current designation model:
 
@@ -112,12 +106,18 @@ Current designation model:
 - `Vector`
 - `Echo`
 
-Operational permissions:
+Target-model caution:
 
-- owner can manage all team settings and members, transfer ownership, and disband
-- manager can manage lower-designation members and team settings allowed by backend policy
-- standard members can leave the team but not manage it
-- admin can override most team management permissions
+- these numeric designations describe the current reference only;
+- the replacement team model separates explicit ownership, public title, effective management capability, and competition rank;
+- Website controls may present a title, but Eventun capabilities and ownership authorize actions.
+
+Target operational rules:
+
+- explicit owner identity controls ownership transfer and disband unless the reviewed Eventun policy deliberately permits an administrator override;
+- effective capabilities control invitations, request approval, roster changes, metadata, media, membership mode, titles, and competition rank;
+- standard members can leave the team but cannot infer management authority from their public title;
+- the authenticated action-state and management reads return the allowed actions needed by Website V2, and Eventun authorizes every mutation again.
 
 ## Membership Modes
 
@@ -126,18 +126,16 @@ V1 membership modes:
 - `open`
 - `request`
 - `invite`
-- `token_gated`
 
 Meaning:
 
 - `open`: eligible player joins immediately
 - `request`: eligible player submits a join request; manager or owner accepts or denies
 - `invite`: team invites a player; player must accept or decline
-- `token_gated`: player must satisfy token gate eligibility before joining
 
 ## Working Route Direction
 
-Preferred Nuxt route set:
+Preferred Website V2 route set:
 
 - `/teams`
 - `/teams/create`
@@ -169,12 +167,12 @@ Secondary entry points:
 
 ### Eligibility
 
-Desired V1 rule:
+Initial target rule:
 
 - logged-in player can create a team only when not already on a team
-- admin can create a team regardless of team membership
+- the authenticated creator becomes the explicit owner
 
-Current reference rule matches this.
+The current Ascentun reference also lets an administrator create a team for another eligible player. T01 instead derives ownership from the authenticated creator. Website V2 must not preserve administrator create-on-behalf unless the reviewed T01/T02 contract deliberately retains it.
 
 ### Default behavior
 
@@ -183,10 +181,9 @@ Non-admin creator:
 - owner is fixed to the logged-in player
 - default membership mode is `open`
 
-Admin creator:
+Administrator create-on-behalf:
 
-- can choose an eligible player without a team as owner
-- can create on behalf of that player
+- excluded from the initial Website form unless the implemented Eventun contract explicitly supports it
 
 ### User flow
 
@@ -198,9 +195,9 @@ Admin creator:
    - membership mode
    - primary and secondary colors
    - media
-   - owner, if admin
+   - owner only if an approved administrator create-on-behalf contract exists
 4. Site validates the form.
-5. Media uploads resolve before final create submission.
+5. Media uploads resolve before final create submission through authorized ten-minute upload intents, with at most 10 JPEG/PNG/WebP images of at most 10 MB each per submission.
 6. Site sends create request.
 7. Backend creates the team.
 8. Session refresh updates current team state if needed.
@@ -222,7 +219,7 @@ Error states:
 
 - unauthorized
 - already on a team
-- chosen owner no longer eligible
+- chosen owner no longer eligible, only if administrator create-on-behalf is later approved
 - name or tag conflict
 - media upload failure
 - backend validation failure
@@ -238,7 +235,7 @@ The team profile should compute action state from:
 - membership mode
 - whether the user has a pending join request
 - whether the user has a pending invite
-- whether the user satisfies token-gate requirements
+- the explicit allowed actions and effective capabilities returned by Eventun
 
 Recommended public-state matrix:
 
@@ -259,10 +256,8 @@ Recommended public-state matrix:
 - logged in, no team, `invite` team:
   - if invite exists: notification routes to the team page, where `Accept Invite` and `Decline Invite` are shown
   - if no invite exists: informational `Invite Only`
-- logged in, no team, `token_gated` team:
-  - if eligibility satisfied: `Join Team`
-  - if wallet link required: `Connect Wallet`
-  - if wrong wallet/token state: `Wallet does not satisfy gate`
+
+The browser renders the action state returned for the authenticated player. It must not reproduce Eventun's membership transition or capability rules from these presentation examples.
 
 ## Open Join Flow
 
@@ -431,35 +426,6 @@ Context rule:
 - authorized team members should not need a separate global invite-admin screen to cancel invites
 - the `Invites` tab or equivalent team-page management section is the right place for this action
 
-## Token-Gated Join Flow
-
-Desired V1 source of truth:
-
-- token-gated eligibility should be based on linked wallets recognized by Eventun
-
-Optional UX enhancement:
-
-- currently connected browser wallet can be used for preflight messaging or token preview
-- it should not replace server-side eligibility checks
-
-Desired user flow:
-
-1. Logged-in player opens a token-gated team profile.
-2. Team page explains the gate and required token collection.
-3. If user has no linked eligible wallet, show `Connect Wallet`.
-4. User links a wallet through [[wallet-linking]].
-5. Site returns user to the team page.
-6. Team page reevaluates eligibility.
-7. If eligible, player can `Join Team`.
-8. Backend confirms eligibility and adds player.
-
-Current reference gap:
-
-- current public join button checks policy IDs from the locally connected browser wallet
-- management copy says linked wallets determine eligibility
-
-Nuxt V1 should resolve this by treating linked-wallet eligibility as authoritative.
-
 ## Leave Team Flow
 
 1. Logged-in player opens their own team profile.
@@ -494,7 +460,7 @@ Recommended V1 management zones:
 
 - team identity
 - team media
-- membership mode and gate tokens
+- membership mode
 - roster
 - invites
 - requests
@@ -520,39 +486,38 @@ Mutation behavior:
 - refresh team view
 - refresh session if current team changed
 
-## Membership Mode and Gate Token Management Flow
+## Membership Mode Management Flow
 
 Manager, owner, or admin can:
 
-- switch between `open`, `request`, `invite`, and `token_gated`
-- add gate token policies
-- remove gate token policies
+- switch between `open`, `request`, and `invite` when their effective capability permits it
 
 Desired V1 behavior:
 
 - changing mode updates the public team page immediately
-- token-gated teams should explain that players must satisfy at least one required token policy
-- if gate token list is empty while mode is `token_gated`, show setup guidance instead of a broken gate
-
-Current reference behavior:
-
-- token list can be selected from known tokens or entered manually by policy id
+- changing mode transactionally consumes or cancels incompatible pending state according to Eventun policy
+- the response returns an explicit result instead of requiring the browser to infer what changed
 
 ## Roster Management Flow
 
 Manager, owner, or admin opens roster tab.
 
-Allowed actions on lower-designation players:
+Allowed actions when returned by Eventun capability checks:
 
-- promote
-- demote
-- set or clear rank
+- assign or remove an approved public title
+- assign or clear competition rank
+- assign or remove delegated capabilities where permitted
 - remove from team
 
-Permission rule from current reference:
+Legacy reference:
 
 - manager can only manage players with a numerically lower privilege than their own designation
-- admin can override this
+
+Website V2 target:
+
+- do not implement this numeric comparison in the browser;
+- render only actions allowed by Eventun's effective-capability response;
+- Eventun enforces capability delegation boundaries and protected owner actions.
 
 Desired V1 UX:
 
@@ -561,23 +526,20 @@ Desired V1 UX:
 
 ## Ownership Transfer Flow
 
-1. Owner or admin opens manage view.
+1. Owner or an administrator explicitly authorized by Eventun opens manage view.
 2. Team has more than one member.
 3. User clicks `Transfer Ownership`.
 4. Site opens member picker excluding current owner.
 5. User selects successor.
 6. Site shows confirmation.
-7. Backend transfers ownership and demotes prior owner appropriately.
+7. Backend transfers ownership and updates the prior owner's title/capabilities according to the implemented policy.
 8. Team and session state refresh.
 
-Current reference behavior:
-
-- payload uses `successorId`
-- prior owner is reassigned designation `1`
+Current request field names and legacy designation changes are reference behavior only; the T01/T02 replacement contract controls the final mutation and result.
 
 ## Disband Team Flow
 
-1. Owner or admin opens manage view.
+1. Owner or an administrator explicitly authorized by Eventun opens manage view.
 2. User clicks `Disband Team`.
 3. Site shows destructive confirmation.
 4. User confirms.
@@ -608,7 +570,7 @@ Actions that should refresh session:
 - leaving team
 - ownership transfer affecting current user
 - disband affecting current user
-- membership mode or gate-token edits when session exposes current-team fields that changed
+- membership-mode edits when current-player state exposes team fields that changed
 
 ## Public Messaging Guidance
 
@@ -622,7 +584,6 @@ Good copy:
 - `Invite Only`
 - `Team management`
 - `Transfer ownership`
-- `Token-gated crew`
 
 Avoid:
 
@@ -636,14 +597,13 @@ Avoid:
 - destructive actions require clear confirmation dialogs
 - pending states must be visible as text, not color alone
 - roster-management controls must have accessible labels
-- token-gate explanations must be readable without relying on token imagery
 - mobile layouts must keep primary team actions visible without forcing horizontal scroll
 
 ## Acceptance Criteria
 
 - eligible logged-in players can create a team
 - non-admin users cannot create a second team while already on a team
-- admins can create a team on behalf of an eligible player
+- administrator create-on-behalf is absent unless the reviewed T01/T02 contract deliberately supports it
 - team creation routes to the new team's management context
 - open teams can be joined directly by eligible players
 - request-mode teams create a pending request state
@@ -655,19 +615,13 @@ Avoid:
 - managers, owners, and admins can cancel pending invites from the team management context
 - non-owner members can leave their team
 - owners cannot leave without transfer or disband handling
-- manage route is limited to manager, owner, or admin
-- managers can manage lower-designation members only
-- owners or admins can transfer ownership
-- owners or admins can disband the team with confirmation
-- token-gated teams rely on linked-wallet eligibility as the authoritative rule
+- manage route is limited to users whose Eventun action state allows management
+- authorized managers can perform only the member actions returned by Eventun capabilities
+- owners, or administrators explicitly authorized by Eventun, can transfer ownership
+- owners, or administrators explicitly authorized by Eventun, can disband the team with confirmation
 - team and session state refresh after mutations
 
 ## Open Questions
 
-- Should invite notification appear in the avatar menu, homepage personal-status area, `/teams`, or more than one of those surfaces?
-- Should the team page action area show invite-specific controls above the standard membership-mode copy when a pending invite exists?
-- Should invite-only teams be allowed in V1 if player-side invite acceptance is not ready?
 - Should managers be allowed to edit all team identity settings, or should some remain owner-only?
-- Should token-gated teams require linked-wallet eligibility only, or linked wallet plus current wallet connection for better UX?
 - Should players on another team see a clear `Leave current team first` message on joinable teams?
-- Should `/teams/create` remain a separate route, or can creation be a modal/sheet launched from `/teams`?

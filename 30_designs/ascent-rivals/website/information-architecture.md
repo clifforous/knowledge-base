@@ -48,7 +48,7 @@ The stable semantic order is:
 7. global search;
 8. Steam login or the authenticated account menu.
 
-The active state, density, and surrounding shell treatment may adapt to marketing or data-heavy pages, but route names and ordering must not change by context. `About` and `Brand` are secondary destinations available through `More` and the footer. Sponsor administration is available only through the authorized account/admin menu.
+The active state, density, and surrounding shell treatment may adapt to marketing or data-heavy pages, but route names and ordering must not change by context. `About` and `Brand` are secondary destinations available through `More` and the footer. Sponsor administration belongs to the Eventun Extend App and has no Website V2 route.
 
 Page-local subnavigation should live inside pages instead of relying on a persistent global side navigation.
 
@@ -151,7 +151,7 @@ Priority entity groups:
 - planets
 - ship parts
 
-Permission-filtered administrative search may add sponsors for administrators. Sponsor results are not part of public search or general creator search.
+A later permission-filtered administrative group may add sponsors for administrators through a separate authenticated response. Sponsor results are not part of public search or general creator search.
 
 ## Responsive Top-Bar Behavior
 
@@ -236,7 +236,7 @@ Guardrail:
 | `/courses` | course directory, category leaderboards, and pilot placement | competition |
 | `/courses/[code]` | shareable course briefing, selected category leaderboard, records, and pilot placement | competition |
 
-## Phase 1 Preserved Authenticated/Admin Routes
+## Phase 1 Preserved Authenticated Routes
 
 Exact route naming can change during implementation, but the capability must remain.
 
@@ -251,8 +251,6 @@ Authentication flow:
 | team manage | manage roster, invites, requests, media, roles |
 | gauntlet create | create gauntlet when authorized |
 | gauntlet edit | edit gauntlet when authorized |
-| sponsor registry/detail | administrator-only sponsor lookup, record detail, and maintenance context |
-| sponsor admin | create/edit sponsors for admins |
 
 Accountun-related prize and reward data is entirely deferred. Website V2 does not expose or administer data-driven prize pools, funding, claims, payouts, wallet requirements, or legacy workflows. Verified prize copy may still appear as manually maintained promotional content on a related `/events/[slug]` page.
 
@@ -314,7 +312,7 @@ Content disposition summary:
 - Preserve after verification: homepage content categories, studio story and mission, current team, verified recognition, logo downloads and essential usage rules, historical event facts, approved event media, and useful recording links.
 - Rewrite or refresh: homepage copy and media, brand-system guidance, About copy, event descriptions, metadata, and any time-sensitive instructions.
 - Move: event appearances and recaps from `/about` to `/events`; event-specific videos to their event detail when useful.
-- Redirect: current `/tournaments` URLs to their `/events` equivalents.
+- Retire: current `/tournaments` URLs after their content moves to the canonical `/events` routes; no legacy redirect layer is required initially.
 - Retire: the current homepage implementation and layout, unverified claims or partner marks, obsolete one-off navigation links, duplicate `/game` content, and a standalone vlog archive on `/about`.
 
 Terminology guidance:
@@ -323,17 +321,16 @@ Terminology guidance:
 - `Events` can include manually maintained LANs, physical venue appearances, historical tournaments, showcases, and recorded competitions.
 - A historical event can link to a gauntlet if one exists, but it does not have to be a gauntlet.
 
-Canonical URL and redirect decision:
+Canonical URL and legacy-route decision:
 
 - `/`, `/about`, `/brand`, `/events`, and `/events/[slug]` are canonical marketing routes for the initial Website V2 release.
 - `/events` is the canonical editorial event index.
 - `/events/[slug]` is the canonical route for manually authored event details.
 - `/gauntlets` and `/gauntlets/[id]` remain reserved for Eventun-backed competition data.
-- Permanently redirect `/tournaments` to `/events` at Website V2 cutover.
-- Permanently redirect `/tournaments/msi-grand-prix-2026` to `/events/msi-grand-prix-2026`.
+- Retire `/tournaments` and `/tournaments/msi-grand-prix-2026` at Website V2 cutover rather than adding redirects for the current negligible external traffic.
 - Do not include legacy prize, reward, funding, claim, payout, or wallet links on Website V2 event pages.
 - Each marketing route must define a unique title, description, canonical URL, social image, and social-image alt text alongside its route content.
-- Historical event pages retain stable slugs when practical; any changed published slug requires a permanent redirect.
+- Historical event pages retain stable slugs when practical; changed slugs update repository content and internal links, with an exact redirect added later only if measured inbound use justifies it.
 
 ## Code-Authored Content Convention
 
@@ -480,10 +477,11 @@ Page-local sections:
 - Course Stats
 - Recent Races
 - Gauntlets, containing the `Gauntlet History` section
-- Trophies and Medals
-- Rank History
+- Achievements & Medals
 
 `Gauntlet History` includes active public participation before completed history, then sorts by the pilot's latest real activity. It adapts each entry to qualifier, accepted stage, or general participation facts; it does not expose invitations or other private participation state and does not label qualifier rank as a tournament finish.
+
+`Achievements & Medals` shows completed public Eventun achievements/masteries and known gameplay-medal totals. It does not expose active or incomplete progress, challenges, raw progression counters, reward data, or inferred trophies. A later self-only progression destination requires a separate approval.
 
 Personalized own-profile overlays:
 
@@ -492,8 +490,10 @@ Personalized own-profile overlays:
 
 Public privacy guardrail:
 
-- public rank tier is allowed
-- exact ELO remains private
+- the initial profile has no generic global rank tier or rank history;
+- exact AccelByte MMR is omitted, including on the current player's profile;
+- exact course leaderboard positions and gauntlet standings remain public in their scoped contexts;
+- any future named division is Eventun-owned and requires a separate stateful rank-system design rather than a Website mapping.
 - Recent Races contains only published/archived-course multiplayer results and does not expose hidden course codes, client versions, replay keys, or raw match/session identifiers.
 - Time trials, Career Cup, and other single-player activity are not presented as recent-race history; retained best lap and best finish records remain on course/career surfaces.
 
@@ -538,7 +538,7 @@ Personalized logged-in overlays:
 Public privacy guardrail:
 
 - public leaderboard time/rank is allowed
-- exact ELO remains private and unrelated to course leaderboard display
+- internal AccelByte MMR is absent from and unrelated to course leaderboard display
 
 ## Teams
 
@@ -594,17 +594,11 @@ Management guardrail:
 
 ## Sponsors
 
-Page spec:
+Sponsor administration handoff:
 
 - [[pages/sponsors-index]]
 
-Page-local sections:
-
-- administrator-only sponsor list and search;
-- administrator-only sponsor detail;
-- approved media, colors, description, and social/website links;
-- gauntlet relationship context where available;
-- mutation controls.
+Website V2 has no sponsor registry, detail, create, edit, delete, or sponsor-media administration pages. Those workflows move to the Eventun Extend App before cutover.
 
 Gauntlet-authoring boundary:
 
@@ -617,15 +611,13 @@ Other configured media purposes receive generic labeled upload and thumbnail han
 
 Terminology boundary:
 
-- `/sponsors` contains Eventun-backed competition sponsors and is limited to administrators;
+- `Sponsor` remains the Eventun-backed competition entity, but its registry and administration exist only in the Eventun Extend App;
 - public gauntlet pages may show an approved sponsor name or mark in that gauntlet's context but do not link to the registry or expose relationship tier;
 - code-authored marketing content may use `Partner` for a broader verified relationship that does not imply gauntlet sponsorship;
 - do not introduce `/partners` until there is enough distinct content and ownership to justify a separate route.
 
 Permissioned actions:
 
-- create/edit/delete sponsor for admins
-- update sponsor media, colors, description, and social links
 - upload gauntlet-owned billboard media for gauntlet creators
 - optionally select an existing sponsor through a form-scoped advanced control without granting registry access
 
@@ -637,24 +629,23 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 |---|---|---|---|
 | `/` | marketing homepage with game proposition, conversion CTA, feature/media proof, and competition bridge | same, with optional compact gauntlet, career, team, or result context | same as logged-in; no global admin controls |
 | `/gauntlets` | unique current/upcoming gauntlets, Past scope, and repeated-occurrence Schedule agenda | same layout plus personalized participation context when available | `Create Gauntlet` for creator/admin |
-| `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, and factual public result context; no Accountun-driven prize/reward data | same plus personal rank/qualification/eligibility context | ordinary non-prize edit/delete actions; runtime stage tooling remains a post-bracket hosting decision |
+| `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, and factual public result context; no Accountun-driven prize/reward data | same plus personal rank/qualification/eligibility context | ordinary non-prize edit/delete actions; administrator-only bracket and runtime-repair tooling remains in the Eventun Extend App UI |
 | `/players` | player directory and search/filter | same | same, possible admin-only moderation/actions later |
-| `/players/[id]` | public profile, course stats, course placements, Recent Races, structure-aware Gauntlet History, trophies, rank tier | own profile may show team/account actions and own AccelByte medals/badges if available | admin-only actions later if needed |
+| `/players/[id]` | public profile, course stats, course placements, Recent Races, structure-aware Gauntlet History, completed public achievements/masteries, and known gameplay-medal totals; no generic rank tier/history | own profile may show team/account actions; exact MMR and active progression remain omitted | admin-only actions later if needed |
 | `/courses` | production-ready course selector, explicit archived filter, course metadata, selected leaderboard, player profile links | same plus personal placement strip when available | no V1 admin actions unless course administration is added later |
 | `/courses/[code]` | public or explicitly archived course briefing, selected category records and leaderboard, pilot links; unreleased courses are not exposed | same plus personal placement when available | no initial admin actions unless course administration is later approved |
 | `/teams` | team directory, search/filter, membership-mode context | same plus create team when eligible and `My Team` context if useful | admin may see broader moderation affordances later |
 | `/teams/[id]` | public team briefing, roster, membership mode, and fact-backed team analytics when available | join/request/leave actions based on membership and current team state | manage roster, invites, requests, media, colors, membership mode, ownership/disband for owner/manager/admin |
 | `/teams/[id]/manage` | not publicly navigable | unavailable unless authorized for the selected team | metadata, media, roster roles, invitations, join requests, ownership transfer, and disbanding |
-| `/sponsors` | unavailable; approved sponsor branding may appear within a public gauntlet | unavailable unless the account is an administrator | administrators can browse, create, edit, delete, and manage media/colors/social links |
-| `/sponsors/[id]` | unavailable | unavailable unless the account is an administrator | administrators can inspect, edit, and delete the record |
 | login | Steam login entry | redirect or show already logged-in state | same |
 | team management | login required | only visible if authorized by team role | admin override if supported |
 | gauntlet management | login required | only visible to creator role where applicable | admin override |
-| sponsor administration | login required | hidden unless admin | full sponsor CRUD |
 
 ## Search Architecture
 
 Search should group results by entity type.
+
+Initial delivery uses the persistent top-bar `SearchCommand` as an accessible dialog or mobile sheet rather than adding a separate `/search` destination. The catalog is lazy-loaded on first search interaction, searched locally, and cached in browser query state with bounded staleness and mutation invalidation. Each group can route to its normal directory with `q` preserved for the complete local result set.
 
 Initial groups:
 
@@ -663,7 +654,7 @@ Initial groups:
 - Teams
 - Courses
 
-Authorized administrative search adds `Sponsors` for administrators. Public search responses and general creator search must not include sponsor registry records; a gauntlet form may provide a narrower relationship picker.
+Sponsor discovery and administration remain in the Eventun Extend App and do not become a Website global-search group. Public search responses and general creator search never include sponsor registry records. A gauntlet form may provide a narrower authorized relationship picker.
 
 Future groups:
 

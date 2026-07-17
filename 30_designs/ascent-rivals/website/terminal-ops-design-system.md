@@ -586,7 +586,7 @@ Approved initial items:
 - Admin / Operations, if authorized
 - Sign Out
 
-`My Career` links to the canonical authenticated pilot profile. `My Team` links to the current team or the personalized `/teams` state when the player has no team. Sponsor administration appears under `Admin / Operations` only for authorized administrators and only when a valid destination exists. Keep team/gauntlet creation and entity editing on their relevant pages. Visually separate `Sign Out` from navigation entries. The menu should use accessible menu primitives and behavior, including an accessible pending-status label rather than a visual-only badge.
+`My Career` links to the canonical authenticated pilot profile. `My Team` links to the current team or the personalized `/teams` state when the player has no team. `Admin / Operations` appears only when an approved Website or external operations destination exists; it does not imply a Website sponsor route. Keep team/gauntlet creation and entity editing on their relevant pages. Visually separate `Sign Out` from navigation entries. The menu should use accessible menu primitives and behavior, including an accessible pending-status label rather than a visual-only badge.
 
 ## Core Components
 
@@ -652,7 +652,7 @@ Initial groups:
 - Teams
 - Courses
 
-Permissioned administrative search may add `Sponsors` for administrators.
+Sponsors do not enter Website global search. Sponsor discovery and administration belong to the Eventun Extend App; gauntlet authoring uses a separate form-scoped selector when needed.
 
 Future groups:
 
@@ -946,7 +946,7 @@ Rules:
 
 - do not make the profile only a leaderboard/rank page
 - include optional strength modules only when they can be derived cleanly from best lap or best finish data
-- show public rank tier but not exact private ELO
+- do not show a generic global rank tier, rank history, or exact MMR until a separate Eventun public-division design is approved
 - keep match history deeper in the page or behind a section
 - expose course stats clearly
 

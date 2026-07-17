@@ -8,6 +8,7 @@ Membership direction confirmed: 2026-07-15. The stable public concepts are `Open
 ## Related
 - [[../unified-design]]
 - [[../information-architecture]]
+- [[../route-api-matrix]]
 - [[../terminal-ops-design-system]]
 - [[../tone-and-voice]]
 - [[team-profile]]
@@ -40,7 +41,7 @@ Current app route equivalent:
 Final route direction:
 
 - use plural route groups in Website V2
-- preserve redirects from old singular routes if public links already exist
+- allow old singular routes to retire without redirects unless later measured inbound use justifies an exact mapping
 
 ## Audience
 
@@ -85,13 +86,19 @@ Source:
 
 ### Team player summary
 
-Available per team player:
+Available per team player in the legacy reference response:
 
 - player id
 - name
 - avatar URL
 - designation
 - rank
+
+Replacement-contract direction:
+
+- T01/T02 separates public title, effective capability, and competition rank;
+- directory cards do not need these roster-management fields;
+- a future roster preview uses only approved public presentation fields and never exposes capability data.
 
 Source:
 

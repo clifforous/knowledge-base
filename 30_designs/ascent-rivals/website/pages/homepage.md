@@ -314,7 +314,7 @@ If Section 4 already uses a code-authored event as its fallback, avoid repeating
 
 - `Sponsor` refers to an Eventun-backed gauntlet relationship and appears only in its approved gauntlet context;
 - `Partner` refers to a broader manually verified marketing relationship;
-- the homepage must not expose permissioned sponsor registry pages, operational tier, or sponsor-management controls.
+- the homepage must not expose Eventun Extend App sponsor operations, operational tier, or sponsor-management controls.
 
 ## 7. Final Conversion and Next Actions
 

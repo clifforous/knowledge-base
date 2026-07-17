@@ -5,6 +5,8 @@ Status: Approved career and recent-races model; visual design and contract imple
 Career-summary priority confirmed: 2026-07-15
 Recent-races review confirmed: 2026-07-16
 Gauntlet-history review confirmed: 2026-07-16
+Recognition review confirmed: 2026-07-16
+Global-rank deferral confirmed: 2026-07-16
 
 ## Related
 - [[../unified-design]]
@@ -262,8 +264,9 @@ V1 caution:
 
 Available:
 
-- public player medal totals, including medal name, augment relationship, count, and dimensions;
-- player progression goals, counters, and completions.
+- public player gameplay-medal totals, including medal code, augment relationship, count, and raw dimensions;
+- public progression goals and completed achievement/mastery records;
+- broader progression counters and completion-source detail that must not be forwarded as a public Website presentation contract.
 
 Sources:
 
@@ -272,15 +275,20 @@ Sources:
 
 Product boundary:
 
-- Eventun owns official gameplay medal totals and progression state exposed through these reads;
+- Eventun owns official gameplay-medal totals and progression state exposed through these reads;
 - AccelByte-only badges, trophies, or platform recognition remain separate unless explicitly migrated;
-- medals are valid supporting recognition, but they do not replace the career summary as the profile lead.
+- medals and completed public achievements/masteries are valid supporting recognition, but they do not replace the career summary as the profile lead;
+- active challenges, incomplete goal progress, reward contents, claims, and fulfillment are not public-profile features.
 
-V1 caution:
+Current contract caution:
 
+- `PlayerMedals` exposes raw medal codes rather than joined authored display definitions;
+- `PlayerProgression` includes raw counters, dimensions, source identifiers, and other implementation detail beyond the approved public presentation;
+- completed-goal records need their public goal title, category, mastery flag, completion time, and approved presentation metadata composed for display;
+- do not consume either broad response directly from the browser as the final Website recognition model;
 - render only known medal definitions and factual Eventun totals;
 - do not synthesize achievement labels from aggregate career statistics;
-- decide later whether progression goals and completions belong on the public profile or a logged-in personal surface.
+- describe totals as career totals only after historical medal backfill is validated; otherwise return and display accurate coverage metadata such as `Tracked since [date]`.
 
 ## Initial Page Structure
 
@@ -307,7 +315,6 @@ Content:
 - avatar
 - player name
 - team name/tag if present
-- public rank tier if available
 - profile status labels if useful
 
 V1 supported:
@@ -316,15 +323,25 @@ V1 supported:
 - name
 - team summary
 
-V1 conditional:
+Initial exclusion:
 
-- public rank tier only if Eventun/AccelByte-backed public rank tier is available
+- do not show a generic global rank, named division, exact MMR, or rank history;
+- keep exact per-course leaderboard placements and gauntlet standings in their explicitly scoped sections.
 
 V2:
 
 - richer player banner media
 - social links
 - current ship/loadout identity
+- a future Eventun-owned named competitive division only after its source, update, promotion/demotion, provisional, mode, season, visibility, and history semantics are approved
+
+Ranking boundary:
+
+- the current AccelByte MMR V2 is an internal lifetime skill estimate for the item recommender, not a Website rank, leaderboard value, or matchmaking contract;
+- the current player may be able to retrieve their own exact AccelByte MMR, but Website V2 does not need to expose it;
+- a future public division layer may map MMR into names such as Bronze or Diamond and may use stateful promotion thresholds or delayed promotion rather than a direct instantaneous numeric band;
+- Eventun, not the Website, must own any approved public division state and history;
+- that future layer requires a separate design and must not be inferred from current item-recommender thresholds.
 
 Social-link note:
 
@@ -633,29 +650,41 @@ V2:
 - historical event highlights
 - qualification progression over time
 
-## 8. Trophies and Medals
+## 8. Achievements & Medals
 
 Purpose:
 
-- support recognition beyond raw leaderboard rank
+- support durable recognition beyond raw leaderboard rank without turning the public profile into a progression or reward-management surface
 
-V1 possible:
+Initial release:
 
-- show real medals and badges for the logged-in user's own profile if AccelByte exposes them through the user's token
-- show tournament/gauntlet trophies only if Eventun exposes reliable winner/placement data
+- show completed Eventun public achievements and masteries first;
+- show gameplay-medal totals as secondary recognition using authored display names, exact counts, and parent/augment relationships where applicable;
+- use a text-first compact list or grid that remains complete without bespoke icon art;
+- use approved presentation assets when Eventun supplies them, but do not make recognition dependent on an art pipeline;
+- show an honest empty state when the pilot has no completed public goals or tracked medals.
 
-V1 caution:
+Initial exclusions:
 
-- if medals are real game achievements, do not fake them as official achievements without backend support
-- do not show generated/computed medals as if they are official game medals
-- do not assume public medal counts for other players are available in V1
+- do not show `Trophies` until Eventun explicitly models a gauntlet win or trophy; a stage placement does not create a trophy;
+- do not show active challenges, incomplete goals, public progress bars, reward previews, reward claims, fulfillment state, or Accountun prize/reward data;
+- do not expose raw progression counters, dimensions, requirement expressions, source session/match ids, unpublished/private/hidden goals, or unknown medal codes;
+- do not relabel aggregate career facts as medals or achievements.
+
+Website API requirement:
+
+- add a compact public player-recognition read rather than exposing `PlayerMedals` and `PlayerProgression` directly to the browser;
+- return completed public achievements/masteries with authored title, category, mastery state, completion time, and approved presentation metadata;
+- return only known displayable gameplay medals with authored display name, exact count, and parent/augment relationship;
+- exclude active/incomplete progression, raw counters and dimensions, source identifiers, and every reward field;
+- include validated historical-coverage metadata whenever the totals do not represent the player's full career.
 
 V2:
 
-- backend-owned public trophy and medal summaries
-- gauntlet winner trophies
-- event medals
-- achievement history
+- a self-only progression surface for active goals and challenges if Website participation becomes useful;
+- explicitly modeled gauntlet winner trophies;
+- event-specific recognition;
+- richer achievement history and filtering.
 
 ## 9. Own-Profile Overlay
 
@@ -666,7 +695,7 @@ V1 possible:
 - team invite/request state
 - link to team management or team page
 - profile/account actions if supported
-- Eventun medals and progression links where included in the approved profile scope
+- a future link to self-only progression if that separate surface is approved
 
 Placement decision:
 
@@ -677,13 +706,13 @@ V1 not currently primary:
 
 - owned items
 - battle pass
-- private ELO
+- self-only exact AccelByte MMR
 
 V2:
 
 - AccelByte item ownership
 - battle pass progress
-- private rating detail
+- self-only rating detail only if a later product need justifies exposing the internal value
 - recommendation cards
 
 ## Auth and Permission States
@@ -692,7 +721,7 @@ V2:
 |---|---|
 | Anonymous | can view public profile, public stats, course stats, leaderboards, and public recent races |
 | Logged-in other player | same as anonymous plus account/avatar top bar and comparison affordances if available |
-| Logged-in own profile | public profile plus team/account action overlays and own medals/badges where supported |
+| Logged-in own profile | public profile plus team/account action overlays; public recognition remains the same as for other viewers |
 | Admin | same as logged-in, plus admin-only moderation/actions only if product decides they are needed |
 
 ## Empty / Loading / Error States
@@ -703,6 +732,7 @@ Required states:
 - no course stats
 - no leaderboard placements
 - no recent races
+- no public achievements or tracked gameplay medals
 - no team
 - failed career fetch
 - failed leaderboard fetch
@@ -752,15 +782,16 @@ Public player pages should support:
 
 Guardrail:
 
-- do not expose private rating/ELO in metadata.
+- do not expose internal MMR or a Website-derived division in metadata.
 
 ## V2 Candidate Data Needs
 
 These ideas are valuable but should not block V1 if unsupported:
 
-- exact public rank tier history
-- private exact ELO display on own profile
-- public trophy and medal counts for other players
+- Eventun-owned named competitive divisions and history after a separate rank-system design
+- optional self-only exact MMR only if a later product need justifies it
+- explicitly modeled public gauntlet trophies
+- self-only active achievement, mastery, and challenge progress
 - player-owned public social links
 - social-link verification state
 - ship/loadout-specific strength analysis
@@ -790,6 +821,8 @@ These ideas are valuable but should not block V1 if unsupported:
 13. Public recent-race data excludes hidden course matches and unused implementation identifiers before reaching the browser.
 14. Match-stat presence must be preserved through the Website contract. Protobuf optionality is preferred when generation proves it survives; otherwise use explicit availability metadata. Zero-as-missing is forbidden where zero or false is a valid result.
 15. The public profile uses a `Gauntlet History` section. Active participation with public results appears before completed history; completed entries are ordered by actual player activity. Qualifier rank, stage placement, and generic participation remain distinct, and invitations or status-only state are never exposed as public history.
+16. The initial recognition section is `Achievements & Medals`: completed public Eventun achievements/masteries first and known gameplay-medal totals second. It has no trophies, public incomplete progress, active challenges, or reward UI. A purpose-built public response strips raw counters, dimensions, source identifiers, and reward data and reports historical coverage when totals are incomplete.
+17. The initial Website has no generic global rank tier or `Rank History`. Exact course leaderboard positions and gauntlet standings remain visible in their scoped contexts, while exact AccelByte MMR is omitted even for the current user. A future Eventun-owned named-division layer may use stateful promotion thresholds or delayed promotion, but requires a separate design before any Website field or component is added.
 
 ## Next Steps
 

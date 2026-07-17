@@ -16,6 +16,9 @@ Framework decision updated: 2026-07-15
 - [[design-doc-roadmap]]
 - [[information-architecture]]
 - [[initial-release-scope]]
+- [[non-functional-baseline]]
+- [[delivery-plan]]
+- [[route-api-matrix]]
 - [[terminal-ops-design-system]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
@@ -356,14 +359,15 @@ This section captures the current page-priority model so the design work can sta
 - `/lore`
 - `/faq`
 
-### Preserved private and admin routes
+### Preserved private routes and external operations handoff
 
 Even when not called out in the public page inventory above, the new site must still preserve current authenticated and operational routes for:
 
 - Steam login
 - team creation and management
 - gauntlet creation and management
-- sponsor administration
+
+Administrator-only sponsor administration and sponsor-owned media move to the Eventun Extend App before cutover. Website V2 does not preserve the Ascentun sponsor routes.
 
 Accountun-related prize and reward data is entirely deferred. Legacy workflows may continue independently, but Website V2 does not expose or link them and they are not parity requirements. Verified prize descriptions may still appear as code-authored promotional copy on a related editorial event page.
 
@@ -408,6 +412,7 @@ All approved non-blockchain features from the current `ascentun` application sho
 - the alternate URL-backed `Schedule` view is a chronological agenda of qualifier and stage occurrences and may repeat one gauntlet for multiple windows
 - long-lived and ad hoc playtest gauntlets are current only during an actual occurrence window; between windows they sort by the next occurrence and move to Past when none exists
 - schedule overlap supports `Current`, `Upcoming`, and `Past` timing language but not `Live`; stronger runtime/completion language requires an explicit state contract
+- one compact, unpaginated Eventun discovery collection supplies shallow public identity/media, normalized occurrences, server time, and derived active/next/latest occurrence summaries for the directory, Schedule, homepage teaser, and search
 - gauntlet creation and editing
 - qualifier views
 - stage views
@@ -418,6 +423,10 @@ All approved non-blockchain features from the current `ascentun` application sho
 
 Core create/edit uses one sectioned form with Core Details, Competition Structure, Branding and Advertising, and Review and Save. It is not a wizard, has no implied draft/autosave state, and does not absorb bracket authoring. See [[flows/gauntlet-authoring]].
 
+Keep that core form in Website V2 so Eventun's delegated `gauntlet_creator` role and creator-ownership rules remain supported. Use the Eventun Extend App UI for initially administrator-only bracket generation/publication/repair and runtime result or stage-operation repair. Do not duplicate the core form in both surfaces. Website V2 still renders published bracket and match state when those public contracts ship; public rendering does not imply mutation permission.
+
+The discovery contract is domain-neutral rather than named or shaped for one Website component. Website V2 is its first approved consumer. A later review should evaluate migrating public game-client discovery to the same read, while leaving runtime admission, detailed configuration, and operator APIs separate where their responsibilities differ. Existing game-client reads remain until that consumer review and migration occur.
+
 ### Explicit legacy exclusions
 
 - wallet linking, verification, and management
@@ -427,16 +436,16 @@ Core create/edit uses one sectioned form with Core Details, Competition Structur
 
 ### Sponsors and operations
 
-- administrator-only sponsor list and detail
-- sponsor CRUD/admin flows
-- current admin-specific access controls
+- sponsor list/detail, CRUD, and sponsor-owned media administration in the Eventun Extend App;
+- current Eventun Admin authorization, corrected atomic mutation contracts, and an administrator-authorized media upload boundary;
+- no Website V2 sponsor registry or administration routes.
 
 Terminology boundary:
 
-- `Sponsor` is the Eventun-backed competition entity used in administrator search, optional gauntlet relationships, and administration;
+- `Sponsor` is the Eventun-backed competition entity used in Extend App administration and optional gauntlet relationships;
 - direct gauntlet-owned `Billboard` media are the primary initial creator workflow because tournament campaigns and artwork frequently vary; use explicit `Tileable` metadata and a three-copy tile preview for ribbon-style placement compatibility rather than a distinct new `WideBillboard` upload;
 - retain an existing-sponsor picker as a scoped advanced gauntlet-authoring control without granting creators general registry access;
-- sponsor registry/detail routes are not public destinations; approved sponsor branding may still appear within its gauntlet context without exposing operational tier or linking to the registry;
+- sponsor registry/detail routes do not exist in Website V2; approved sponsor branding may still appear within its gauntlet context without exposing operational tier or linking to an operations surface;
 - `Partner` is a broader code-authored marketing relationship and does not imply Eventun sponsorship;
 - defer `/partners` until distinct partner content and ownership justify a separate route.
 
@@ -472,7 +481,7 @@ These are in scope for the long-term site design, though not all are phase-1 req
 - richer public player stats
 - richer public team stats, initially secondary to individual pilot results and subject to post-implementation review
 - richer gauntlet stats
-- historical ranking context
+- exact course and gauntlet ranking context
 - medal and trophy display models
 - future season-oriented views for general competitive play beyond specific tournaments
 
@@ -534,7 +543,7 @@ Search should eventually support grouped results across:
 - gauntlets
 - ship parts
 
-Permission-filtered administrative search may add Eventun sponsors for administrators. Sponsor records are not public content entities or public/general creator search results.
+A later permission-filtered administrative group may add Eventun sponsors through a separate authenticated response. Sponsor records are not public content entities or public/general creator search results.
 
 General lore should not be the first search priority and may instead be discoverable through dedicated content pages and entity relationships.
 
@@ -545,25 +554,24 @@ The public player page should evolve beyond a simple stat card.
 ### Required direction
 
 - basic public stats
-- rankings and rank-tier presentation
+- exact per-course leaderboard positions and gauntlet standings in their scoped contexts
 - finish times and lap times by course
 - gauntlet/tournament performance context
-- public trophies for tournaments won
-- public medals or badges only if a backend/API exposes safe public medal data
+- completed public Eventun achievements/masteries
+- known Eventun gameplay-medal totals through a safe public presentation contract
 
 ### Ranking privacy model
 
-The exact ELO should remain private.
+The initial Website has no generic global rank tier, named division, or rank-history surface. The current AccelByte MMR V2 is an internal lifetime skill estimate for the item recommender. It is not a public rank, leaderboard, matchmaking input, or stable history contract.
 
-Publicly visible ranking information can include:
+Publicly visible ranking information is limited to explicitly scoped competition facts:
 
-- public rank tier such as Bronze, Silver, Gold, and similar tiers
-- historical rank progression across competitive seasons
+- per-course leaderboard positions for an explicit category;
+- gauntlet qualifier or stage standings with their actual semantics.
 
-This implies a split between:
+The current player may be able to retrieve their exact MMR from AccelByte, but Website V2 does not expose it because no approved Website use requires it.
 
-- private raw rating data
-- public rank presentation
+A future Eventun-owned public division layer may map internal rating evidence into named divisions such as Bronze or Diamond. It may use stateful promotion thresholds, delayed promotion, or hysteresis rather than instant numeric bands. That is a separate product and backend design covering source atomicity, update ordering, provisional state, calibration, promotion and demotion, mode and season scope, correction, privacy, and history. The Website must not derive divisions from MMR or reuse item-recommender bands.
 
 ### Public/private blending
 
@@ -579,12 +587,13 @@ The current default player-page structure is:
 - Course Stats
 - Recent Races
 - Gauntlets, presented as `Gauntlet History`
-- Trophies and Medals
-- Rank History
+- Achievements & Medals
 
 This can be implemented as tabs, stacked sections, or a responsive hybrid, but the information model should remain stable.
 
 The initial `Gauntlet History` is a compact structure-aware collection rather than one cross-gauntlet performance chart. Active gauntlets with real public player results appear first; completed entries follow in order of the player's latest actual participation. Qualifier standing, accepted stage placement, and generic race participation remain separate result types. Invitation, eligibility, admission, group, and status-only state are not public profile history. Eventun should provide this as one Website-oriented projection with presentation metadata and explicit result presence rather than require browser-side N+1 composition.
+
+The initial `Achievements & Medals` section presents completed public Eventun achievements and masteries before known gameplay-medal totals. It is text-first and may use approved authored presentation assets when available. It does not infer trophies from stage placements or expose active challenges, incomplete progress, raw counters/dimensions, source identifiers, or reward data. Eventun should provide a purpose-built public recognition projection and explicit historical-coverage metadata when medal totals are not complete career totals.
 
 Default first-view priority:
 
@@ -608,7 +617,7 @@ Examples:
 - a gauntlet page can show whether the user has qualified
 - a player/team surface can expose actions only relevant to the current user
 - a player's own public profile can expose team and account actions
-- a player's own public profile can show AccelByte-owned medals or badges if available through the logged-in token
+- a future self-only progression destination can show active goals or challenges only after that surface is separately approved
 
 ### Deferred/private candidates
 
@@ -847,7 +856,7 @@ This allows lore work to deepen the world without isolating it from the rest of 
 
 The long-term goal should be broad search coverage with grouped results.
 
-Search-everywhere is also a homepage priority for logged-in users and should be treated as a core site primitive rather than a small convenience feature.
+Search-everywhere is a persistent shared-shell utility for anonymous and logged-in visitors. It should be treated as a core site primitive without becoming a separate homepage dashboard module.
 
 ### High-priority entity groups
 
@@ -921,6 +930,14 @@ Existing game-client endpoints are reusable inputs, not a fixed Website contract
 - include explicit metric meaning, unit, scope, time window, freshness/as-of context, pagination, and null/no-data behavior where applicable;
 - preserve source-system visibility and permission rules on the server rather than filtering sensitive records only in the browser;
 - keep implementation and validation details that could assist event forgery or abuse out of public response metadata and UI copy.
+
+The browser integration boundary is now explicit: generated Eventun gateway clients, AccelByte service credentials, and player tokens remain server-only. Server Components and server-only data functions obtain initial reads; same-origin Server Actions or route handlers own authenticated refreshes and mutations; direct browser transfer is limited to authorized signed media uploads. Browser components receive deliberate view models rather than complete generated transport records. See [[route-api-matrix]].
+
+### Rendering and caching
+
+Use Next.js 16 Cache Components with explicit public data/component caching rather than blanket caching of mixed public and private routes. Repository-authored marketing content is static by deployment. Public entity and directory reads use domain-tagged stale-while-revalidate caching, schedule-sensitive gauntlet data uses short or occurrence-boundary-aware freshness, and standings/recent results use short caching with explicit refresh where useful. Authenticated overlays, permissions, forms, and operations remain request-time and never enter the shared public cache.
+
+Successful mutations invalidate affected entity and collection tags before the canonical public page is treated as refreshed. The approved Vercel Pro deployment baseline uses two fixed Website environments paired to the matching AccelByte/Eventun environments, protected development-only previews, the Node.js runtime, and an initial single function region near the backends. Project names, measured region, hostnames, branch promotion, and DNS/cutover remain implementation setup. See [[non-functional-baseline]] and [[delivery-plan]].
 
 ### Collection loading and pagination
 
@@ -1031,9 +1048,7 @@ Potential scope:
 
 - Which supported source can confirm Steam ownership for homepage CTA personalization in the Shared Cloud architecture?
 - Should the bounded homepage race-network item use code-authored curation, an Eventun feature marker, or a deterministic state/recency rule?
-- How should seasonal rank history be modeled if general competitive seasons exist outside gauntlets?
 - Which public event types should receive distinct listing categories versus shared listing/filter treatment?
-- If public seasonal rank-tier history is added, should AccelByte expose the required history through Eventun or another reviewed Website read contract?
 - When `/watch` ships, should the first live experience be embedded on gauntlet pages, on a dedicated page, or both?
 
 ## Initial Epic Breakdown
@@ -1061,8 +1076,8 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 - richer player overview
 - course stats
 - structure-aware gauntlet history
-- trophies and medals
-- rank-history model
+- achievements and gameplay medals
+- no global rank/history module until a separate Eventun public-division design is approved
 
 ### 4. Public team experience redesign plus preserved management workflows
 
@@ -1080,9 +1095,9 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 
 ### 6. Sponsor and partner presentation
 
-- administrator-only sponsor registry/detail
+- administrator-only sponsor registry/detail and media management in the Eventun Extend App
 - approved sponsor relationship display in public gauntlet context without a public sponsor profile link
-- preserved sponsor admin workflows
+- preserved sponsor admin workflows as an explicit Website parity handoff
 - direct gauntlet `Billboard` upload as the primary creator path, with explicit tileable metadata and reusable sponsor association optional/advanced
 - code-authored partner presentation where separately verified
 

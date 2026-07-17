@@ -1,8 +1,8 @@
 # Ascent Rivals Authentication User Flow
 
 Date: 2026-04-14
-Status: Approved scope baseline; implementation details open
-Last reviewed: 2026-07-16
+Status: Approved for implementation; Shared Cloud documentation ambiguity accepted
+Last reviewed: 2026-07-17
 
 ## Related
 - [[../unified-design]]
@@ -50,18 +50,21 @@ Do not copy current Ascentun components or implementation gaps directly; preserv
 
 ## Protocol and Shared Cloud Assessment
 
-As of 2026-07-16, Steam OpenID 2.0 remains Steam's documented browser-authentication method for third-party websites. Steam's separate OAuth 2.0 program is intended for approved partner applications that need scoped access to Steam APIs; it is not a generally available replacement for identity-only website login.
+As of 2026-07-17, Steam OpenID 2.0 remains Steam's documented browser-authentication method for third-party websites. Steam's separate OAuth 2.0 program is intended for approved partner applications that need scoped access to Steam APIs; it is not a generally available replacement for identity-only website login.
 
 AccelByte's current IAM OpenAPI contract still documents `steamopenid` and the V4 platform-token grant used by Ascentun. No Steam or AccelByte deprecation notice was found for that core exchange.
 
-However, Ascent Rivals runs on AGS Shared Cloud. AccelByte's current authentication coverage table marks Steam in-game login as supported in Shared Cloud and Steam web login as unsupported. The detailed Steam guide describes the unsupported web integration as an AGS Player Portal flow in a publisher namespace, while Ascentun instead performs OpenID in the custom website and submits the returned assertion to the V4 platform-token endpoint with a confidential client. Public documentation does not explicitly confirm whether this custom flow is a supported Shared Cloud contract.
+However, Ascent Rivals runs on the managed tier historically identified for this project as AGS Shared Cloud. AccelByte's current documentation labels the managed tier `Public Cloud`; its authentication coverage table marks Steam in-game login as supported there and Steam web login as unsupported. The detailed Steam guide describes the unsupported web integration as an AGS Player Portal flow in a publisher namespace, while Ascentun instead performs OpenID in the custom website and submits the returned assertion to the V4 platform-token endpoint with a confidential client. Public documentation does not explicitly confirm whether this custom flow is a supported Ascent Rivals Shared Cloud contract.
 
 Decision:
 
-- retain `Steam OpenID callback -> server-side AccelByte V4 steamopenid grant -> AccelByte website session` as the provisional Website V2 implementation baseline;
+- retain `Steam OpenID callback -> server-side AccelByte V4 steamopenid grant -> AccelByte website session` as the approved Website V2 implementation baseline;
 - do not replace it with Steam OAuth 2.0 or a native Steam auth ticket flow, because neither is the documented general browser-login replacement;
-- do not treat the baseline as launch-approved until the Shared Cloud verification gate in [[../../../../50_knowledge/ascent-rivals/accelbyte-platform|AccelByte platform]] is complete;
-- if AccelByte confirms the custom grant is unsupported, stop and choose a different identity and authorization architecture before implementing Website V2 authentication.
+- treat the current working Ascentun deployment as sufficient evidence that the exchange is viable in the Ascent Rivals environment;
+- do not require a separate AccelByte support answer or duplicate pre-implementation smoke-test gate;
+- retain the documentation mismatch as an accepted vendor-compatibility risk and revisit the architecture if the deployed behavior changes.
+
+The AccelByte access token itself is not untrusted merely because it belongs to the player or is held by the browser. Its identity and claims may be trusted by server code after validating the token signature, issuer, audience/client context, and expiry. The separate Ascentun user-info cookie is different: it is derived JSON, readable and writable by the browser, and is not independently authenticated before current server code consumes its role values.
 
 Required hardening when the flow is implemented:
 
@@ -71,6 +74,8 @@ Required hardening when the flow is implemented:
 - require the expected OpenID mode, provider endpoint, claimed-identity shape, callback target, and signed response fields before exchange;
 - submit only the required OpenID assertion fields to AccelByte and do not request unused AX/SREG profile attributes;
 - keep the AccelByte client secret, access token, and refresh token server-only and use secure HTTP-only cookies;
+- expose an explicit display-safe session projection rather than trusting browser-readable identity, role, or team cookies;
+- mark authentication responses `no-store`, redact callback URLs, and apply a restrictive callback referrer policy;
 - handle cancellation, AccelByte linking responses, Login Queue responses, refresh failure, and retry without logging raw assertions or tokens.
 
 ## Current Ascentun Implementation Notes
@@ -99,15 +104,23 @@ Current behavior:
 - the session is populated from Eventun `/v1/player/me` when available
 - if Eventun player data is unavailable, the session falls back to AccelByte public user data
 - access token and refresh token are stored in HTTP-only cookies
-- display-safe user info is stored in a readable user-info cookie for client navigation state
+- display-oriented user info, including roles, is stored in a readable user-info cookie for client navigation state and is parsed again by server session code
 - a CSRF cookie/header pattern is used for mutating requests
 - after login, the login button is replaced by the user's avatar/name menu
 - the avatar menu currently exposes `Career`, `Wallets`, and `Log out`
 
-Current implementation gap:
+Current implementation gaps:
 
-- `/api/auth/steam/login` currently sets the callback `state` to `/`, so it does not preserve the current page.
-- the current `Career` dropdown item is present visually but is not linked in `nav-user.tsx`.
+- the login and callback routes derive realm, callback, and redirect origins from request host values instead of one trusted environment origin;
+- `/api/auth/steam/login` sets the callback `state` to `/`, so it is neither a signed, expiring login transaction nor a preserved safe return path;
+- the login route requests AX/SREG fullname and email attributes that Website V2 does not use;
+- the callback forwards the returned OpenID fields to AccelByte without first enforcing the complete Website V2 structural and transaction checks;
+- the readable user-info cookie contains roles and is trusted again by server code. Because the browser can rewrite it, this must not be copied as an authorization or server-rendering trust boundary;
+- malformed user-info cookies and raw vendor error bodies can reach current logs, contrary to the Website V2 redaction boundary;
+- the callback does not implement the documented V4 `202` Login Queue continuation;
+- refresh uses the V3 token endpoint without a recorded endpoint-version review and has no explicit multi-tab/concurrent-refresh strategy;
+- logout clears local cookies but does not attempt AccelByte token revocation;
+- the current `Career` dropdown item is present visually but is not linked in `nav-user.tsx`;
 - `/api/logout` redirects to `/`, but the client logout handler only refreshes the current route after the fetch; protected-route guards may then decide where the user lands.
 
 Website V2 should implement the desired behavior below rather than copying those gaps.
@@ -182,8 +195,8 @@ Desired behavior:
 Recommended implementation shape:
 
 - login action calls an auth endpoint with `returnTo={currentPathAndQuery}`
-- auth endpoint stores or signs that value into the OpenID `state`
-- callback validates the state and redirects to the safe return path
+- auth endpoint creates a short-lived authenticated login transaction and references it from the callback URL carried through Steam OpenID
+- callback validates and consumes that transaction, then redirects to the safe return path
 
 Examples:
 
@@ -241,20 +254,22 @@ Session population priority:
 1. Eventun `/v1/player/me`
 2. AccelByte public user data fallback
 
-Session user info should include:
+The browser-facing `SessionView` should include only:
 
-- user id
+- authenticated or expired state
+- canonical pilot id and profile route
 - display name
 - avatar
-- roles
-- team summary, if available
-- pending team invitation/join-request summary, if available
-- access token expiry timestamp
-- refresh token expiry timestamp
+- current-team identity and route, or an explicit no-team state
+- one bounded pending team invitation/join-request count or status
+- explicit authorized operations destinations rather than raw roles or permissions
+- access-session expiry state sufficient to schedule refresh
 
-Display-safe user info can be available to the client for shell rendering.
+Display-safe user info can be returned to the client for shell rendering, but it is an output projection rather than an authorization credential. A browser-readable or unauthenticated user-info cookie must never supply server identity, roles, team state, or permission decisions.
 
-Access and refresh tokens must remain HTTP-only.
+Access tokens, refresh tokens, Login Queue tickets, client secrets, raw permissions, and OpenID assertions must remain server-only. Eventun remains authoritative for team and operations context; the AccelByte user fallback may supply display identity only and must fail closed for those capabilities.
+
+Initial session packaging should use separate host-only `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `__Host-` access/refresh cookies and derive `SessionView` server-side from the validated token and Eventun context. This retains Ascentun's basic token placement and does not require a second authentication framework, session database, or metadata cookie. If later performance work caches session metadata in another cookie, cryptographically authenticate it and keep it HTTP-only. Cookie size, expiry alignment, rotation, replay resistance, and concurrent refresh behavior must be measured; use an opaque server-side session only if those constraints are unsafe or brittle.
 
 ## Post-Login Navigation State
 
@@ -290,9 +305,10 @@ User action:
 
 System behavior:
 
+- attempt best-effort AccelByte revocation for the refresh/access token through the supported confidential-client operation
 - clear access token cookie
 - clear refresh token cookie
-- clear user-info cookie
+- clear any cached authenticated session metadata, login-transaction, and Login Queue state
 - clear CSRF cookie or rotate CSRF state
 - invalidate client session cache
 - refresh or redirect the current view
@@ -343,10 +359,11 @@ Examples:
 
 ## Token Refresh and Expiration
 
-V1 should preserve the current refresh model:
+V1 should preserve the current user-facing refresh behavior while replacing the unsafe implementation details:
 
 - refresh access tokens before expiry when refresh token is still valid
-- update session cookies after refresh
+- serialize or deduplicate concurrent refresh for one session
+- update and rotate authenticated HTTP-only session state after refresh
 - rotate or update CSRF state as needed
 - if refresh fails, mark session expired and require login
 
@@ -431,6 +448,8 @@ Potential non-sensitive events:
 - logout completed
 - token refresh failed
 
+External analytics is not a launch requirement. These events may remain redacted operational logs unless a later analytics decision approves a concrete tool and purpose.
+
 Do not log:
 
 - Steam credentials
@@ -446,7 +465,7 @@ Do not log:
 - login from a public page returns to that page after Steam callback
 - login from a protected route returns to that route after successful login when the user is authorized
 - unsafe return paths fall back to `/`
-- the custom `steamopenid` V4 grant is verified and confirmed as an accepted Shared Cloud dependency before launch
+- the Website V2 development deployment completes the same working `steamopenid` V4 exchange used by Ascentun before release
 - OpenID realm and callback URLs use a trusted configured public origin rather than a request-supplied host
 - login transaction state is signed, time-limited, nonce-bound, replay-resistant, and restricted to safe relative return paths
 - successful login replaces sign-in control with avatar/account menu
@@ -457,9 +476,14 @@ Do not log:
 - sign-out from public pages keeps the user on the current public page
 - sign-out from fully private pages redirects to `/`
 - sign-out clears server cookies and client session state
+- logout attempts vendor token revocation when supported but still clears local session state when revocation is unavailable
+- no browser-readable or unauthenticated identity/role/team cookie is trusted by server code
+- private session reads are request-time and excluded from shared caches
 - expired sessions prompt re-login without exposing private content
 
 ## Open Questions
 
-- Should expired protected routes show `/login?expired=true&returnTo=...` or trigger Steam login directly?
-- Should logout from authorized management routes prefer public parent routes or always return to `/`?
+- Does the sealed one-time login transaction plus Steam/AccelByte validation provide sufficient replay resistance, or is a short-lived server-side nonce store required?
+- Which refresh endpoint/version and token-rotation semantics are supported by the deployed Ascent Rivals namespace?
+- Does the Shared Cloud environment return Login Queue, linking, or legal-compliance continuations for this custom confidential-client flow, and what exact response taxonomy must the Website retain?
+- Can one bounded Eventun current-player contract return canonical pilot/team/pending-membership data and explicit Website operations destinations without exposing broad role lists?

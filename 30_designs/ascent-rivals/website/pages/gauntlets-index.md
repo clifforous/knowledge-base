@@ -1,8 +1,8 @@
 # Ascent Rivals Gauntlets Index Page Spec
 
 Date: 2026-04-13
-Status: Approved discovery model; visual design and Website API projection open
-Last reviewed: 2026-07-16
+Status: Approved discovery model and compact discovery contract; visual design open
+Last reviewed: 2026-07-17
 
 ## Related
 
@@ -32,7 +32,7 @@ Do not force one list to satisfy both. The default `Gauntlets` view lists each g
 
 - canonical route: `/gauntlets`;
 - current legacy route: `/gauntlet`;
-- permanently redirect public legacy singular routes to their plural equivalents at cutover.
+- retire public legacy singular routes without redirects unless later measured inbound use justifies an exact mapping.
 
 Initial URL-backed state:
 
@@ -336,23 +336,26 @@ Gauntlet creators and administrators may receive:
 
 Do not expose operations controls globally or change the discovery layout by role. Authorization must be enforced by protected routes and APIs as well as presentation.
 
-## Website API Projection Requirement
+## Gauntlet Discovery Contract
 
-Website V2 may initially join current gauntlet and calendar reads server-side. If a dedicated Website-oriented projection is useful, it should return one compact, complete collection of public gauntlet summaries rather than a server-paginated directory. Each summary provides:
+Add one compact, complete Eventun discovery read rather than making Website V2 join the current gauntlet, current calendar, completed-gauntlet, and completed-calendar reads. The Website is the first approved consumer, but the contract should use gauntlet-domain terminology rather than a Website-specific namespace or presentation schema so the game client can be evaluated as a later consumer.
 
-- authoritative server time;
-- unique public gauntlet summary;
+The response provides:
+
+- authoritative server time once at the response level;
+- unique public gauntlet identity and presentation summary: id, title, subtitle/ticker, region, colors, participant count, and bounded card media;
+- normalized qualifier and stage occurrences needed by both the unique directory and repeated-occurrence Schedule view;
 - active occurrence, if any;
 - next occurrence, if any;
 - latest ended occurrence for Past sorting;
 - additional scheduled-occurrence count;
-- public timing state;
+- public timing state limited to `Current`, `Upcoming`, or `Past`;
 - optional explicit runtime/result state when available;
-- bounded public media and sponsor context;
-- optional signed-in participation overlay;
-- no nested detail data that the index does not render.
+- no creator permissions, sponsor-administration fields, full authoring configuration, or other nested detail that discovery does not render.
 
 The server should derive timing state and occurrence candidates once. Do not let browser clocks independently classify the same gauntlet differently around time boundaries. The browser then performs the approved stable ordering, title search, scope filtering, and any later supported filters over the returned collection.
+
+Keep the base collection public and cacheable. If signed-in participation context is later useful on the directory, compose it as a small authorized overlay rather than making every public summary user-specific.
 
 Initial directory presentation is client-side:
 
@@ -363,7 +366,13 @@ Initial directory presentation is client-side:
 
 Client-side progressive reveal reduces rendered DOM work but does not reduce the initial response size. Keep the collection payload compact and cacheable rather than confusing UI lazy loading with data pagination.
 
-The Schedule projection should include the bounded gauntlet identity needed for each occurrence so the Website does not issue one detail fetch per repeated gauntlet.
+Each normalized Schedule occurrence includes the bounded gauntlet identity needed for display so the Website does not issue one detail fetch per repeated gauntlet.
+
+### Deferred Game-Client Alignment
+
+Do not migrate the game client as part of the Website V2 discovery-contract decision. Retain its current reads until a separate consumer review covers generated Unreal types, authentication, caching, update timing, and every current list/calendar use.
+
+That later review should prefer the shared discovery read when its semantics fit. Runtime admission, detailed configuration, operator controls, and other specialized use cases may still require separate APIs. Avoid two independently evolving public discovery models, but do not force unlike runtime and presentation responsibilities into one response merely to reduce endpoint count.
 
 ## Empty, Loading, and Error States
 

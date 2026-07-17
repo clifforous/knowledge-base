@@ -235,12 +235,6 @@ Text guidance:
 - `DarkPrimaryText`: `#121216`
 - `DarkSecondaryText`: `#35353D`
 
-Tier guidance:
-
-- `Bronze`: `#CD7F32`
-- `Silver`: `#A2A2A2`
-- `Gold`: `#F2A900`
-
 ### Palette usage guidance
 
 - dark-first visual system
@@ -350,7 +344,7 @@ If Pencil can only produce a smaller set first, prioritize:
 - `/teams`
 - `/teams/[id]`
 
-Administrator-only `/sponsors` registry/detail screens belong to the operational workflow set, not the initial public Pencil page set. Gauntlet creators use direct billboard uploads first and may receive a scoped advanced sponsor picker.
+Sponsor registry/detail screens belong to the Eventun Extend App rather than Website V2 or its Pencil page set. Gauntlet creators use direct billboard uploads first and may receive a scoped advanced sponsor picker.
 
 ## Nice-to-Have Phase-1 Pages
 
@@ -431,7 +425,6 @@ Default content structure:
 - Match History
 - Gauntlet Results
 - Trophies and Medals
-- Rank History
 
 Default first-view priority should be identity and career totals first, course stats and course placements second, and optional best-lap/best-finish strength highlights only when the data supports them.
 
@@ -507,7 +500,7 @@ Design copy should use:
 - player/team/gauntlet cards
 - standings tables
 - trophy and medal displays
-- rank-tier badges
+- scoped leaderboard and gauntlet-standing treatments; no global rank-tier badge
 - sponsor strip or sponsor module
 - CTA treatments for wishlist, play, or follow
 - account/avatar state in global navigation

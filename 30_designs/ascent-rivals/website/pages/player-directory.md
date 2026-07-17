@@ -40,7 +40,7 @@ Current app route equivalent:
 Final route direction:
 
 - use plural route groups in the Next.js site
-- preserve redirects from old singular routes if public links already exist
+- allow old singular routes to retire without redirects unless later measured inbound use justifies an exact mapping
 
 ## Audience
 
@@ -150,12 +150,11 @@ The current `GET /v1/player` response exposes substantially more data than the d
 - player id and public display name;
 - avatar URL;
 - public team id, name, and tag when present;
-- podium finishes, matches played, and average circuit points while those remain approved card/sort fields;
-- an optional public rank tier or other explicitly public rank summary when a supported contract exists.
+- podium finishes, matches played, and average circuit points while those remain approved card/sort fields.
 
-Do not include full career groups, match history, course history, nested team media, private account state, exact private ELO/MMR, wallet data, or other profile-detail payloads in the directory collection.
+Do not include full career groups, match history, course history, nested team media, private account state, exact AccelByte MMR, wallet data, or other profile-detail payloads in the directory collection.
 
-If a future rating or MMR presentation is approved for public use, expose a deliberately defined public rank field. Do not leak an internal matchmaking value merely because it is convenient to add to the collection response.
+Do not add current AccelByte MMR or a derived rank field to the directory. If a future Eventun-owned named-division system is approved, revisit the collection only after its public contract exists; the browser must never derive divisions from raw MMR.
 
 Client collection behavior:
 
@@ -244,7 +243,6 @@ V1 card content:
 
 Optional V1 card content:
 
-- small public rank tier if available from supported public rank data
 - one restrained team-color accent, such as a narrow rule or small marker, only when the supplied color remains legible in the Website palette
 
 Team identity styling:
@@ -259,7 +257,7 @@ Do not include in V1 cards by default:
 
 - deaths
 - crashes
-- exact ELO
+- exact MMR
 - team avatar or logo
 - wallet state
 - private team invite/request state
@@ -372,7 +370,7 @@ The player directory should support:
 - description focused on public pilot profiles, teams, and career stats
 - canonical URL
 
-Do not expose private ELO, wallet state, private account state, or invite/request state in metadata.
+Do not expose exact AccelByte MMR, wallet state, private account state, or invite/request state in metadata.
 
 ## V2 Candidate Data Needs
 
@@ -381,7 +379,7 @@ These ideas are valuable but should not block V1:
 - player-owned public social links
 - social-link verification state
 - public Twitch/live status
-- rank tier filters
+- future named-division filters only after an Eventun public-rank design and contract are approved
 - team filters
 - course specialty filters
 - gauntlet participation filters
@@ -398,8 +396,8 @@ These ideas are valuable but should not block V1:
 - name and team search, supported sorts, and display pagination/progressive reveal do not require additional network requests;
 - the collection response contains only identity, search, card, and approved sort fields rather than full profile/history payloads;
 - podium finishes, matches played, and average circuit points remain secondary context rather than an implied player ranking;
-- exact private ELO/MMR, wallet state, private team state, and account data never enter the public directory payload;
-- a public rank summary appears only when an explicitly public and semantically defined source contract exists;
+- exact AccelByte MMR, any Website-derived division, wallet state, private team state, and account data never enter the public directory payload;
+- a future public named division appears only after Eventun owns an explicitly approved stateful rank contract;
 - team identity uses `[TAG] Team Name` where space permits, tag-only compact treatment, and `Independent` when unaffiliated;
 - the pilot avatar is the card's only image, and arbitrary team foreground/background colors do not control tag legibility;
 - missing avatars and teams use stable fallbacks without excluding the pilot;

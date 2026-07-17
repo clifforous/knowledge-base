@@ -32,6 +32,7 @@ A heat roster is frozen when the heat starts. Racers may disconnect or reconnect
 - A racer who disconnects remains a participant in the heat they started. No bot replaces them during that heat.
 - While the same-heat reservation remains valid, their TAB row stays visible and greyed out. Their progress is frozen, so their provisional placement drops naturally as connected racers pass them.
 - Same-heat reconnect behavior follows the configured reconnect mode. Checkpoint respawn is allowed only because the player was already on that heat's frozen roster; temp-spectator and reject modes wait until a later heat.
+- Reconnect snapshots preserve restorable race progress but do not preserve a computed placement. A returning racer is briefly unplaced at the bottom of the live board, then the normal authoritative placement pass recomputes their rank from restored progress alongside every other racer.
 - If the player is still absent when the next heat roster is frozen, an ordinary bot may fill that heat's racer seat. The human is not a participant in that heat.
 - A player who reconnects during a heat they did not start spectates until the next heat, then receives priority over an ordinary backfill bot.
 - An active seat reservation protects the human's right to return in a future heat. It does not prevent a bot from temporarily filling a heat while the human is absent.
@@ -40,6 +41,7 @@ A heat roster is frozen when the heat starts. Racers may disconnect or reconnect
 
 ## Scoreboards And Results
 - The in-race TAB scoreboard shows only racers committed to the current heat. Normally this is the frozen heat-start roster; immediate replacement mode swaps the removed bot out and commits the late-joining human.
+- Current TAB identity, avatar, team, stats, and placement come from the stable participant row. A live racer entity may supply transient presentation details such as local-player state and ping, but reuse of a SnapNet player index must never transfer the previous entity's identity to the new participant.
 - A heat summary shows only racers committed to that heat, including racers who disconnected during it. A bot removed by immediate replacement has no result for that heat, and the replacing human does.
 - A racer who disconnects before producing an eligible heat result becomes DNF and unplaced when the heat is finalized. The historical row remains visible, but it receives no new circuit points.
 - A result completed before a later disconnect remains valid.
@@ -48,6 +50,7 @@ A heat roster is frozen when the heat starts. Racers may disconnect or reconnect
 - In timed modes such as Ascent, an eligible result does not require crossing a traditional finish line. A racer still active when the authoritative heat timer ends can receive the normal ranked result.
 - Spectators, shoutcasters, and temporary spectators never appear as racers on TAB, heat summaries, or the match summary.
 - Lobby presentation uses live lobby/session players. Historical participant rows must not make absent players appear as dimmed lobby entries.
+- Previous-heat summaries use immutable participant heat-result rows, and the overall match summary uses finalized participant standings. Live entity-cache replacement and current TAB decoration must not rewrite those historical identities or results.
 
 ## Example
 1. A human starts Heat 1, disconnects, and does not return before Heat 2 starts. Their Heat 1 row remains and finalizes as DNF if they did not complete an eligible result.

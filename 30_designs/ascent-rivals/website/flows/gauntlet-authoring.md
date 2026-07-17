@@ -1,7 +1,8 @@
 # Ascent Rivals Gauntlet Authoring Flow
 
 Date: 2026-07-15
-Status: Draft
+Last reviewed: 2026-07-17
+Status: Core authoring and hosting-surface boundary approved; implementation contract review open
 
 ## Related
 
@@ -47,6 +48,14 @@ Exact route naming may change during implementation, but create and edit should 
 - the owning creator or administrator can edit an existing gauntlet when the current backend contract permits it;
 - authorization must be enforced before protected data is rendered and again by Eventun on mutation;
 - an ordinary logged-in player cannot enter the form merely by navigating directly to the route.
+
+## Hosting Surface Boundary
+
+Website V2 remains the single initial surface for ordinary core gauntlet creation, editing, deletion, scheduling, competition-structure configuration, and gauntlet-owned media. It uses Eventun's player-facing domain authorization so the non-admin `gauntlet_creator` role and creator ownership remain meaningful.
+
+The Eventun Extend App UI is the initial surface for operations deliberately restricted to studio administrators, including bracket generation/publication/repair and runtime result or stage-operation repair when those workflows are implemented. Those operations use the AdminService permission boundary rather than treating the Eventun-local creator role as an administrator grant.
+
+Do not implement duplicate core create/edit forms in Website V2 and Extend. Moving core authoring wholesale to Extend would intentionally retire delegated gauntlet creation and requires a separate product and permission-model decision. A later bracket design may revisit whether a bounded creator-facing bracket workflow is justified, but that does not move the approved core form.
 
 ## Form Shell
 
@@ -126,7 +135,8 @@ Direct advertising is the primary creator path:
 - expose an explicit `Tile across ribbon placements` control backed by media metadata `Tileable = true`;
 - use a square-oriented single-panel preview and, when tileable, show three adjacent copies of the same artwork as a lightweight ribbon preview;
 - show upload status, priority/order, replacement, and removal;
-- validate the current upload contract before final save without adding dimension extraction, aspect-ratio classification, or billboard-slot matching;
+- request operation-scoped upload intents immediately before final save, allowing at most 10 JPEG/PNG/WebP images of at most 10 MB each per submission;
+- upload directly to R2, verify each transfer, preserve form state on failure, and retry only failed files without adding dimension extraction, aspect-ratio classification, or billboard-slot matching;
 - do not require a reusable sponsor record, sponsor name, or relationship tier.
 
 `WideBillboard` is not a normal new-upload choice. Preserve an existing record without silently converting or deleting it, label it as legacy in edit mode, and defer its removal until live Eventun data and the unused game-client collection are reviewed together.
@@ -225,8 +235,8 @@ Mutation failures must preserve entered form state wherever safe and provide a s
 
 ## Separate and Deferred Work
 
-- bracket authoring workspace, publication, seeding, byes, and audited repair;
-- runtime stage-session creation and result repair;
+- administrator-only bracket generation, publication, seeding, byes, and audited repair in the Eventun Extend App UI;
+- administrator-only runtime stage-session and result-repair operations in the Eventun Extend App UI;
 - draft gauntlets, autosave, and resumable authoring;
 - spatial billboard-slot selection and game-client preview;
 - sponsor representative identity and self-service approval;
@@ -235,8 +245,9 @@ Mutation failures must preserve entered form state wherever safe and provide a s
 ## Open Questions
 
 - Which existing media-purpose labels and metadata fields have active consumers, and which can be retired during a later media audit?
-- What cleanup policy applies when media upload succeeds but gauntlet creation never completes?
 - Does Eventun need optimistic-concurrency/version support before multi-operator editing is safe?
+
+Accepted upload tradeoff: an abandoned or failed form may leave an unreferenced object. Use auditable server-generated keys, but do not add an initial pending-object database or automated cleanup service at the current traffic level.
 
 ## Next Steps
 

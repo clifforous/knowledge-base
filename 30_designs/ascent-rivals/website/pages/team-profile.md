@@ -9,8 +9,10 @@ Membership direction confirmed: 2026-07-15. The stable public concepts are `Open
 ## Related
 - [[../unified-design]]
 - [[../information-architecture]]
+- [[../route-api-matrix]]
 - [[../terminal-ops-design-system]]
 - [[../tone-and-voice]]
+- [[../flows/team-lifecycle]]
 - [[teams-index]]
 - [[sponsors-index]]
 - [[player-profile]]
@@ -105,12 +107,18 @@ Source:
 
 - included in `GET /v1/team/{teamId}`
 
-Current designation names:
+Legacy reference designation names:
 
 - `Prime`
 - `Nexus`
 - `Vector`
 - `Echo`
+
+Replacement-contract direction:
+
+- explicit ownership, public title, effective capability, and competition rank are distinct;
+- final roster presentation fields must be reviewed after T01/T02 implementation;
+- visible titles and rank never authorize Website actions.
 
 ### Pending invites and requests
 
@@ -250,7 +258,7 @@ Logged-in player without team:
 Logged-in player on this team:
 
 - show own team status
-- `Leave Team` if not Prime
+- `Leave Team` if not the explicit owner
 - management entry if manager/owner/admin
 
 Logged-in player on another team:
@@ -278,20 +286,20 @@ Content:
 
 - player avatar
 - player name
-- designation
-- rank
+- approved public title after the replacement contract is reviewed
+- competition rank when its implemented meaning is useful to viewers
 - link to player profile
 
 Interaction:
 
 - sort by name
-- sort by designation
-- sort by rank
+- sort by approved public title when useful
+- sort by competition rank when available
 
 Design guidance:
 
 - roster should be the primary public data section in V1
-- designations can use in-world labels, but should remain understandable
+- public titles can use in-world labels, but should remain understandable and must not imply authorization
 
 Terminal Ops components:
 
@@ -360,13 +368,19 @@ Guardrail:
 
 Visible when:
 
-- logged-in user is admin
-- logged-in user is on this team with manager/owner designation
+- the authenticated Eventun action-state response allows team management for this user and team
 
 Current manager/owner model:
 
-- `Prime` and `Nexus` are management roles in current UI logic
-- admins can manage regardless of membership
+- `Prime` and `Nexus` are legacy presentation/designation inputs in the current UI logic;
+- the replacement model uses explicit ownership and effective capabilities from Eventun;
+- administrators may override only where the implemented Eventun policy allows it.
+
+Authorization guardrail:
+
+- use Eventun's explicit allowed action/effective capability response to render management entry and controls;
+- do not infer permission from public title, competition rank, roster order, or a legacy numeric designation;
+- every mutation is authorized again by Eventun.
 
 Management areas:
 
@@ -411,8 +425,9 @@ Editable:
 
 Editable:
 
-- member designation
-- member rank
+- member public title where permitted
+- member competition rank where permitted
+- delegated capabilities where permitted
 - remove member
 - promote member
 - demote member
@@ -456,7 +471,7 @@ Actions:
 
 Guardrail:
 
-- owner/Prime-only actions must be clearly separated from routine roster management
+- owner-only actions must be clearly separated from routine roster management
 - disband is destructive and must require strong confirmation
 
 ## Auth and Permission States
@@ -466,8 +481,8 @@ Guardrail:
 | Anonymous | can view public team briefing and roster; can sign in to join if relevant |
 | Logged-in player without team | can join `Open` teams, request `Request to Join` teams, or accept a valid invitation; `Invite Only` otherwise has no direct membership action |
 | Logged-in player on another team | can view team but cannot join until leaving current team |
-| Logged-in member | can view own team state and leave if not Prime |
-| Manager/Prime | can manage roster, invites, requests, media, membership mode, colors, and ownership/disband where allowed |
+| Logged-in member | can view own team state and leave if not the explicit owner |
+| Authorized manager/owner | can perform only the roster, invite, request, media, membership, capability, transfer, or disband actions explicitly allowed by Eventun |
 | Admin | can access management actions where supported |
 
 ## Empty / Loading / Error States
@@ -504,7 +519,7 @@ Desktop:
 Tablet:
 
 - stack hero/media and action rail
-- preserve roster name/designation/rank
+- preserve roster name and any approved public-title/competition-rank fields
 
 Mobile:
 
@@ -543,12 +558,10 @@ These ideas are valuable but should not block V1:
 
 ## Open Questions
 
-- Should team rank mean in-team ordering, competitive team ranking, or both?
-- Should `Prime`, `Nexus`, `Vector`, and `Echo` remain public labels, or should we add plain-language helper text?
+- Which implemented public titles and competition-rank fields should be shown after T01/T02 replaces the legacy designation model?
 - What is the first source of truth for team trophies and team gauntlet standings?
 
 ## Next Steps
 
 - Ask Pencil for one public team profile mock and one authorized management state mock.
-- Create companion sponsor page spec.
-- Create user-flow specs for team join request, invite accept/deny, roster management, and ownership/disband flows.
+- Reconcile the mock and exact statistics modules against the implemented T01-T03 contracts.

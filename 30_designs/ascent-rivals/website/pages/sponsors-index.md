@@ -1,349 +1,121 @@
-# Ascent Rivals Sponsor Registry Spec
+# Ascent Rivals Sponsor Administration Handoff
 
 Date: 2026-04-14
-Updated: 2026-07-15
-Status: Draft
+Updated: 2026-07-17
+Status: Approved boundary; Eventun Extend App implementation required before Website V2 cutover
 
 ## Related
 
 - [[../unified-design]]
 - [[../information-architecture]]
-- [[../terminal-ops-design-system]]
-- [[../tone-and-voice]]
-- [[gauntlets-index]]
+- [[../initial-release-scope]]
+- [[../delivery-plan]]
+- [[../route-api-matrix]]
 - [[gauntlet-detail]]
 - [[../../../../50_knowledge/ascent-rivals/eventun/api|eventun-api]]
 - [[../../../../50_knowledge/ascent-rivals/eventun/data-model|eventun-data-model]]
-- [[../../../../50_knowledge/ascent-rivals/game-client|game-client]]
 - [[../flows/gauntlet-authoring]]
 
-## Purpose
+## Decision
 
-Define the administrator-facing Website V2 registry used to inspect and maintain Eventun sponsor records, plus its limited relationship to gauntlet authoring.
+Website V2 has no sponsor registry, sponsor detail, sponsor create/edit/delete, or sponsor-media administration routes.
 
-The sponsor catalog is an administrative surface, not a public entity directory or the default gauntlet advertising workflow. It should help administrators answer:
+All sponsor identity and media administration moves to the Eventun Extend App UI before Website V2 replaces Ascentun. This is an approved parity exception: the capability is preserved, but its destination is the administrator operations application rather than the public/player website.
 
-- which approved media, colors, and links belong to a sponsor;
-- which sponsor records an administrator can create, edit, or delete.
+This boundary is appropriate because sponsor CRUD is administrator-only operational work. It does not need the public Website shell, Steam player navigation, public metadata, or responsive marketing presentation.
 
-Gauntlet creators currently tend to upload tournament-specific billboard artwork directly to the gauntlet. Sponsor-entity association remains an optional advanced capability because the same sponsor and artwork are not necessarily reusable across tournaments.
+## Website V2 Boundary
 
-Public visitors may see approved sponsor branding in the context of a gauntlet or code-authored marketing content. They do not receive a general sponsor index or sponsor profile route.
+Website V2 retains only sponsor behavior required in a gauntlet context:
 
-## Sponsor and Partner Terminology
+- public gauntlet detail may render an approved sponsor name or mark from a bounded gauntlet display projection;
+- public pages do not expose relationship tier, placement rules, registry fields, or a sponsor profile link;
+- authorized gauntlet creators may use a form-scoped existing-sponsor selector in the optional advanced association section;
+- the selector returns only stable id, name, one optional preview, and fields required to preserve the selected relationship;
+- direct gauntlet-owned `Billboard` upload remains the primary advertising workflow and does not require a sponsor record;
+- no Sponsor group appears in Website global search, navigation, metadata, sitemap, or account routes.
 
-- `Sponsor` is the Eventun-backed competition entity used by gauntlet authoring, sponsor relationships, and sponsor administration;
-- `Partner` is a broader manually verified marketing relationship and does not imply Eventun sponsorship or a gauntlet association;
-- code-authored marketing sections may use `Partners` when that broader relationship is accurate;
-- do not merge code-authored partner content into the Eventun sponsor catalog;
-- do not add a public `/partners` route until distinct partner content and ownership justify it.
+Legacy `/sponsor`, `/sponsor/[id]`, create, and edit URLs do not become Website V2 pages. Do not redirect public traffic to an authenticated AccelByte Admin Portal surface. Administrators enter sponsor operations through the normal Eventun Extend App/Admin Portal navigation.
 
-## Routes and Visibility
+## Eventun Extend App Scope
 
-Working routes:
+The Eventun Extend App must support:
 
-- `/sponsors` — administrator-only registry;
-- `/sponsors/[id]` — administrator-only sponsor record detail;
-- sponsor create/edit routes or equivalent in-page flows — administrators only.
+- administrator-authorized sponsor list and detail;
+- create, edit, and delete or dependency-blocked retirement behavior;
+- optional description, primary/secondary colors, website, Discord, X, and Twitch links;
+- media list, upload, preview, purpose, priority/order, replacement, and removal;
+- preservation of existing media ids, metadata, URLs, gauntlet relationships, relationship tiers, and legacy `WideBillboard` records;
+- explicit loading, empty, validation, authorization, conflict, dependency, and retry states;
+- generated Admin API clients and the existing Eventun Admin permission boundary.
 
-Current app route equivalents:
+The initial UI should remain operational and compact. It does not need the Website V2 Terminal Ops visual system, sponsor marketing pages, spatial billboard placement, sponsor self-service, or campaign management.
 
-- `/sponsor`;
-- `/sponsor/[id]`;
-- `/sponsor/create`;
-- `/sponsor/[id]/edit`.
+## Required Eventun Contract Work
 
-Required direction:
+Before exposing sponsor administration in the Extend App:
 
-- preserve sponsor list/detail capability for operational replacement parity;
-- do not expose either route in public navigation, public entity search, sitemaps, or anonymous metadata;
-- require server-side authorization rather than relying on hidden links or client-only checks;
-- gauntlet creators do not receive general registry/detail access;
-- gauntlet authoring leads with direct gauntlet-owned advertising uploads and retains a scoped advanced picker for associating an existing sponsor entity;
-- administrators retain create, edit, delete, media, color, description, and social-link management;
-- preserve existing sponsor records, media, gauntlet relationships, and relationship tiers without flattening them into gauntlet-owned media;
-- exact create/edit route naming can be chosen with the other operational routes;
-- preserve legacy redirects only inside the equivalent authorized flow; do not turn old singular URLs into public sponsor pages.
+- add administrator-authorized sponsor list and detail operations or an equivalent reviewed Admin projection; retain the existing client/game reads until their consumers are separately reviewed;
+- make create, update, and delete atomic rather than issuing an untransactional batch of independent statements;
+- correct the current delete path, which references a nonexistent `gauntlet_media.sponsor_id` column;
+- define deletion behavior for gauntlet relationships and historical Accountun/prize references. Do not partially delete media or relationships and then return failure;
+- return typed validation, conflict, not-found, dependency, and authorization failures without raw database details;
+- return an empty media collection for a sponsor with no media rather than a synthetic null media item;
+- validate and normalize sponsor name, optional colors, URLs, media purposes, priorities, and supported metadata at the authoritative boundary;
+- preserve unknown but valid existing media metadata during an edit even when the initial UI does not expose a generic JSON editor.
 
-## Audience
+Sponsor delete is not a Website V2 requirement. If safe destructive behavior is not settled before cutover, the Extend App may block deletion for referenced sponsors and support create/update/media management first, provided existing records remain maintainable and the limitation is explicit.
 
-Primary:
+## Sponsor Media Upload Dependency
 
-- administrators maintaining sponsor records.
+The Eventun Extend App runs in the administrator browser and must not receive object-store credentials. Sponsor media therefore requires an administrator-authorized upload boundary before cutover.
 
-Not an audience for the registry:
+Review these implementation choices in order:
 
-- anonymous visitors;
-- ordinary logged-in players;
-- gauntlet creators outside the scoped gauntlet-authoring relationship control;
-- press or community viewers;
-- marketing partners without an explicitly designed operational identity and permission model.
+1. reuse an existing media upload service only if it can issue bounded administrator-authorized upload intents without importing Accountun prize/wallet responsibilities;
+2. otherwise add an Eventun Admin upload-intent operation backed by server-held object-store credentials;
+3. do not retain an undocumented Ascentun upload-only dependency after Ascentun retirement.
 
-## Page Goals
+The selected contract must:
 
-- make approved sponsor identity, media, colors, and external links easy to verify;
-- preserve sponsor CRUD/admin workflows from Ascentun;
-- keep reusable sponsor records secondary to gauntlet-owned campaign artwork;
-- show relationship context without treating tier as a global sponsor rank;
-- keep private or operational sponsor fields out of public responses and metadata.
+- require Eventun Admin authorization;
+- generate the object key server-side and bind the intent to sponsor ownership and an allowed media purpose;
+- allow only reviewed image MIME types and file-size/count limits;
+- use a short expiry and direct browser-to-object-store transfer;
+- return the stable media URL and identifier required by the sponsor mutation;
+- preserve existing externally hosted or legacy media URLs during edits;
+- define best-effort cleanup or an auditable orphan-media process for abandoned uploads and removed assets;
+- verify that uploaded media resolves in the matching development and production environments and remains usable by the game/public gauntlet projections.
 
-## Current V1 Data Availability
+For create, the simplest recoverable sequence is to create the base sponsor record first, then upload and attach media. An upload failure leaves an editable sponsor rather than losing all form work or requiring a client-owned provisional sponsor id.
 
-### Sponsor List
+## Advertising Boundary
 
-Available:
+Current advertising has two independent ownership paths:
 
-- sponsor id;
-- name;
-- description;
-- primary color;
-- secondary color;
-- website URL;
-- Discord URL;
-- X URL;
-- Twitch URL;
-- media.
+- reusable `sponsor_media` administered in the Extend App;
+- tournament-specific `gauntlet_media` administered in Website V2 gauntlet create/edit.
 
-Source:
+Do not flatten either path during cutover. `Billboard` remains the normal initial purpose, `Tileable` metadata indicates repeatable ribbon treatment, and existing `WideBillboard` records are preserved as legacy data without offering that purpose for new uploads until the game-client audit is complete.
 
-- `GET /v1/sponsor`.
+Tier remains a sponsor–gauntlet relationship value used by current advertising placement logic. It is not a global sponsor rank and does not appear in public Website presentation.
 
-### Sponsor Detail
+## Cutover Acceptance
 
-Available:
+Website V2 and the current Ascentun sponsor pages may be retired only after the matching Eventun Extend App environment demonstrates:
 
-- the same sponsor fields as the list, by sponsor id.
+- authorized list, detail, create, update, and the approved delete/block behavior;
+- sponsor image upload, preview, attachment, replacement, and removal;
+- preservation of existing sponsor records, media, metadata, gauntlet relationships, tiers, and legacy media purposes;
+- correct generated-client behavior and Eventun Admin authorization;
+- no partial database mutation on a failed write;
+- successful consumption of retained sponsor relationships/media by gauntlet authoring, public gauntlet display, and the game client where applicable.
 
-Source:
+## Deferred
 
-- `GET /v1/sponsor/{sponsorId}`.
-
-### Sponsor Administration
-
-Available:
-
-- create sponsor;
-- update sponsor;
-- delete sponsor.
-
-Sources:
-
-- `POST /v1/admin/sponsor`;
-- `PUT /v1/admin/sponsor/{sponsorId}`;
-- `DELETE /v1/admin/sponsor/{sponsorId}`.
-
-Admin-editable fields:
-
-- name;
-- description;
-- primary color;
-- secondary color;
-- website URL;
-- Discord URL;
-- X URL;
-- Twitch URL;
-- media.
-
-### Gauntlet Sponsor Relationship
-
-Available from gauntlet data:
-
-- sponsor id;
-- relationship tier.
-
-Source:
-
-- gauntlet `sponsors` field.
-
-### Gauntlet-Owned Advertising Media
-
-Current behavior:
-
-- gauntlet media supports direct `Billboard` assets independently of sponsor entities; `Tileable` metadata makes a normal billboard compatible with ribbon-style placements;
-- `WideBillboard` still exists as a media purpose, but the reviewed client has no identified consumer for its separate collection;
-- the current gauntlet create/edit form uploads those assets through the ordinary gauntlet media workflow;
-- practical organizer use commonly stores tournament-specific sponsor artwork this way;
-- the game client treats direct gauntlet media as the synthetic `Gauntlet` source at tier `0` when populating course billboards.
-
-Initial Website direction:
-
-- make direct gauntlet billboard upload the primary creator workflow;
-- preserve preview, replacement, ordering, validation, and removal through the gauntlet media form;
-- assume the currently used square creative, show a square thumbnail, and render three adjacent copies when `Tileable` is enabled;
-- do not extract dimensions or attempt to match uploads to billboard aspect ratios or physical slots in the initial release;
-- do not require sponsor name, reusable identity, or sponsor relationship tier merely to place campaign artwork;
-- retain sponsor-entity association only as an optional advanced path until the sponsor model has responsibilities beyond reusable advertising media.
-
-Sponsor, gauntlet, and team media-purpose catalogs include anticipated use cases that do not necessarily have active consumers. Preserve their generic attachment management where required for parity, but do not build bespoke previews or placement rules solely because a purpose value exists.
-
-Contract caution:
-
-- the current API authorization must be reviewed against the administrator-only registry boundary and any narrower form-scoped lookup retained for gauntlet authors;
-- public gauntlet reads should return only the approved sponsor display projection needed for that gauntlet, not unrestricted registry records;
-- Eventun does not appear to provide a dedicated sponsor-to-gauntlets aggregate endpoint;
-- do not make full sponsor history a launch dependency.
-
-## V1 Registry Structure
-
-Default priority:
-
-1. operational registry header and permission-aware actions;
-2. compact sponsor search and sort;
-3. sponsor records with approved identity/media cues;
-4. selected sponsor detail and optional gauntlet relationship context;
-5. mutation controls.
-
-## 1. Registry Header
-
-Content:
-
-- `Sponsors` or `Sponsor Registry` title;
-- concise operational description;
-- sponsor count if useful;
-- `Create Sponsor`.
-
-The page should feel like part of gauntlet operations, not a public partner showcase.
-
-## 2. Search and Sort
-
-Required controls:
-
-- search by sponsor name;
-- search by description;
-- sort A–Z;
-- sort Z–A.
-
-Do not add a global tier filter. Tier belongs to a specific sponsor–gauntlet relationship, not the sponsor record.
-
-## 3. Sponsor Records
-
-Record content:
-
-- sponsor logo or approved media;
-- name;
-- short description when present;
-- website/social-link indicators;
-- color accents;
-- view/edit action for administrators.
-
-Design guidance:
-
-- use sponsor colors as restrained accents;
-- do not let sponsor styling override the Website V2 operational shell;
-- omit absent fields rather than generating promotional claims;
-- do not expose sponsor records through public entity cards or public search results.
-
-## 4. Sponsor Detail
-
-The permissioned detail capability is required for replacement parity.
-
-Content:
-
-- available approved media;
-- sponsor name;
-- description when present;
-- website/social links;
-- colors;
-- relationship context when cheaply derivable;
-- admin edit/delete affordances when authorized.
-
-Sparse records use a compact factual layout. The route does not need public-profile SEO, sharing, or marketing modules.
-
-## 5. Sponsor Relationships and Tier
-
-Tier is specific to the sponsor's relationship with one gauntlet.
-
-Rules:
-
-- do not store or present tier as a global sponsor rank;
-- do not show tier in public gauntlet or marketing presentation or use it to imply prestige;
-- when relationship context is useful to an authorized user, label the tier beside the relevant gauntlet;
-- treat tier as gauntlet-specific operational input currently used in deciding in-game advertising placement;
-- do not over-specify public Website behavior from the current tier model because the game-client billboard system is expected to change.
-
-Public gauntlet presentation may show an approved sponsor name or mark attached to that gauntlet. It should not link to the permissioned registry or expose operational tier/placement data.
-
-Direct gauntlet billboard artwork does not by itself establish a reusable sponsor identity or a Website sponsor relationship. Do not infer a public sponsor name, profile, or sponsor strip from the image alone.
-
-## 6. Sponsor Administration
-
-Administrator actions:
-
-- create sponsor;
-- edit sponsor;
-- delete sponsor;
-- update media;
-- update colors;
-- update description;
-- update social links.
-
-Gauntlet creators do not gain registry or sponsor-record mutation rights. If the optional sponsor-association path remains in gauntlet authoring, expose only the scoped lookup and selection needed by that form.
-
-Destructive actions must be separated from selection and ordinary editing. Failed writes must be explicit and recoverable.
-
-## Game-Client Advertising Boundary
-
-Current runtime data combines sponsor-owned assets carrying their relationship tier with gauntlet-owned assets assigned to the synthetic `Gauntlet` source at tier `0`. The resulting automatic placement behavior is not a stable Website V2 presentation contract.
-
-A later game-client/content design pass should explore:
-
-- authored sets of valid advertising locations per course;
-- manual placement selection by organizers, or later by sponsors if a sponsor identity and approval workflow is designed;
-- multiple billboard shapes and aspect ratios;
-- trackside, vehicle-mounted, and holographic advertising treatments.
-
-If sponsor identity later gains durable value beyond billboards, consider keeping the stable identity on `Sponsor` while owning tournament-specific creative and placement choices on the sponsor–gauntlet relationship. Do not assume one global sponsor billboard set fits every tournament.
-
-Website V2 should not implement spatial placement authoring until that game-client model, asset rules, permissions, and preview/approval workflow are defined. The initial Website must preserve direct gauntlet `Billboard` upload with an explicit tileable control; sponsor-entity association is secondary. Preserve existing `WideBillboard` records as legacy data but do not offer that purpose for new uploads pending audit and coordinated cleanup.
-
-## Auth and Permission States
-
-| State | Behavior |
-|---|---|
-| Anonymous | no sponsor registry/detail navigation, search results, or route access; may see approved branding embedded in public gauntlet or marketing context |
-| Logged-in player | same as anonymous unless the account is an administrator |
-| Gauntlet creator | cannot browse the registry; can upload gauntlet-owned billboard assets and use the scoped optional existing-sponsor picker inside authorized gauntlet authoring |
-| Administrator | can browse, inspect, create, edit, delete, and manage sponsor media/colors/links |
-
-## Empty, Loading, and Error States
-
-Required states:
-
-- no sponsors;
-- no sponsors matching search;
-- sponsor not found;
-- unauthorized or insufficient role;
-- failed sponsor list/detail fetch;
-- missing media;
-- failed create/update/delete.
-
-The unauthorized state must not leak record existence or sponsor fields.
-
-## Responsive Behavior
-
-Desktop may use a registry list/grid beside a selected-record panel. Tablet and mobile should stack the same administrative flow, preserve search and inspection, and keep destructive actions clearly separated.
-
-## Indexing and Metadata
-
-- exclude sponsor registry and detail routes from public sitemaps;
-- emit no public sponsor-profile structured data or Open Graph identity pages;
-- use authenticated application metadata and `noindex` behavior;
-- do not leak sponsor descriptions, links, or media through unauthorized server rendering.
-
-## Deferred Data and Workflow Questions
-
-- whether sponsor-to-gauntlet history needs an aggregate endpoint;
-- whether a future sponsor–gauntlet campaign record should own tournament-specific creative while `Sponsor` retains only stable identity/contact data;
-- whether sponsor administration uses dedicated create/edit routes or in-page controls;
-- which sponsor media purpose is preferred for registry rows and public gauntlet marks;
-- whether a future sponsor representative can choose advertising locations directly;
-- how billboard slot compatibility, asset approval, preview, and publication are modeled;
-- whether a future public `/partners` route is justified by separately owned marketing content.
-
-## Next Steps
-
-- review Eventun list/detail authorization against the administrator-only registry boundary;
-- design direct billboard upload in gauntlet create/edit as the primary advertising workflow;
-- keep any sponsor-entity picker scoped to the gauntlet form and visually secondary;
-- keep public gauntlet sponsor display limited to an approved relationship projection;
-- defer billboard-placement design to a dedicated game-client/content pass.
+- sponsor self-service or sponsor representative accounts;
+- sponsor–gauntlet campaign entities;
+- public sponsor profiles or a `/partners` route;
+- physical billboard-slot selection, shape matching, vehicle placements, and holographic treatments;
+- dimension-derived placement and automatic creative approval;
+- a complete sponsor-to-gauntlet history experience.

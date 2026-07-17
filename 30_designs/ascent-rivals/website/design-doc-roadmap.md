@@ -6,6 +6,9 @@ Status: Active Draft
 ## Related
 - [[unified-design]]
 - [[information-architecture]]
+- [[non-functional-baseline]]
+- [[delivery-plan]]
+- [[route-api-matrix]]
 - [[terminal-ops-design-system]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
@@ -74,24 +77,26 @@ The remaining gaps are mostly specification gaps rather than strategy gaps.
 
 ## Current Status
 
-As of 2026-05-11, the design documentation has moved from broad discovery into focused draft specifications.
+As of 2026-07-17, the design documentation has moved from broad discovery into focused draft specifications.
 
 Completed or substantially drafted:
 
 - [[unified-design]] remains the top-level PRD and product/design index.
 - [[information-architecture]] defines the working route model, top-bar navigation direction, bridge rule, search architecture, and initial phase-1 page state matrix.
 - [[terminal-ops-design-system]] defines Terminal Ops as the primary working visual direction, with component inventory, navigation behavior, responsive collapse guidance, accessibility guardrails, and SEO guardrails.
+- [[delivery-plan]] defines the approved greenfield route-slice sequence, launch readiness gates, cutover/stabilization direction, legacy-site boundary, and rollback constraint.
+- [[route-api-matrix]] records the approved server/browser integration boundary, all initial route groups, shared response/metadata/sitemap behavior, deliberate legacy-route retirement, and the bounded team/gauntlet upload-intent contract.
 - Page specs exist for homepage, gauntlets, gauntlet detail, player directory, player profile, course leaderboards, teams, team profile, and sponsors.
 - Flow specs exist for authentication, wallet linking, team lifecycle, and core gauntlet authoring workflows.
 - Terminal Ops concept images and the original broad [[pencil-design-brief]] are preserved as durable reference artifacts.
 
 Still missing or incomplete:
 
-- A dedicated `/game` page spec.
+- A later `/game` page spec if material game-system, mode, ship, course, or world content eventually justifies the currently deferred route.
 - A consolidated open-question register.
 - A standalone content strategy.
-- A standalone responsive/accessibility/SEO baseline, unless the project accepts the distributed coverage in the design system and page specs.
-- A dedicated sponsor-administration flow. Core gauntlet create/edit now has a flow spec; bracket authoring and runtime operations remain separate post-implementation decisions. Prize/reward flows are deferred outside Website V2.
+- Vercel provisioning and cutover remain implementation work. Accessibility, responsive/performance, SEO, and hosting/deployment have approved baselines in [[non-functional-baseline]]; external analytics and observability are deliberately deferred rather than missing launch requirements.
+- A dedicated sponsor-administration flow. Core gauntlet create/edit now has a flow spec; initially administrator-only bracket authoring and runtime-repair operations are assigned to the Eventun Extend App UI, while their detailed implementation flows remain unwritten. Prize/reward flows are deferred outside Website V2.
 - A second Pencil pass against constrained page specs and Terminal Ops instead of another broad shell exploration.
 
 ## Outstanding Work
@@ -153,12 +158,11 @@ Phase-1 page state matrix should cover:
 - `/players/[id]`
 - `/teams`
 - `/teams/[id]`
-- administrator-only `/sponsors` and `/sponsors/[id]`
 - login
 - wallet linking
 - team management
 - gauntlet management
-- sponsor administration
+- Eventun Extend App sponsor-administration handoff
 
 ### 3. Design system specification
 
@@ -226,8 +230,7 @@ Initial page spec priority:
 5. course leaderboard
 6. team profile
 7. directories for players and teams
-8. permissioned sponsor registry and administration
-9. game page
+8. game page when distinct content justifies it
 
 Current drafts:
 
@@ -271,7 +274,7 @@ Current gaps:
 
 - gauntlet creation/editing
 - logged-in gauntlet participation context
-- sponsor administration
+- Eventun Extend App sponsor administration/media implementation and cutover verification
 
 ### 6. Responsive strategy
 
@@ -299,16 +302,16 @@ Required decisions:
 
 - source for homepage news/announcements
 - no-CMS phase-1 authoring model
-- static Nuxt content versus Eventun-served content
+- static Next.js content versus Eventun-served content
 - media asset ownership
 - Steam wishlist and social CTA placement
 - lore relationship to courses, planets, manufacturers, and ship parts
 
 ### 8. Accessibility and SEO baseline
 
-Status: partially covered in [[terminal-ops-design-system]], [[tone-and-voice]], and page specs.
+Status: rendering/caching, Vercel hosting/deployment, WCAG 2.2 AA accessibility, responsive/performance, and lightweight SEO requirements are recorded in [[non-functional-baseline]]; external analytics/observability are deferred, and Vercel provisioning/cutover remains implementation work.
 
-Create a dedicated accessibility and SEO baseline note if the distributed guidance is not enough for implementation.
+The accessibility and SEO baseline is approved in [[non-functional-baseline]]. Retain its implementation verification as release work.
 
 Required decisions:
 
@@ -317,7 +320,7 @@ Required decisions:
 - keyboard navigation for command/search interaction
 - screen reader labels for command nav and telemetry strips
 - contrast validation for color tokens
-- Nuxt SSR expectations for public pages
+- Next.js rendering and caching expectations for public and authenticated pages
 - meta and Open Graph patterns for public entities
 - performance budget for image-heavy pages
 
@@ -387,9 +390,9 @@ Recommended order:
 1. Complete or accept the current draft design system specification. Status: drafted.
 2. Complete or accept the current draft information architecture spec with page state matrix. Status: drafted.
 3. Run the next Pencil pass against the completed core page specs. Status: prompt drafted in [[pencil-terminal-ops-follow-up-prompt]].
-4. Create the missing `/game` page spec. Status: not started.
-5. Create the responsive/accessibility/SEO baseline or explicitly accept distributed coverage. Status: partial.
-6. Create remaining user-flow specs for sponsor administration and later bracket/runtime operations. Status: partial.
+4. Keep `/game` deferred until material content justifies it. Status: not an initial-release documentation gap.
+5. Maintain the accessibility, responsive/performance, and SEO portions of [[non-functional-baseline]]. Status: approved; implementation verification remains.
+6. Create remaining user-flow specs for later bracket/runtime operations; sponsor administration is assigned to the approved Eventun Extend App handoff. Status: partial.
 7. Create content strategy. Status: not started.
 8. Consolidate open questions. Status: not started.
 
@@ -403,11 +406,11 @@ Reason:
 
 - [x] Unified doc links to every focused design document created so far.
 - [ ] Every section of the unified doc has a destination in the decomposed set.
-- [ ] Every phase-1 must-have page has a page spec. Missing: `/game`.
+- [x] Every initial-release must-have public page has a page spec or an approved grouped spec; `/game` is explicitly deferred rather than missing.
 - [x] Phase-1 page state matrix exists.
 - [x] Design system maps Terminal Ops tokens to canonical game palette.
 - [x] Component inventory covers the core Terminal Ops components.
-- [ ] User flows cover authenticated and admin workflows preserved from the current site. Core gauntlet authoring is specified; sponsor administration and later bracket/runtime operations remain. Prize/reward flows are intentionally excluded.
+- [ ] User flows cover authenticated Website workflows and remaining administrator operations. Core gauntlet authoring is specified; sponsor administration has an approved Eventun Extend App handoff, while later bracket/runtime operations remain. Prize/reward flows are intentionally excluded.
 - [ ] Responsive strategy addresses navigation, tables, and two-column layouts.
 - [x] Accessibility guidance addresses terminal metaphor and box-drawing risks.
 - [ ] SEO baseline exists for public entity pages.

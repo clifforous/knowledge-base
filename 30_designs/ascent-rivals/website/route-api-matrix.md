@@ -1,0 +1,442 @@
+# Ascent Rivals Website V2 Route and API Matrix
+
+Date: 2026-07-17
+Status: Initial route groups, integration boundaries, and shared support contracts approved; implementation contract gaps remain tracked by route group
+
+## Related
+
+- [[unified-design]]
+- [[initial-release-scope]]
+- [[information-architecture]]
+- [[non-functional-baseline]]
+- [[delivery-plan]]
+- [[pages/homepage]]
+- [[pages/gauntlets-index]]
+- [[pages/gauntlet-detail]]
+- [[pages/player-directory]]
+- [[pages/player-profile]]
+- [[pages/course-leaderboards]]
+- [[pages/teams-index]]
+- [[pages/team-profile]]
+- [[flows/authentication]]
+- [[flows/gauntlet-authoring]]
+- [[flows/team-lifecycle]]
+- [[../../../50_knowledge/ascent-rivals/eventun/api|eventun-api]]
+
+## Purpose
+
+Map each approved Website V2 route to its authoritative source, server-side integration, browser-visible data, authorization behavior, and required contract work.
+
+This is a product and integration map, not a frozen endpoint-name or TypeScript-interface specification. Exact operation names and generated types must be verified against the implementation revision used by each slice.
+
+## Approved Integration Boundary
+
+- the browser does not receive Eventun or AccelByte service credentials, player access/refresh tokens, or generated clients configured to call those services directly;
+- server-only Next.js data functions use generated Eventun gateway clients and controlled AccelByte integrations;
+- Server Components obtain initial public or authenticated data and pass explicit browser view models only to the client components that need interaction;
+- cached public reads, private request-time reads, and mutation invalidation follow [[non-functional-baseline]];
+- same-origin Server Actions or route handlers own authenticated refreshes and mutations that originate in the Website;
+- Eventun remains authoritative for metrics, historical attribution, visibility, ownership, domain authorization, and mutation validation;
+- the Next.js layer may authenticate, cache, compose a bounded number of authoritative reads, remove unrendered fields, normalize transport failures, and map domain responses into page presentation;
+- do not copy backend domain rules into React components or treat a rendered control as authorization evidence;
+- direct browser upload is allowed only through a bounded signed URL or equivalent upload contract; the Website server obtains the authorization and attachment intent without proxying large media bodies unnecessarily;
+- AccelByte course metadata reaches the browser through a Website server integration or an approved Eventun projection, never through browser-held AccelByte service credentials;
+- prefer domain-neutral Eventun read models where other trusted consumers may reasonably reuse the semantics; keep route-only composition and display labels in Website V2.
+
+## Transport and Type Rules
+
+- keep generated gateway clients and raw transport models in a server-only integration package;
+- do not pass a complete generated record to the browser merely because it is available;
+- define explicit public, private-overlay, form-prefill, and mutation-input projections according to the route contract;
+- preserve null, absent, zero, false, timestamp, unit, and enum semantics during projection;
+- prevent secrets, internal ids, raw event evidence, replay/session keys, client versions, permission internals, and unrendered configuration from crossing the browser boundary;
+- use route templates and normalized failure categories in logs rather than request bodies or entity/player identifiers;
+- normalize dependency errors into deliberate unavailable, retryable, validation, authorization, conflict, and unexpected-failure states;
+- keep initial compact collections in one response for client-side search/filter/sort/display pagination until measured limits justify a different contract.
+
+## Repository-Authored Route Group
+
+| Route | Authoritative source | Server behavior | Browser behavior | Contract status |
+|---|---|---|---|---|
+| `/` | Repository-authored typed content and approved media; optional Eventun gauntlet discovery read | Static marketing page; independently cache an optional bounded race-network item; authenticated ownership/personal context must not block the page | Marketing interaction and optional client enhancement only | Repository content convention approved; optional gauntlet teaser reuses the discovery contract |
+| `/about` | Repository-authored verified studio, mission, team, and recognition content | Static by deployment | No product-data client fetch required | Approved; content accuracy review required during migration |
+| `/brand` | Repository-authored brand guidance and downloadable assets | Static by deployment; serve approved assets with stable URLs | Download interactions only | Approved; visual guidance must be refreshed after the design system is finalized |
+| `/events` | Repository-authored typed editorial event collection | Static by deployment; sort and render current/historical editorial entries | Optional local filtering only if event volume justifies it | Approved; no CMS or Eventun gauntlet substitution |
+| `/events/[slug]` | Repository-authored typed event detail and approved media/video links | Static by deployment; generate factual metadata/social card | Ordinary media/link interaction | Approved; verified promotional prize copy may exist here without data-driven Accountun integration |
+| `/game` | None approved beyond homepage content | No route in the initial release | None | Explicitly deferred until distinct material content exists |
+
+### Homepage Data Boundary
+
+The homepage may consume at most one optional race-network module backed by the same compact public gauntlet discovery response as `/gauntlets`. Selection uses the approved deterministic current/upcoming/recent fallback or code-authored editorial fallback. Failure or absence omits the module and never blocks the marketing shell.
+
+Do not add independent homepage leaderboard, telemetry, system-log, or multi-entity dashboard contracts.
+
+## Gauntlet Route Group
+
+| Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
+|---|---|---|---|---|---|
+| `/gauntlets` | Eventun compact public gauntlet discovery collection | Cached server read with occurrence-boundary-aware freshness; derive no timing state in the browser beyond display countdowns | Client-side scope, search, filter, sort, and display pagination/progressive reveal over the complete shallow collection | Optional participation summaries compose separately and must not make the public collection private | New/revised domain-neutral discovery contract required; response shape approved in [[pages/gauntlets-index]] |
+| `/gauntlets/[id]` | Eventun public gauntlet detail/configuration, schedule/occurrences, media, sponsor relationships, and published competition structure | Cache the relatively stable public entity/detail separately from short-cache standings/results; omit prize/reward data and unavailable optional modules independently | Section navigation, local presentation filters, explicit standings refresh, and bounded visualization only | Personal rank/qualification/participation and ordinary edit/delete permissions compose request-time; admin-only bracket/runtime mutation remains outside Website V2 | Existing detail reads are candidates; final detail projection and public published-bracket contract require implementation review |
+| `/gauntlets/create` | Eventun player-facing core gauntlet mutation, media-purpose lookup, signed upload, scoped sponsor lookup | Authenticate server-side; obtain form options and signed upload intent; submit one authoritative create mutation; invalidate collection/entity tags after success | Form state, client validation, direct signed media transfer, retry, and unsaved-change handling | Route requires `gauntlet_creator` or administrator according to Eventun; ordinary players cannot render protected form data | Existing mutation/upload contracts require final post-team field and failure-model review |
+| `/gauntlets/[id]/edit` | Eventun authorized full core-edit record, mutation, delete, media, and scoped sponsor reads | Enforce creator ownership/role or administrator access before prefill; recheck in Eventun; invalidate detail/collection/dependent tags after success | Prefilled form, direct signed uploads, preservation of existing ids/media/relationships, conflict and retry handling | Owning creator with current role or administrator | Existing contracts require optimistic-concurrency and post-team field review; bracket graph mutation excluded |
+
+### Gauntlet Detail Read Decomposition
+
+Do not force every gauntlet module into one cache and refresh lifecycle.
+
+Use these logical read classes even if implementation later combines compatible operations internally:
+
+1. Public detail/configuration
+   - identity, title/subtitle/ticker, colors, region, entry requirement, media, sponsor display, qualifiers, stages/circuits, and normalized occurrence schedule;
+   - tagged entity cache with schedule-aware freshness where timing affects presentation.
+2. Standings and accepted results
+   - gauntlet/stage/qualifier standings and accepted final result summaries;
+   - short public cache and explicit refresh where useful.
+3. Published bracket and public match state
+   - published graph, seeds/byes only when public, match state, and accepted results;
+   - new contract tied to the bracket implementation; no mutation controls or repair evidence.
+4. Private player overlay
+   - personal participation, qualification, placement, invitation/eligibility facts only when approved, and permissioned core actions;
+   - request-time player-authenticated read, never shared cached.
+
+An unavailable standings, bracket, sponsor, or personal module must fail independently where the remaining public detail is still meaningful.
+
+### Gauntlet Contract Gaps
+
+- implement the compact domain-neutral discovery collection approved in [[pages/gauntlets-index]];
+- confirm whether the existing public detail operation can return the approved normalized qualifier/stage/occurrence presentation without exposing authoring-only fields;
+- define the public published-bracket graph and match-state read when bracket contracts ship;
+- verify a bounded personal-overlay read instead of making the browser join several player-gauntlet calls;
+- review post-team allocation, field-publication, and stage fields before freezing create/edit projections;
+- determine optimistic-concurrency/version behavior for edits;
+- accept occasional unreferenced uploads at the initial traffic level, use auditable server-generated keys, and revisit cleanup only if measured growth or cost warrants it;
+- keep sponsor lookup scoped to authorized gauntlet authoring without exposing the administrator sponsor registry;
+- verify mutation-driven invalidation signals for detail, discovery, standings, and dependent player/team histories.
+
+## Pilot Route Group
+
+| Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
+|---|---|---|---|---|---|
+| `/players` | Eventun public pilot identity, team summary, and approved shallow career context | Return one cached compact collection; exclude only source-classified bot, test, and internal identities; strip profile-detail and private fields before serialization | Client-side name/team search, approved sorts, and display pagination/progressive reveal over the complete collection | None required; an own-profile link is ordinary navigation | Existing `GET /v1/player` is a candidate while measured payload cost remains acceptable; otherwise add a compact domain-neutral directory projection |
+| `/players/[id]` | Eventun pilot career and pilot-course career projections, current records/ranks, bounded match history, gauntlet participation/results, and public recognition; public course metadata originates in AccelByte through the approved Eventun projection | Compose independently cached public modules; filter history through the public course projection; preserve missing-value semantics; remove raw evidence and unrendered identifiers; return not found for an unusable public identity | Section navigation, local table/chart controls, and exact-value accessible alternatives; no browser N+1 joins | Request-time own-profile team/account actions only; no wallet, exact MMR, rank history, or private progression | F14 serving reads are candidates after review and F15 cutover; compact gauntlet-history and recognition reads are required; own-profile contract depends on the implemented team model |
+
+### Pilot Profile Read Decomposition
+
+Keep these as logical read classes even if compatible operations are combined internally:
+
+1. Identity and career summary
+   - public pilot identity, current public team summary, headline career values, and approved grouped totals;
+   - ordinary tagged public cache.
+2. Course career and placements
+   - public-course career rows, current record context, exact category rank/time, and the values needed for an optional normalized gap-to-record view;
+   - public cache aligned with course-record freshness.
+3. Recent races
+   - newest 100 server-backed multiplayer races on `published` or `archived` courses;
+   - short public cache; omit session/match ids, replay keys, client versions, hidden-course rows, and unrendered fields before the browser boundary.
+4. Gauntlet history
+   - compact active/completed public participation derived from real qualifier, match, or accepted-stage evidence;
+   - no invitations, eligibility, group assignment, or status-only rows.
+5. Recognition
+   - completed public achievements/masteries and known displayable gameplay-medal totals with honest coverage metadata;
+   - no incomplete progress, raw counters/dimensions, source ids, or reward fields.
+6. Own-profile overlay
+   - request-time team and account actions for the viewed authenticated pilot;
+   - unavailable or unauthorized state must not alter the shared public profile response.
+
+Identity/career, course performance, recent races, gauntlet history, recognition, and the private overlay may fail independently where the remaining profile still has factual value. The server may execute bounded compatible reads in parallel; the browser must not reproduce their joins.
+
+### Pilot Contract Gaps
+
+- review the Eventun F14 career, pilot-course, current-record/rank, and bounded-history contracts, then require the F15 historical backfill and cutover before launch use;
+- verify that the directory source supplies explicit public identity classification; do not infer bots, test accounts, or internal identities from naming or activity;
+- add a compact directory projection when the measured `GET /v1/player` response is no longer appropriate for a full client-side collection;
+- define a public recent-races projection that applies course visibility, maps race-mode labels, preserves missing versus zero/false, and strips internal identifiers before serialization;
+- add the compact player-gauntlet-history read defined in [[pages/player-profile]] instead of issuing one request per gauntlet;
+- add the compact public player-recognition read defined in [[pages/player-profile]] instead of forwarding broad progression and medal responses;
+- finalize the own-profile team/action overlay only after the team implementation is reviewed;
+- define invalidation or bounded freshness for career, records, recent races, gauntlet results, team identity, and recognition changes.
+
+## Course Route Group
+
+AccelByte Cloud Save remains authoritative for course configuration and publication state. Eventun should own the reusable controlled cache and public-safe projection because course visibility also governs leaderboards, recent races, player-course statistics, search, metadata, and game-facing reads. Website V2 consumes that Eventun projection server-side rather than implementing a separate publication classifier in Next.js.
+
+| Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
+|---|---|---|---|---|---|
+| `/courses` | AccelByte Cloud Save course configuration through Eventun's public-safe course projection; Eventun current record summaries | Return one cached compact collection of `published` courses by default and explicitly `archived` courses only when requested; never serialize hidden classifications; include bounded best-finish/lap summaries where approved | Client-side course/planet search, archive filter, sort, selection, and display pagination/progressive reveal over the complete collection | None | Current `GET /v1/course` is not safe to consume unchanged because its derived `active` value collapses retired and unreleased states; revise it or add a purpose-built domain-neutral projection |
+| `/courses/[code]` | AccelByte course metadata through Eventun; Eventun category leaderboard/current record; Eventun player-specific placement | Resolve the stable course code; return not found for hidden/unknown courses; cache stable metadata separately from short-cache selected-category records; preserve the category query in shareable state | Category switching, exact leaderboard table, bounded top-N gap visualization, accessible row detail, and public pilot links | Request-time logged-in pilot rank/time for the selected course/category, including placement outside the public top-N | Existing leaderboard reads are candidates after F14 review/F15 cutover; final public board and private placement projections require contract verification |
+
+### Course Read Decomposition
+
+1. Public course catalog/detail
+   - stable code, display metadata, approved media, runtime laps/heats, and only `published` or explicitly `archived` public lifecycle values;
+   - tagged public cache with one visibility implementation shared by directory, detail, history filtering, search, metadata, and sitemap generation.
+2. Public records and leaderboard
+   - selected player-facing category, exact rank/time, public pilot identity/link, loadout value, record context, returned-population size, and as-of time where available;
+   - short public cache or explicit refresh without implying live telemetry.
+3. Personal placement
+   - authenticated pilot rank and time for the selected course/category even when absent from the returned top rows;
+   - request-time private overlay that does not make the public board private.
+
+The course index may include bounded cross-course record summaries, but it must not embed every full category leaderboard. Course metadata failure, leaderboard failure, and personal-placement failure require distinct page states.
+
+### Course Contract Gaps
+
+- revise `GET /v1/course` or add a purpose-built Eventun public projection that reads authoritative AccelByte feature/archive metadata, returns `published` by default, returns `archived` only explicitly, and treats hidden detail as not found;
+- ensure the same public projection filters player recent-race history, player-course rows, global search, route metadata, canonicals, and sitemaps;
+- review F14 current-record and player-rank serving contracts and require the F15 historical backfill/cutover before launch use;
+- verify the public leaderboard projection exposes exact category, rank, time, public pilot identity, loadout value, bounded population context, and useful as-of metadata without raw source-policy or internal identifiers;
+- verify a small authenticated personal-placement response for ranks outside the public top-N;
+- preserve the approved player-facing Race, Time Trial, `3K Class`, and `10K Class` mappings while keeping server/client authority and validation terminology out of public copy;
+- defer checkpoint geometry, sector comparison, whole-population distributions, percentiles, and record-history timelines until stable source contracts exist;
+- define bounded record/cache freshness or invalidation from accepted Eventun result updates.
+
+## Team Route Group
+
+This route group is provisional until the Eventun T00-T03 team work is implemented and reviewed. It fixes Website ownership, public/private separation, and required semantics without freezing legacy endpoint names, numeric designations, or speculative statistics fields.
+
+| Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
+|---|---|---|---|---|---|
+| `/teams` | Eventun public team browse projection; optional T03 fact-backed summary fields after review | Return one cached compact collection with public identity, membership/recruiting context, approved media/colors, and roster count; do not embed management queues or every roster merely because legacy `Teams` does | Client-side name/tag search, membership filter, approved sorts, and display pagination/progressive reveal over the complete collection | Request-time current-team and create-eligibility summary composes separately; it must not make the directory private | T02 browse contract is planned; prefer a reusable compact projection over the legacy full-roster list |
+| `/teams/create` | Eventun authenticated team creation, approved media-purpose lookup, and signed upload | Authenticate and obtain eligibility/form options server-side; submit one authoritative create mutation; refresh current-player state; invalidate team collection/detail tags; route to the new team management context | One form with local validation, direct signed media upload, retry, and unsaved-change handling | Eligible authenticated player; administrator create-on-behalf remains an explicit post-T01 contract decision | Final create fields, ownership rule, typed result, conflict behavior, and media attachment lifecycle require T01/T02 review |
+| `/teams/[id]` | Eventun public team detail and active roster; T03 team performance; published team competition results when their ownership semantics exist | Cache identity/roster separately from fact-backed statistics; compose a request-time team action state for authenticated users; execute join/request/invite-response/leave mutations through same-origin actions and revalidate affected team/player collections | Local roster/stat controls, exact pilot links, public membership label, and only the action returned for the current player state | Current membership, pending invitation/request for this player, and allowed actions; no public pending queues or capability internals | T02 public detail/action-state and typed transition contracts are planned; T03 statistics are a launch dependency but exact modules remain provisional |
+| `/teams/[id]/manage` | Eventun authorized management snapshot, pending queues, team mutation contracts, media-purpose lookup, and signed upload | Reject unauthorized access before prefill; recheck every mutation in Eventun; keep independently saveable management sections; invalidate team, player, pending, search, and relevant statistic tags after success | Team info/media forms, roster/capability controls, invite/request queues, direct signed uploads, confirmations, conflicts, and retries | Explicit effective capabilities and ownership from Eventun; numeric designation or a visible title is not authorization evidence | T01/T02 replacement contracts required; management fields and capabilities must be reviewed after implementation |
+
+### Team Read and Mutation Decomposition
+
+1. Public team directory
+   - compact identity, membership/recruiting presentation, media/colors, and member count;
+   - one cached collection for local search/filter/sort.
+2. Public team detail and roster
+   - identity plus the complete active roster at the expected small team scale;
+   - public titles and competition rank only when their implemented meanings are approved; never serialize management capabilities as decorative profile fields.
+3. Fact-backed team performance
+   - T03 career/competition summaries, team-filtered roster leaderboards, and historical results attributed to the team represented when the performance occurred;
+   - separate public cache and independent unavailable state; never sum current members' lifetime pilot careers as a substitute.
+4. Current-player action state
+   - current team, relationship to the viewed team, relevant unexpired invitation/request, and explicit allowed action such as join, request, cancel, accept, decline, leave, or manage;
+   - request-time authenticated response; React does not reproduce the membership transition state machine.
+5. Authorized management state
+   - effective capabilities, editable public fields/media, active roster management facts, and pending invitation/request queues;
+   - permissioned request-time reads split by management section when that improves independent loading and saving.
+6. Typed mutations
+   - create/update, deterministic membership transition, decline/cancel/leave/remove, title/capability/rank changes, ownership transfer, and disband;
+   - Eventun derives the actor, locks relevant state, authorizes one transition, commits audit/notification intent atomically, and returns an explicit outcome.
+
+Public identity/roster and fact-backed statistics may fail independently. Private action-state or management failure must not leak pending state or disable the public profile. Successful mutations refresh or invalidate the team directory, team detail, current-player summary, pending queues, affected player profiles, global search, and any current-roster or historical-statistic projection whose facts changed.
+
+### Team Contract Gaps
+
+- complete and review T00-T03 before freezing Website contracts; Website V2 launch requires fact-backed T03 reads and membership-at-performance-time attribution;
+- add a compact reusable public team browse projection rather than shipping the legacy every-team-plus-full-roster response to the browser indefinitely;
+- finalize public team identity, recruiting, region/time-zone, watch/community link, media, roster, title, competition-rank, and affiliation-visibility fields against the implemented model;
+- expose one bounded current-player/team action-state response with unexpired pending state and explicit allowed actions; do not make the Website derive transition eligibility from membership mode alone;
+- keep one deterministic add-member transition with typed outcomes where the reviewed Eventun design retains it; decline, cancel, leave, remove, transfer, and disband may remain explicit mutations;
+- ensure the implemented T02 scope includes the approved `Open`, `Request to Join`, and `Invite Only` Website flows, including player-side invite acceptance/decline and requester cancellation;
+- replace numeric designation authorization with explicit ownership and effective capabilities; visible titles remain presentation data;
+- decide during T01/T02 review whether administrators can create a team for another player or whether ownership is always derived from the authenticated creator;
+- define optimistic-concurrency/version behavior for independently saved management sections and destructive confirmations;
+- reuse the approved signed-upload boundary and define cleanup/expiry for unattached team media;
+- integrate actionable invite/request notification intent through the approved AccelByte Chat delivery path; Website V2 needs only a concise current-player indicator linking to the authoritative team page, not a second inbox;
+- define T03 public team summary, roster-comparison, leaderboard, and historical-result reads without introducing a speculative aggregate team score;
+- define mutation-driven invalidation for team identity, roster, current-player state, pending queues, public search, player team summaries, and fact-backed team views.
+
+## Global Search Utility Group
+
+Global search is a shared-shell utility rather than an initial destination route. Do not add a dedicated `/search` page merely to host the same grouped results. The accessible top-bar `SearchCommand` opens as a dialog or mobile sheet, and each group can link to its existing directory with the query preserved, such as `/players?q={query}`.
+
+| Surface | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
+|---|---|---|---|---|---|
+| Top-bar `SearchCommand` | The approved Eventun public gauntlet, pilot, and team compact collections plus the AccelByte-authored course catalog through Eventun's public-safe projection | On first search interaction, compose the independently cached public collections into one explicit shallow Website catalog; return group availability independently; never expose service credentials or raw transport records | Cache the catalog in browser query state with bounded staleness and mutation invalidation; normalize once; perform grouped local matching; show at most a small result preview per group; support keyboard/touch navigation and direct entity links | None for the initial four public groups | No new Eventun cross-domain search endpoint is initially required if the approved compact reads remain suitably small; add one same-origin Website support handler/view model |
+| `/gauntlets?q={query}` | Existing public gauntlet discovery collection | Render the ordinary directory and supply the initial query state; keep all public current, upcoming, and past gauntlets searchable | Apply the query through the directory's approved local search and controls | Existing participation overlay remains independent | Existing directory contract; query variant is `noindex` and canonicalizes to `/gauntlets` |
+| `/players?q={query}` | Existing compact public pilot directory collection | Render the ordinary directory and supply the initial query state | Apply the query through local pilot/team matching | None | Existing directory contract; query variant is `noindex` and canonicalizes to `/players` |
+| `/teams?q={query}` | Planned T02 compact public team browse collection | Render the ordinary directory and supply the initial query state | Apply the query through local team-name/tag matching | Current-team/create eligibility remains independent | Provisional until T02 review; query variant is `noindex` and canonicalizes to `/teams` |
+| `/courses?q={query}` | Eventun public-safe projection of authoritative AccelByte course metadata | Render the ordinary directory and supply the initial query/archive state; hidden courses behave as absent | Apply the query through local course/planet matching; archived matches remain explicitly labeled | Personal placement remains independent | Requires the approved safe course projection; query variant is `noindex` and canonicalizes to `/courses` |
+
+### Search Catalog Contract
+
+Return one full shallow collection for each initial group:
+
+1. Gauntlets
+   - stable id, title, ticker/subtitle where approved, canonical route, one optional small image, concise server-derived timing/lifecycle context, and public searchable labels;
+   - include every public gauntlet regardless of whether it is current, upcoming, or past.
+2. Players
+   - stable id, display name, avatar, public team name/tag or `Independent`, canonical route, and public searchable labels;
+   - apply the same explicit bot/test/internal classification used by `/players`.
+3. Teams
+   - stable id, name, tag, optional avatar, public membership/recruiting label, member count, canonical route, and public searchable labels;
+   - do not include complete rosters, capabilities, or pending membership state.
+4. Courses
+   - stable code, display name, planet, optional approved image, `published` or `archived` state, canonical route, and public searchable labels;
+   - never include hidden, alpha, internal, unknown, or conflicting records.
+
+Common catalog rules:
+
+- searchable aliases contain only deliberate public labels; do not make internal ids, raw enum values, or private metadata searchable merely because they exist;
+- omit full statistics, schedules, rosters, media arrays, configuration, and management data;
+- expose a stable group discriminator, canonical entity route, optional presentation fields, and per-group unavailable state rather than one ambiguous flat result list;
+- return no personalized action state in the public catalog;
+- reuse the same source cache tags and visibility projections as the entity directories so search cannot reveal a record that its public route rejects;
+- invalidate or refresh the browser catalog after a same-session entity mutation that changes a searchable public label or lifecycle state.
+
+### Search Interaction and Ranking
+
+- lazy-load the catalog on the first explicit search interaction rather than prefetching every collection on every marketing page;
+- use plain-text input; optional in-world verbs such as `FIND PILOT` remain presentation shortcuts and are never required syntax;
+- rank deterministically within each group: exact normalized label/tag match, prefix match, then fuzzy or substring match with a stable alphabetical tie-break;
+- do not create one opaque cross-entity relevance score or let a popular entity type crowd out the other groups;
+- initially show up to five matches per group and provide `View all` navigation to the corresponding directory query;
+- distinguish no matches from a temporarily unavailable group;
+- preserve group headings, result counts, focus movement, Escape behavior, Enter activation, visible focus, screen-reader status, and touch targets according to [[non-functional-baseline]];
+- do not add fake command latency, recent-query tracking, recommendation ranking, or analytics-dependent ordering.
+
+### Search Permission Boundary
+
+Sponsors do not enter the public catalog. Website V2 has no sponsor registry or administrator sponsor-search group; sponsor administration belongs to the Eventun Extend App. A gauntlet form may request a separate authorized form-scoped sponsor selector, but it never makes the shared public catalog session-dependent.
+
+Team invitation player pickers, scoped sponsor pickers, gauntlet authoring selectors, and other mutation-specific choices are not global search. Each requires an authorized purpose-built lookup whose eligibility and returned fields match that workflow.
+
+### Search Contract Gaps
+
+- verify that the four approved compact collections expose the shallow labels and canonical identifiers needed by search without importing their broad legacy responses;
+- add one same-origin Website catalog handler/view model that composes cached public source reads and reports per-group availability;
+- ensure the gauntlet catalog includes Past entities, the pilot catalog applies explicit identity classification, the team catalog excludes private state, and the course catalog uses the fail-closed public visibility projection;
+- accept and initialize the `q` query on each entity directory while keeping filtering client-side and query variants out of the sitemap/index;
+- measure compressed catalog size, first-open fetch latency, parse/normalization time, memory, and input responsiveness on representative mobile hardware;
+- if one group crosses measured limits, move only that group to a bounded server search contract before considering a separate all-entity search service;
+- do not add Planets, Ship Parts, Manufacturers, Events/News, or a global Sponsor group until their route, visibility, and compact-result contracts justify inclusion.
+
+## Authentication and Session Route Group
+
+This route group is approved using the exchange already operating in Ascentun. Steam OpenID remains Steam's documented browser-login mechanism and AccelByte's current IAM contract still exposes the V4 `steamopenid` platform-token grant. AccelByte's managed-cloud coverage does not explicitly support this custom website architecture, but that documentation ambiguity is an accepted compatibility risk rather than a separate launch gate.
+
+| Route | Authoritative source | Server behavior | Browser behavior | Security and contract status |
+|---|---|---|---|---|
+| `GET /api/auth/steam/login?returnTo=...` | Trusted environment configuration and Steam OpenID | Validate one safe relative return path; create a short-lived authenticated login transaction containing a nonce, issued time, and return path; construct realm/callback URLs from the configured public origin; redirect directly to Steam without unused AX/SREG claims | Follow the external redirect; no provider picker or browser-readable transaction contents are required | Approved; never derive realm, callback, or final redirect authority from `Host`/forwarded-host request values |
+| `GET /api/auth/steam/callback` | Steam callback plus AccelByte V4 `steamopenid` platform-token exchange | Correlate and consume the login transaction; validate callback structure, expected provider/endpoint/mode/return target/claimed-id shape and required signed fields; submit only the allowed assertion fields to AccelByte; treat identity as established only after a successful exchange; handle cancel, linking/compliance, queue, and failure responses; establish the session and redirect safely | Receive only a final safe redirect or a deliberate login-status page | Required; raw assertions, platform tokens, AccelByte tokens, client secrets, and vendor response bodies must not be persisted in browser-accessible application state or ordinary logs |
+| `/login` | Website-authored status copy; sanitized auth outcome | Render canceled, expired, failed, temporarily unavailable, linking-required, and retry states without exposing vendor payloads; preserve only a validated relative `returnTo` | Start or retry direct Steam sign-in | Required; `noindex`; expired protected routes should land here rather than silently starting an external redirect |
+| `POST /api/auth/login-queue` | AccelByte Login Queue ticket grant | Read a sealed server-held queue ticket; enforce CSRF and Origin checks; exchange or poll through the documented V4 login-queue grant; establish a session when ready and discard the ticket on success/expiry/failure | Receive waiting, ready, expired, or retryable status without receiving the queue ticket | Implement when the platform-token exchange returns the documented V4 `202`; exact polling behavior is ordinary integration verification |
+| `GET /api/auth/session` | Authenticated Website session; Eventun current-player context; display-only AccelByte fallback | Return a request-time, `no-store`, explicit `SessionView`; refresh authoritative context when required; fail closed for team/admin capabilities when Eventun context is unavailable | Render sign-in or the compact account menu and private overlays from display-safe fields only | Required; no access/refresh token, raw role/permission list, wallet state, or vendor payload crosses this boundary |
+| `POST /api/auth/refresh` | HTTP-only AccelByte refresh-token cookie and reviewed IAM token endpoint | Enforce CSRF and Origin checks; serialize or deduplicate concurrent refresh for one session; rotate tokens, any cached session metadata, and CSRF state; clear private state on terminal failure | Receive success/expired status and refresh the explicit session view | Required; final V3-versus-V4 endpoint and token-rotation behavior must be verified against the deployed namespace |
+| `POST /api/auth/logout` | Website session and AccelByte IAM token revocation | Enforce CSRF and Origin checks; best-effort revoke the refresh/access token through the supported confidential-client operation; always clear auth, transaction, queue, any metadata, and CSRF cookies; return a validated public-parent/current-public destination | Remove private overlays and navigate without a confirmation dialog | Required; local sign-out must succeed even when vendor revocation is unavailable |
+
+### Session and Cookie Model
+
+- do not add an external session database for the initial implementation unless cookie size, replay resistance, rotation, or Login Queue behavior demonstrates that one is required;
+- use host-only production cookies with `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, and `__Host-` names where applicable for access/refresh credentials and any cached authenticated session metadata;
+- a readable CSRF value may exist for the double-submit pattern, but no browser-writable or unauthenticated cookie may become an identity, role, team, or authorization source;
+- never copy Ascentun's readable user-info cookie pattern: a browser-facing `SessionView` is an output projection, not a credential or server authorization input;
+- an AccelByte access token is different from that derived cookie: its claims are valid authentication input when the server verifies its signature, issuer, audience/client context, and expiry;
+- keep access tokens, refresh tokens, Login Queue tickets, raw roles/permissions, client secrets, and OpenID assertions server-only;
+- Eventun current-player context is primary for canonical pilot, team, pending membership, and operations destinations. AccelByte public user fallback may provide display identity only and must fail closed for Eventun-derived capabilities;
+- private session reads are request-time and `no-store`; shared public page data remains independently cacheable;
+- refresh authenticated context after team or identity mutations rather than relying on a long-lived browser copy;
+- authorization controls may improve navigation, but Eventun must reauthorize every protected domain read and mutation.
+
+The simplest initial implementation retains separate HTTP-only access/refresh cookies and derives `SessionView` server-side from the validated token and Eventun context. It does not require a second authentication framework, session database, or metadata cookie. If later performance work caches session metadata in another cookie, that cookie must be HTTP-only and cryptographically authenticated. Measure token-cookie size and rotation behavior before launch; move credentials behind an opaque server-session identifier only if those constraints are not safe or maintainable.
+
+### Browser Session Projection
+
+`SessionView` contains only fields needed by the shell and approved private overlays:
+
+- authenticated/expired state;
+- canonical pilot id, route, display name, and avatar;
+- current team id, route, name/tag, or an explicit no-team state;
+- one bounded pending invitation/join-request count or status;
+- explicit authorized `Admin / Operations` destinations rather than raw roles or permissions;
+- access-session expiry status sufficient to schedule refresh, without exposing either token.
+
+The approved account menu remains `My Career`, `My Team`, conditional `Admin / Operations`, and separated `Sign Out`. Wallets, exact MMR, creation/edit actions, and speculative provider/linking controls remain excluded.
+
+### Environment and Callback Boundary
+
+- production and development each use one configured canonical public origin paired to the matching AccelByte/Eventun environment;
+- arbitrary Vercel preview hosts must not become Steam realm, callback, or post-auth redirect authorities;
+- previews should disable external Steam sign-in or hand off to the fixed development origin through a separately reviewed mechanism; they must not synthesize callbacks from request host headers;
+- safe return paths begin with one `/`, remain same-origin, and exclude callback, logout, management, or other destinations that cannot safely resume;
+- consume the login transaction once, enforce a short lifetime, and redact callback query strings and cookies from logs;
+- return `Cache-Control: no-store` from authentication handlers and a restrictive referrer policy from the callback so the OpenID assertion URL is not retained or propagated by Website responses.
+
+### Authentication Implementation Checks
+
+- reuse the working Ascentun Steam OpenID to AccelByte V4 exchange; no separate vendor-support confirmation is required before implementation;
+- verify successful login, refresh, and logout in the matching Website V2 development environment as ordinary release acceptance;
+- verify linked-player, first-login/headless-account, duplicate-identity, `steam` versus `steamopenid` grouping, linking/compliance, cancellation, invalid assertion, replay, and Login Queue responses in the intended namespace;
+- confirm the confidential client, exact V4 platform grant, refresh endpoint/version, token rotation, and V3 revocation operation available to Website V2;
+- determine whether a sealed one-time login-transaction cookie plus provider/AccelByte validation supplies sufficient replay resistance or whether the flow requires a short-lived server-side nonce store;
+- verify authenticated-cookie size, browser limits, expiry alignment, concurrent refresh behavior, multi-tab behavior, and terminal refresh cleanup;
+- define or verify one bounded Eventun current-player/session-context read that supplies canonical pilot, team, pending membership, and explicit Website operations destinations without broad role disclosure;
+- freeze the sanitized login outcome taxonomy and safe parent-route behavior for protected-route expiry and sign-out;
+- test that Eventun unavailability cannot promote an AccelByte display fallback into team, creator, or administrator authority.
+
+## Sponsor Administration Exclusion
+
+Website V2 does not implement `/sponsors`, `/sponsors/[id]`, sponsor CRUD, or sponsor-owned media administration. Those operations move to the Eventun Extend App before cutover as specified in [[pages/sponsors-index]].
+
+The Website route boundary retains only:
+
+- approved sponsor display embedded in or composed for one public gauntlet detail response;
+- a narrow existing-sponsor option projection inside authorized gauntlet authoring;
+- direct gauntlet-owned advertising upload, which remains independent of sponsor-owned media.
+
+No unrestricted sponsor registry response, mutation, or upload credential crosses the Website browser boundary. Existing singular Ascentun sponsor URLs retire without becoming public Website V2 destinations.
+
+## Shared Response-State Support
+
+These are framework-level support behaviors, not independent public application routes or new backend APIs.
+
+| Support surface | Trigger | Required behavior | Contract status |
+|---|---|---|---|
+| `app/not-found.tsx` | Unknown route; unknown, hidden, or unpublished public entity | Render one branded, non-revealing recovery state; entity routes resolve primary identity/visibility before optional modules; verify a real `404` response and `noindex` in the production build | Approved; duplicate entity-specific not-found pages are unnecessary unless recovery actions materially differ |
+| Local unavailable state | Essential authoritative read is temporarily unavailable | Render the page shell with a retry action and a 5xx response; do not turn dependency failure into not found | Approved; exact 5xx behavior must be verified in the implemented Next.js route |
+| Optional module unavailable state | Standings, recognition, sponsor display, personal placement, or another nonessential read fails | Keep the factual page available and isolate the failure to that module | Approved; each route contract identifies which modules are optional |
+| `app/error.tsx` | Unexpected exception within the root route tree | Render a branded recovery state inside the normal shell and support retry without exposing exception details | Approved |
+| `app/global-error.tsx` | Failure escapes the root layout or template | Render a minimal self-contained recovery document | Approved; expected to be rare |
+| Protected-page recovery | Anonymous session or authenticated session without management permission | Anonymous visitors go to `/login` with a validated relative return path; authenticated unauthorized visitors return to the safe public parent with a clear message; mutation endpoints return typed `403` | Approved; Eventun still reauthorizes domain operations |
+| Retired content | Replaced or removed legacy route | Return `404`; do not add an initial redirect or `410` inventory for the current negligible external traffic | Approved; exact redirects may be added later only for demonstrated inbound use |
+
+Next.js can render a streamed `notFound()` result with a `200` response. Implementation acceptance must inspect the actual response status for unknown, hidden, and unpublished dynamic entities and move primary entity resolution ahead of optional streaming where necessary. Website V2 does not need the experimental `global-not-found` convention for its approved single-root-layout structure.
+
+## Shared Metadata and Discovery Support
+
+These use standard Next.js metadata facilities and the same public-safe projections as the rendered routes. Do not add parallel metadata or sitemap APIs.
+
+| Support surface | Authoritative source | Server behavior | Indexing and browser behavior | Contract status |
+|---|---|---|---|---|
+| Root metadata configuration | Repository-authored brand defaults and one configured production origin | Set the title template, metadata base, default description, canonical-origin policy, icons, and default social image without deriving authority from request host headers | Supplies safe fallbacks; each indexable route still receives a factual title, description, and self-canonical URL | Approved; final production origin remains a cutover configuration item |
+| Static route metadata | Repository-authored route content | Export static metadata for marketing, about, brand, event-index, and other repository-authored pages | Index approved public routes; no separate client fetch | Approved |
+| Dynamic entity metadata | The same Eventun public-safe gauntlet, pilot, team, or course projection used by the page | Reuse the primary entity read; never perform a broader visibility-bypassing lookup; return not found for unknown/hidden/unpublished entities; remain useful when optional statistics fail | Render factual entity metadata and a self-canonical URL without private overlays or query-state variants | Approved; projection fields must include only the approved display identity and meaningful update timestamp |
+| Query-state metadata | Directory route plus request query state | Recognize search/filter/sort/pagination variants on initial server render | Preserve useful shareable URLs, apply `noindex`, and canonicalize to the base directory; do not create an indexable variant for every combination | Approved |
+| `app/robots.ts` and deployment headers | Trusted deployment environment and configured production origin | Production advertises the canonical sitemap and excludes protected/support paths; development and preview disallow crawling and receive deployment-wide `X-Robots-Tag: noindex, nofollow` | Robots directives are indexing guidance, never authorization | Approved |
+| `app/sitemap.ts` | Repository-authored public routes/events plus complete cached public gauntlet, pilot, team, and course projections | Emit one sitemap containing canonical public routes, including Past gauntlets and published or archived courses; retain the last complete cached result across dependency failure and fail rather than publish a knowingly empty/partial replacement when no complete result exists | Exclude query variants, search, authentication, create/edit/manage/admin, sponsor, wallet/prize, hidden, unpublished, and preview URLs | Approved; split only after measured URL volume requires it |
+| Social metadata | Repository-authored default card plus factual route/entity identity and approved media | Provide one branded 1200 by 630 fallback; generate route-specific cards only when approved names, dates/categories, and media make them useful | No invented planet, course, sponsor, pilot, or team artwork; missing media uses the fallback | Approved |
+
+Sitemap `lastModified` values come only from meaningful source content/entity timestamps. Build time, request time, cache refresh time, and optional statistics refreshes do not qualify unless they represent a visible canonical-page change.
+
+## Legacy Route Retirement
+
+Website V2 does not implement a legacy marketing or Ascentun redirect layer for the initial release. The current audience is too small and internally concentrated to justify route mappings, host-specific redirect infrastructure, or a redirect manifest.
+
+- all Website navigation, repository-authored content, shared links, metadata, and sitemap entries use the final canonical routes directly;
+- replaced singular Ascentun routes and `/tournaments` marketing routes may return `404` after cutover;
+- the legacy Ascentun gauntlet prize page, required authentication, and supporting APIs remain reachable only for the retained Midnight flow;
+- sponsor routes retire after the Eventun Extend App handoff and do not redirect into Website V2 or an authenticated administrator surface;
+- an exact redirect may be added later when a real inbound link or workflow demonstrates value; do not prebuild wildcard or host-wide mappings.
+
+## Shared Media Upload Support
+
+Website V2 retains Ascentun's direct browser-to-R2 transfer architecture but replaces its session-only signing endpoint with an operation-scoped upload-intent boundary. Website V2 owns only team and gauntlet uploads; sponsor uploads belong to the Eventun Extend App, and course uploads are excluded.
+
+| Support surface | Authoritative source | Server behavior | Browser behavior | Contract status |
+|---|---|---|---|---|
+| Server-rendered media options | Eventun media-purpose configuration filtered by the approved Website form | Fetch with server credentials; return only the team or gauntlet purposes that the current form may create; exclude sponsor/course purposes and new `WideBillboard` uploads | Render labels and purpose-specific controls without a separate browser purpose API | Approved; preserve unrecognized or legacy media already attached during edit |
+| `POST /api/media/upload-intents` | Authenticated session, Eventun create/manage capability, approved form-purpose projection, and Website R2 configuration | Enforce CSRF/Origin checks; authorize team create/manage or gauntlet create/edit; accept at most 10 JPEG/PNG/WebP images of at most 10 MB each; derive extensions from allowed types; generate random keys; issue ten-minute signed `PUT` URLs; return required headers, public URL, and expiry; never log credentials or signed URLs | Request intents immediately before save and retain form state on failure | Approved; no upload-session database or file-body proxy required |
+| Direct R2 `PUT` | Short-lived upload intent and environment-specific R2 bucket | Keep object-store credentials server-only; configure CORS for the fixed production and development Website origins | Validate file type for user feedback, upload directly, inspect every response, and retry only failed files | Approved; direct transfer is not a Website API proxy |
+| Team/gauntlet create or update mutation | Eventun authoritative mutation and authorization | Reauthorize the domain operation; accept newly uploaded URLs only from the configured environment media base while preserving reviewed existing/legacy media; attach purpose, priority, and approved metadata; invalidate affected entity/collection tags | Submit only after required uploads succeed; show upload and mutation failures separately | Approved; upload success alone never proves attachment or mutation authorization |
+
+`Tileable = true` remains ordinary gauntlet `Billboard` metadata and may use the approved three-panel preview. New uploads do not perform dimension extraction, resizing, aspect-ratio classification, physical-slot matching, spatial preview, or content processing.
+
+An upload followed by an abandoned or failed form can leave an unreferenced object. At the approved traffic level this is an accepted initial operational tradeoff: use auditable server-generated keys, but do not add a pending-object database, promotion workflow, or automated orphan-cleanup service. Revisit cleanup only if measured object growth or operating cost warrants it.
+
+## Matrix Review Result
+
+The initial route/API matrix is complete for planning. Remaining entries within individual route groups are implementation contract gaps, team/bracket dependencies, environment verification, and cutover work rather than unmapped Website route groups.

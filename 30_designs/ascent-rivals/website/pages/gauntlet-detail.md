@@ -34,8 +34,8 @@ Current app route equivalent:
 
 Final route direction:
 
-- use plural route groups in the Nuxt site
-- preserve redirects from old singular routes if public links already exist
+- use plural route groups in Website V2
+- allow old singular routes to retire without redirects unless later measured inbound use justifies an exact mapping
 
 ## Audience
 
@@ -397,7 +397,7 @@ Content:
 
 - approved sponsor logos/names for this gauntlet
 - no public relationship-tier or billboard-placement data
-- no links to the permissioned sponsor registry/detail routes
+- no links to Eventun Extend App sponsor operations or any nonexistent Website sponsor profile route
 
 Placement:
 
@@ -466,7 +466,7 @@ Design guardrail:
 
 ### Stage/Admin Actions
 
-Hosting decision deferred until after initial bracket implementation.
+Initial hosting boundary: administrator-only bracket mutation and runtime repair actions live in the Eventun Extend App UI. Website V2 renders the published bracket graph and public match state when those contracts ship, but ordinary core gauntlet creators do not receive AdminService access through the public page.
 
 Candidate operations:
 
@@ -476,7 +476,7 @@ Candidate operations:
 
 Guardrail:
 
-- these controls remain restricted operator tooling wherever they are ultimately hosted;
+- these controls remain restricted operator tooling in the initial Extend App UI boundary;
 - do not assume they belong on Website V2 merely because the public gauntlet page displays stage state;
 - do not turn the public page into an operations dashboard.
 
@@ -486,7 +486,7 @@ Guardrail:
 |---|---|
 | Anonymous | can view briefing, qualifiers, stages/finals, standings, sponsors, and media |
 | Logged-in player | same plus personal rank and qualification context where supported |
-| Gauntlet creator/admin | same plus ordinary non-prize edit/delete actions; runtime stage tooling remains subject to the post-bracket hosting and permission decision |
+| Gauntlet creator/admin | same plus ordinary non-prize edit/delete actions; administrator-only bracket and runtime-repair tooling remains in the Eventun Extend App UI |
 
 ## Empty / Loading / Error States
 
@@ -539,10 +539,6 @@ Public gauntlet pages should support:
 - canonical URL
 
 Do not expose private player-specific eligibility data in metadata.
-
-## Open Questions
-
-- After the initial bracket implementation, should bracket generation, publication, and repair remain admin-only in the Eventun Extend App UI or become a permissioned Website V2 management surface?
 
 ## Next Steps
 

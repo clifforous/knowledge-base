@@ -131,7 +131,7 @@ Mock 1: desktop player profile
   4. optional strengths only when supported by best finish or best lap data
 - Include:
   - player header/briefing
-  - avatar, player name, team tag/name, public rank tier if available
+  - avatar, player name, and team tag/name; no generic global rank tier or rank-history module
   - career overview
   - course stats
   - leaderboard placement module
@@ -139,7 +139,8 @@ Mock 1: desktop player profile
   - no rolling/improvement trend and no match-detail page
   - `Gauntlet History`: a compact responsive list with active public participation first, then completed entries ordered by latest pilot activity; adapt each entry to qualifier facts, accepted stage placement, or a general participation summary without forcing one rigid result schema
   - no aggregate cross-gauntlet chart, no qualifier rank presented as a tournament finish, and no invitation or eligibility state
-  - trophies/medals only if clearly marked as backend-provided
+  - `Achievements & Medals`: completed public Eventun achievements/masteries first and known gameplay-medal totals second, using a text-first treatment that does not require custom icon art
+  - no inferred trophies, active/incomplete progress, challenges, raw counters, or reward UI
   - own-profile overlay area for approved team/account actions; no wallet module
 - Player principle:
   - The profile should not only reward the fastest or highest-ranked players.
