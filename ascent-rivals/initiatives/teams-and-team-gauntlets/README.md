@@ -13,6 +13,17 @@ the same foundation into team qualification, concrete racer slots, runtime roste
 and brackets. Proposed behavior is not current system state, and production deployment is not
 authorized by this initiative.
 
+## Delivery Snapshot
+
+| Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
+|---|---|---|---|---|
+| Existing Eventun and Ascentun team identity/lifecycle baseline | `implemented` | [Current team and gauntlet state](../../system/team-gauntlet-current-state.md) plus linked repository evidence | Known local-development code state; shared-development and production use are unproven | Revalidate the live repositories during T00 |
+| Eventun match, fact, cutoff, and season data foundation used by future team work | `verified` | [Foundation delivery snapshot](../eventun-foundation/README.md#delivery-snapshot) | Verified locally; shared-development deployment remains pending | Coordinated cutover |
+| Runtime resource and service-boundary hardening | `approved` | [Cutover and hardening plan](../eventun-foundation/development-cutover-and-runtime-hardening.md) | `not-deployed` | Implement and verify before team implementation |
+| T00 team design refresh and delivery cutoff | `not-started` | Current solution designs and [delivery plan](delivery-plan.md) | `not-applicable` | Successful shared-development cutover |
+| Team experience implementation | `not-started` | No selected implementation slice | `not-deployed` | T00 approval and completed runtime hardening |
+| Team gauntlet and bracket implementation | `not-started` | Existing partial behavior is documented in [current state](../../system/team-gauntlet-current-state.md), not as this initiative's implementation | `not-deployed` | T00 cutoff, team identity foundation, and selected gauntlet gates |
+
 ## Documents
 
 - [Delivery plan and gates](delivery-plan.md)

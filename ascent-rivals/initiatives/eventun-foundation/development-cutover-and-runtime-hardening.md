@@ -61,8 +61,11 @@ This is the durable remainder formerly tracked as F15B.
 
 ### Execution And Acceptance
 
-- The owner runs the reviewed manual offline transition using the Eventun repository's current
-  operator instructions. Do not create a general migration service or online cutover protocol.
+- The owner runs the reviewed manual offline transition using Eventun's
+  [Historical Cutover Runbook](https://github.com/ikigai-github/eventun/blob/main/docs/historical-cutover-runbook.md).
+  The implementation repository owns exact commands, rollback checkpoints, smoke steps, and
+  post-production transition cleanup. Do not create a general migration service or online
+  cutover protocol.
 - Require complete source accounting, nonzero fact and serving output, explained reconciliation,
   and successful destructive-suffix completion before commit.
 - Validate replacement relation counts, source coverage, converted batches, facts, serving
@@ -121,7 +124,8 @@ completion does not authorize it.
 - Refresh the authentic rehearsal only if schema, data scale, migration contents, or the accepted
   maintenance/storage budget changed materially.
 - Execute the reviewed manual migration, service release, rollback checkpoints, and smoke matrix
-  against the quiesced production environment.
+  against the quiesced production environment using Eventun's
+  [Historical Cutover Runbook](https://github.com/ikigai-github/eventun/blob/main/docs/historical-cutover-runbook.md).
 - Remove the consumed production delta, historical conversion command/package, transition-only
   verification artifacts, and resolved quarantine state only after successful production use.
 

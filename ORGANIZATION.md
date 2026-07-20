@@ -129,6 +129,44 @@ environment claims require explicit evidence. When part of a system differs by e
 state that boundary close to the affected claim or use a dedicated environment/deployment
 document; do not label the entire personal repository production.
 
+Lead with runtime-active behavior. Accepted implementation that exists only in a working copy,
+branch, commit, Perforce shelf, or other non-running artifact may be useful current knowledge,
+but it must be labeled with that source-control boundary. A shelved or committed implementation
+does not become active runtime behavior merely because its code exists.
+
+## Delivery, Deployment, And Artifact State
+
+An initiative's controlled `Status:` describes the lifecycle of the initiative as a whole. It
+does not prove that every component has the same design, implementation, source-control, or
+deployment state.
+
+When a material initiative spans multiple implementation repositories, environments, or live
+design artifacts and those states differ, its `README.md` must include a concise `Delivery
+Snapshot`. Track only meaningful surfaces and gates, not every task or commit:
+
+| Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
+|---|---|---|---|---|
+| Named component or artifact | Controlled state | Location or revision | Environment and evidence | State-changing condition |
+
+Keep the dimensions independent:
+
+- work state is `not-started`, `designing`, `approved`, `implementing`, `implemented`,
+  `verified`, or `superseded`;
+- `implemented` means an implementation artifact exists; it does not mean merged, submitted,
+  deployed, or verified in a running environment;
+- a Perforce shelf is recoverable implementation evidence, not mainline or deployment;
+- a Git commit or submitted changelist is source history, not deployment evidence;
+- deployment claims name the environment and cite a release, revision, observation, or other
+  stable evidence when available;
+- local, shared-development, staging, and production states may differ; never promote one from
+  another by inference;
+- a live design artifact can be ahead of its reviewed Markdown checkpoint and must be labeled as
+  such.
+
+Update the snapshot when a meaningful gate changes: design approval, implementation creation,
+shelving, merge or submit, deployment, rollback, runtime verification, or an external design
+checkpoint. Detailed execution still belongs in the agent task or implementation repository.
+
 ## Initiative Lifecycle
 
 Every material initiative has its own directory and `README.md`. The index must state:
@@ -139,6 +177,7 @@ Every material initiative has its own directory and `README.md`. The index must 
 - authoritative current-system documents;
 - active requirements, designs, specifications, and plans;
 - relevant decisions and sources;
+- a delivery snapshot when component or artifact states materially differ;
 - what remains before incorporation or closure.
 
 Use these initiative statuses:
@@ -291,6 +330,14 @@ Shared sources should identify origin, observation or retrieval date when releva
 limitations. Prefer canonical repository URLs, commit hashes, Perforce changelists, official
 documentation, Notion page identity, or another stable reference over machine-local paths.
 
+A mutable working artifact may remain outside the repository when its authoring tool or storage
+boundary makes repository use unreliable. The owning initiative must then record the artifact's
+owner, tool and durable identity when one exists, why it is external, the last reviewed
+checkpoint, and which Markdown documents capture accepted direction. Do not publish a
+machine-specific path as a shared identifier. Import a repository snapshot only at an explicit
+preservation or review checkpoint, label it as a snapshot, and do not maintain two nominally
+live copies.
+
 Source conclusions do not become current truth until incorporated into `system/`, an active
 initiative, or a decision. A stale or contradictory source may remain unchanged when its
 provenance is still useful.
@@ -367,6 +414,11 @@ Status detail: One sentence explaining the real boundary.
 
 ## Outcome
 ## Active Documents
+## Delivery Snapshot
+
+| Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
+|---|---|---|---|---|
+
 ## Authoritative Current System
 ## Remaining Before Closure
 ~~~
@@ -418,9 +470,15 @@ Archive notice: Archived YYYY-MM-DD because <reason>. Use <replacement> for curr
   serializes destination-document changes.
 - Update current documents only after the behavior or decision is accepted for their stated
   applicability.
+- Update an initiative's delivery snapshot when implementation, source-control availability,
+  deployment, verification, or a live external artifact crosses a meaningful gate.
 - Record what changed, why, affected projects or code paths, and evidence.
 - If implementation and current knowledge disagree, report the mismatch before choosing
   which one to change.
+- Before moving, consolidating, archiving, or deleting an active initiative, consult its active
+  owner/task context and inspect linked implementation or source-control evidence. Repository
+  contents alone cannot prove that off-repository design work, a branch, or a Perforce shelf is
+  inactive or disposable.
 - Explicitly record `no durable knowledge` in the agent/task context when no repository update
   is warranted; do not create a file solely to record that fact.
 

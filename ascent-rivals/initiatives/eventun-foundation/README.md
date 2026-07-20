@@ -5,7 +5,7 @@ Status detail: Local implementation, rehearsal, and populated smoke are complete
 coordinated shared-development cutover, runtime resource hardening, and physical lifecycle
 decisions remain open; production release is unscheduled.
 
-Last consolidated: 2026-07-19
+Last consolidated: 2026-07-20
 
 ## Outcome And Boundary
 
@@ -18,10 +18,22 @@ rehearsal as shared-environment deployment. This initiative owns two active rema
 Current ingest and season behavior is authoritative under `system/`. Production migration is a
 separate owner-scheduled action and is not implied by this initiative's local evidence.
 
+## Delivery Snapshot
+
+| Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
+|---|---|---|---|---|
+| Eventun identified-match, fact, projection, cutoff, and season foundation | `verified` | Accepted Eventun implementation and linked rehearsal evidence | Production-scale local rehearsal and populated smoke passed; not deployed to shared development | Coordinated shared-development cutover |
+| Game-client producer contract required by the cutover | `implemented` | Perforce shelf; changelist identity is not recorded in this knowledge base | Not in the shared-development mainline and not deployed | Copy accepted changes to main and refresh generated contracts |
+| Shared-development Eventun cutover | `approved` | [Cutover and hardening plan](development-cutover-and-runtime-hardening.md) | `not-deployed` | Game-client mainline precondition, backup, coordinated migration, and smoke |
+| Runtime resource and service-boundary hardening | `approved` | [Cutover and hardening plan](development-cutover-and-runtime-hardening.md) | `not-deployed` | Implement and verify before team implementation or production release |
+| Production foundation release | `not-started` | No release revision or window selected | `not-deployed` | Shared-development soak, hardening, and explicit owner-selected window |
+
 ## Documents
 
 - [Development cutover and runtime hardening](development-cutover-and-runtime-hardening.md)
 - [Telemetry lifecycle plan](eventun-telemetry-lifecycle-plan.md)
+- [Eventun historical cutover runbook](https://github.com/ikigai-github/eventun/blob/main/docs/historical-cutover-runbook.md)
+  — implementation-owned shared-development and production procedure
 
 ## Related Sources
 

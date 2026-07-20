@@ -17,6 +17,15 @@ the approved public/player non-blockchain responsibilities of Ascentun. The rele
 stronger public gauntlet, pilot, course, and team presentation while keeping authoritative
 domain behavior in Eventun and AccelByte.
 
+## Delivery Snapshot
+
+| Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
+|---|---|---|---|---|
+| Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents | `not-applicable` | Close remaining contract gaps and slice-specific acceptance detail |
+| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile plus reviewed Markdown checkpoints | `not-applicable`; design artifact | Review active gauntlet detail, then validate pilot, course, and team surfaces |
+| Website V2 application | `not-started` | No implementation revision is recorded | `not-deployed` | Greenfield repository foundation and first approved route slice |
+| Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
+
 ## Reading Order
 
 1. [Initial release scope](initial-release-scope.md) for the approved product boundary.
@@ -45,9 +54,12 @@ domain behavior in Eventun and AccelByte.
 - [Shell concepts](shell-concepts.md)
 - [Tone and voice](tone-and-voice.md)
 
-The live Pencil artifact is intentionally kept outside this repository during active visual
-iteration. Import one reviewed preservation copy only at an explicit design checkpoint; do
-not maintain two nominally live copies.
+The live Pencil artifact is owner-managed by Cliff outside this repository because Pencil does
+not work reliably against the WSL filesystem. No shareable durable artifact identity is
+currently recorded, and the last artifact-review date is not recorded. The repository checkpoint
+was reconciled on 2026-07-20 and is represented by Design Language v0.1 and the current
+checkpoint below. Import one reviewed preservation copy only at an explicit design checkpoint;
+label it as a snapshot and do not maintain two nominally live copies.
 
 ## Detailed Specifications
 

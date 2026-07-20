@@ -51,6 +51,30 @@ Strict validation on 2026-07-19 checked 122 Markdown files across two projects w
 errors and zero warnings. Git whitespace validation also passed. No files were staged or
 committed.
 
+## First Live-Use Corrections
+
+Reviews by the active Website V2 and teams/foundation tasks on 2026-07-20 exposed information
+that repository-only consolidation did not preserve reliably:
+
+- the Eventun foundation can be implemented and rehearsed locally while shared-development
+  deployment remains pending;
+- related game-client implementation can exist as a Perforce shelf awaiting mainline
+  integration and therefore is neither absent nor deployed;
+- the live Website V2 Pencil workfile is intentionally external because Pencil and the WSL
+  filesystem do not provide a reliable live-authoring workflow; and
+- a single initiative status cannot safely summarize components with different implementation,
+  source-control, runtime, and design-artifact states.
+
+`ORGANIZATION.md` now requires a small delivery snapshot for materially mixed initiatives,
+keeps implementation, source-control, and runtime evidence independent, defines how to
+reference mutable external artifacts, and requires active owner/task and source-control review
+before consolidating active work. These corrections are evidence from real use, but they do not
+by themselves complete the remaining task-log and cross-environment workflow cases below.
+
+The Eventun foundation, teams, and Website V2 indexes received initial delivery snapshots.
+Strict validation after these corrections checked 125 Markdown files across two projects with
+zero errors and zero warnings.
+
 ## Remaining Empirical Checkpoint
 
 Do not extract the reusable template or begin the `kb` implementation solely from this pass.
