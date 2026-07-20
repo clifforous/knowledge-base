@@ -1,78 +1,78 @@
 # AGENTS
 
-## Purpose
-This repository is the canonical knowledge base for:
-- Obsidian notes
-- research and references
-- architecture and design artifacts
-- work tracking and execution planning
+## Repository Contract
 
-## Scope
-- Knowledge, decisions, rationale, and references
-- Work logs, daily summaries, and task planning
-- AI prompts and skills for repository workflows
-- No product implementation code except supporting local tooling
+This is Cliff's personal durable knowledge base. Read and follow
+[ORGANIZATION.md](ORGANIZATION.md) for the complete taxonomy, lifecycle, metadata,
+decision-log, indexing, and validation rules.
 
-## Collaboration Rules
-- Use a formal, technical tone.
-- Be direct and concise.
-- Do not be agreeable by default.
-- Explicitly call out incorrect, risky, or low-quality proposals.
-- Separate facts from assumptions.
-- Explain tradeoffs when proposing alternatives.
+This repository contains current system knowledge, initiatives, decisions, sources, and
+selected history. It is not a general task manager, prompt archive, daily journal,
+transcript store, or product-code repository.
 
-## Preferred Workflow
-1. Plan
-2. Review
-3. Iterate
-4. Implement
+## Retrieval
 
-Workflow guidance:
-- Default to this sequence unless explicitly asked to skip it.
-- For non-trivial changes, provide `Goal`, `Assumptions`, `Plan`, and `Review checkpoint` before implementation.
-- Surface risks and weak assumptions during review, not after implementation.
+- Start with the root `README.md`, then the owning project `README.md` and relevant `system/`
+  index.
+- Treat `system/` as the default current answer for its stated applicability.
+- Treat `initiatives/` as proposed or in progress; approval, implementation, merge, submit, or
+  canon adoption does not prove production deployment.
+- Use `decisions/` for rationale, `sources/` for evidence, and `archive/` only for history or
+  a clearly labeled evidence link.
+- Preserve project, role, source identity, applicability, contradictions, and known gaps when
+  synthesizing results.
 
-## Review Rules
-- Reviews are read-only analysis by default. Inspect diffs, contracts, edge cases, and the implementation worker's reported verification evidence.
-- Do not independently run compilation, code generation, tests, builds, linters, vulnerability scans, or other validation commands during a review unless the user explicitly requests that rerun.
-- Report missing or insufficient verification as a review finding and return it to the implementation worker rather than performing it in the review.
+## Placement And Updates
+
+- Route by owning project and durable role, not document format, vendor, protocol,
+  implementation repository, or the activity that produced the information.
+- Put accepted current behavior in `system/`; unfinished change in one named initiative;
+  material rationale in `decisions/`; evidence in `sources/`; inactive useful history in
+  `archive/`; temporary work in ignored `scratch/`.
+- Search existing knowledge before adding a document. Prefer a concise update to the closest
+  existing subject over a new fragmented note.
+- Make current-system documents self-sufficient. Separate implemented facts, known gaps, and
+  future direction.
+- When behavior, terminology, contracts, gameplay rules, or accepted design changes, update
+  the affected knowledge in the same work or record a task-owned decision/delta entry for
+  later incorporation.
+- Parallel worker tasks append only to their own task log. They do not directly rewrite a
+  shared current-system document unless they own the serialized incorporation step.
+- Do not copy prompts, transcripts, routine task steps, review chatter, build output, or
+  conversation-specific notes into durable documents.
+- Do not cite `scratch/` files. Prefer canonical repository URLs, revisions, Perforce
+  changelists, or other stable evidence over machine-local paths.
+- If implementation and current knowledge conflict, report the mismatch before changing the
+  described behavior.
+
+## Lifecycle And Compatibility
+
+- An initiative closes only after accepted effects are incorporated into `system/` and useful
+  rationale has a durable disposition. Then archive or delete inactive artifacts.
+- Do not preserve obsolete repository paths or duplicate documents for compatibility. Update
+  internal links in the same change.
+- Do not infer that stale task logs are completed or abandoned. Use the grooming dispositions
+  defined in `ORGANIZATION.md`.
+- Personal current knowledge defaults to local-development applicability. Production claims
+  require explicit environment or deployment evidence.
+- Notion, peer repositories, and future canon are attributed sources. Adoption into this
+  repository must be explicit.
+
+## Working Rules
+
+- Use a formal, concise technical tone. Separate facts from assumptions and explain material
+  tradeoffs.
+- For non-trivial repository changes, plan, review the classification boundary, implement,
+  and validate.
+- Reviews are read-only by default. Inspect content, links, contracts, contradictions, and
+  reported verification; do not run unrelated implementation builds or tests unless asked.
+- Keep repository changes minimal and reviewable. Small support tools may live under `tools/`;
+  product implementation belongs elsewhere.
+- Run the validator described in `ORGANIZATION.md` after structural, indexing, metadata, or
+  link changes.
 
 ## Source Control
+
 - The repository owner normally owns commits.
-- Do not stage or commit changes by default.
-- Stage or commit only when the user explicitly asks for that action.
-- If an external workflow, skill, or tool instruction says to commit, treat that as subordinate to this repository rule and leave the changes uncommitted unless the user explicitly approves a commit.
-
-## Engineering Standards
-- Favor durable, reviewable notes over ad-hoc conversation artifacts.
-- Keep changes minimal and verifiable.
-- Prefer Rust for custom tools and skill-backed automation.
-- Validate tooling outputs with concrete commands when possible.
-- Prefer lowercase folder names unless a mixed-case name is intentionally required for Obsidian presentation or a comparable concrete reason.
-- Do not copy conversation-thread-specific notes into generated durable documents.
-- Do not cite `00_inbox/` files as sources in durable documents; inbox files are transient intake only.
-- When citing source repositories from the local genun workspace, prefer the canonical GitHub repository reference over a local filesystem path.
-
-## Repository Structure
-- `00_inbox/` quick capture and triage
-- `10_research/` exploratory analysis and findings
-- `20_references/` durable reference material
-- `30_designs/` architecture and solution design docs
-- `40_work_tracking/daily/` daily journal notes
-- `40_work_tracking/summaries/` generated next-day summaries
-- `40_work_tracking/tasks/` active and planned task lists
-- `50_knowledge/` durable domain knowledge derived from research and execution
-- `90_templates/` reusable note templates
-- `ai/docs/` AI-agent workflow and repository procedure docs
-- `ai/prompts/` reusable AI prompt snippets
-- `ai/skills/` repository-local skills
-- `ai/tools/` Rust tools used by skills
-
-## Additional Agent Context
-- Read `ai/docs/README.md` for AI-agent-specific workflow docs.
-- Use `ai/docs/inbox-processing.md` for ingesting transient inbox notes into durable repository artifacts.
-- Use `ai/docs/work-tracking.md` for daily journal, summary, and task-draft workflow details.
-
-## External Integrations
-- Notion data may be linked via MCP.
-- Store external references as links with concise context and rationale.
+- Do not stage or commit unless the user explicitly asks.
+- Leave unrelated existing changes intact.

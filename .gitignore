@@ -6,7 +6,10 @@
 
 # Local environment noise
 .DS_Store
+.obsidian/
+**/__pycache__/
+**/*.pyc
 
-# Transient inbox intake
-00_inbox/*
-!00_inbox/.gitkeep
+# Local scratch space
+scratch/*
+!scratch/.gitkeep
