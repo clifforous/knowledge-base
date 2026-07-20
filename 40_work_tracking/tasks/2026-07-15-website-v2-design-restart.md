@@ -10,6 +10,7 @@
 - `30_designs/ascent-rivals/website/delivery-plan.md`
 - `30_designs/ascent-rivals/website/route-api-matrix.md`
 - `30_designs/ascent-rivals/website/terminal-ops-design-system.md`
+- `30_designs/ascent-rivals/website/design-language-v0.1.md`
 - [Ascent Website](https://github.com/ikigai-github/ascent-website)
 - [Ascentun](https://github.com/ikigai-github/ascentun)
 
@@ -117,6 +118,12 @@ Recorded direction:
 - [x] Define which industrial Terminal Ops elements remain canonical.
 - [x] Specify the stronger sci-fi additions through shape language, materials, imagery, light, typography, motion, and world-specific interface motifs.
 - [x] Avoid generic terminal, generic esports, crypto-luxury, and unreadable all-monospace outcomes.
+- [x] Calibrate the visual direction through clean HUD Overlay, race-control terminal, reference-grounded panel, balanced-corner, and cutout-placement Pencil studies.
+- [x] Reject faux scrap-metal component styling, smooth gray metal gradients, arbitrary hexagons, random border fragments, and per-card polygon randomization.
+- [x] Establish a provisional directional-panel grammar for corners, mid-edge cutouts, signal rails, CTA motion, and framed-versus-open information.
+- [x] Apply the provisional grammar to one complete desktop homepage composition and review it at normal viewing size.
+- [x] Create and refine the corresponding mobile homepage composition after desktop approval.
+- [x] Extract Design Language v0.1 from the approved applied composition.
 - [ ] Produce or commission revised mocks for marketing, a data-heavy player page, gauntlet detail, and mobile.
 - [ ] Approve, revise, or replace Terminal Ops after reviewing those mocks.
 
@@ -125,7 +132,8 @@ Recorded visual foundation:
 - keep the terminal as the core in-world interface metaphor;
 - replace present-day Linux and filesystem imitation with an original, readable Ascent Rivals information and command language;
 - make the terminal a plausible source for gauntlet, team, pilot, planet, course, ship, and world information;
-- combine advanced display technology with rusted hard metal, welded or repaired plates, exposed fasteners, abrasion, heat staining, and scrapyard construction;
+- use a modern race-control surface built from matte graphite panels, flat tonal separation, crisp seams, restrained inset depth, and selective signal lighting;
+- keep scrapyard wear as optional atmosphere, background art, gameplay imagery, or occasional shell detail rather than simulating rusted metal across ordinary UI components;
 - treat the existing static exploded diagram based on an old ship model as reference-only; use schematics later only with current approved game models or data and a stronger diagnostic, modular, or interactive purpose.
 - use a hybrid terminal interaction model: conventional navigation remains primary and accessible, while a global entity-query console supports optional readable commands such as `FIND`, `OPEN`, `SCAN`, and `TRACK`;
 - frame the interface as an access point into a distributed underground race-information network, while keeping exact authorities, orbital deployment, manufacturer roles, spectator culture, and betting as exploratory lore rather than Website V2 requirements;
@@ -134,8 +142,8 @@ Recorded visual foundation:
 - prioritize readability through a proportional body face and reserve condensed display or monospace typography for shorter roles;
 - compare Saira Semi Condensed plus IBM Plex Sans/Mono against an all-IBM Plex system, use Atkinson Hyperlegible Next as a readability benchmark, and retain Opinion Pro Condensed only if webfont licensing is verified;
 - validate typography using real marketing copy, a data table, terminal search results, ambiguous identifiers, and mobile labels before selecting a final system.
-- treat each page as one terminal system; establish a restrained persistent chassis, reserve heavy scrapyard framing for major modules, and use lighter rails and inset surfaces for ordinary information;
-- allow marketing pages more exposed machinery and cinematic depth while keeping player and competition pages calmer and data-forward;
+- treat each page as one terminal system; establish a restrained persistent shell, reserve stronger framing for major modules, and use lighter rails, open composition, or unframed regions for ordinary information;
+- allow marketing pages more cinematic depth and atmospheric material while keeping player and competition pages calmer and data-forward;
 - derive cuts, seams, latches, recesses, and asymmetry from plausible fabricated construction rather than generic sci-fi decoration.
 - do not depend on bespoke planet art, illustrated course maps, or an ongoing custom-art pipeline;
 - prioritize current gameplay captures and video, then terminal-native graphics generated from real data, with material and signal treatments carrying pages that have limited imagery;
@@ -144,6 +152,29 @@ Recorded visual foundation:
 - treat Fab source assets as game-production inputs rather than standalone website art, and never expose raw source assets through the public site.
 - allow bespoke planet and course artwork later, but give initial components optional media slots and strong non-image fallbacks so art production cannot block functional routes;
 - use restrained functional motion for signal acquisition, actual data changes, course-trace drawing, and mechanical response; avoid constant flicker, repeated boot effects, long typing, or delayed content, and provide full reduced-motion behavior.
+
+Pencil calibration findings recorded on 2026-07-18:
+
+- the clean HUD Overlay direction is the strongest composition base: open cinematic field, left-weighted hero content, sparse scan treatment, thin rules, and compact `//` notation;
+- the homepage should not return to a boxed Linux-terminal simulation or a heavily plated scrap-metal chassis;
+- paired forward chevrons and a short directional termination are the preferred CTA motifs; hover/focus may use a subtle one-time approximately 4px advance rather than continuous animation;
+- diamond nodes are the preferred Ascension progression marker;
+- a reusable panel family must use named variants rather than random cuts per card, and ordinary tables, metadata, and long-form regions may remain unframed;
+- valid corner topologies are zero, one, two diagonally opposed, or all four cuts; avoid three cuts or two adjacent cuts on the same side;
+- mid-edge cutouts count any inward removal from the rectangular envelope, including continuing shoulders; no side is mandatory and positions or dimensions need not be symmetric;
+- the cutout-placement studies informed balance, but the complete homepage showed that repeated mid-edge cutouts become gimmicky in composition;
+- default repeated cards to zero mid-edge cutouts, allowing a single shallow top cut for a header/tab relationship, a single side cut beside related open content, or a bespoke cut on a major media/hero frame with a structural reason;
+- a short neutral signal rail with a smaller gold termination is optional state geometry, not default decoration; generic hex identity marks and randomly placed gray/gold fragments are rejected;
+- implementation remains feasible with CSS clip paths or masks for filled surfaces, inline SVG for sparse edge geometry, and semantic HTML for content; raster assets are reserved for atmosphere and imagery rather than panel construction.
+
+Visual-design progress:
+
+1. [x] desktop homepage composition calibration;
+2. [x] desktop review and iteration at normal viewing size;
+3. [x] mobile homepage companion and compact-header refinement;
+4. [x] Design Language v0.1 extraction into durable design-system documentation;
+5. [ ] representative page mocks for gauntlet listing/calendar, gauntlet detail, player profile, course detail/leaderboard, and later team pages;
+6. [ ] continued design-language revision as those page archetypes expose missing table, chart, filter, state, or responsive rules.
 
 ### 4. Initial Replacement Product Scope
 
@@ -280,7 +311,7 @@ Recorded visual foundation:
 
 ## Review Checkpoint
 
-Framework, marketing information architecture, visual direction, replacement-release scope, product-statistics baseline, course visibility, navigation, non-functional requirements, delivery sequencing, the complete initial route/API matrix, and shared support contracts are approved. Sponsor administration/media is assigned to the Eventun Extend App as a pre-cutover dependency, with no Website V2 sponsor pages. External analytics/observability are deferred, legacy redirects are omitted at the current traffic level, and team presentation remains provisional until the preceding team feature work is implemented. The next design checkpoint is a review of the existing Terminal Ops visual artifacts against the approved grittier in-world terminal direction before implementation planning.
+Framework, marketing information architecture, replacement-release scope, product-statistics baseline, course visibility, navigation, non-functional requirements, delivery sequencing, the complete initial route/API matrix, and shared support contracts are approved. Sponsor administration/media is assigned to the Eventun Extend App as a pre-cutover dependency, with no Website V2 sponsor pages. External analytics/observability are deferred, legacy redirects are omitted at the current traffic level, and team presentation remains provisional until the preceding team feature work is implemented. Focused Pencil studies and the approved desktop/mobile homepage calibration have established a provisional clean race-control/HUD direction while rejecting faux scrap-metal component styling and repeated decorative cutouts. Design Language v0.1 now records the applied baseline. The next checkpoint is the gauntlet listing/calendar mock, followed by representative interior-page validation and design-language revision.
 
 ## Risks
 
@@ -288,6 +319,6 @@ Framework, marketing information architecture, visual direction, replacement-rel
 - Using the phrase "Ascentun parity" without an explicit exclusions list can accidentally reintroduce wallet, Accountun prize/reward, and retired token-gating behavior.
 - Treating team analytics as a frontend-only task would misattribute historical performance to current rosters and produce incorrect team results.
 - Requiring every analytics idea at launch could delay replacement indefinitely; the launch set must be limited to visualizations supported by bounded, production-cut-over Eventun reads.
-- Starting visual implementation before the stronger sci-fi direction is validated can lock in the weaker parts of the current Terminal Ops concepts.
+- Treating Design Language v0.1 as final before data-heavy-page validation could lock in table, chart, filter, state, or geometry rules that have not yet been applied.
 - Changing the root-route purpose without a migration and SEO decision can damage the current marketing funnel and historical links.
 - Website V2 deliberately relies on the working Ascentun `steamopenid` exchange despite ambiguous managed-cloud documentation. If AccelByte removes or changes that behavior, authentication will require a replacement architecture; that compatibility risk is accepted rather than treated as a launch blocker.

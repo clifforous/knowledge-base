@@ -1,8 +1,8 @@
 # Eventun Telemetry Lifecycle Plan
 
-**Status:** Logical season semantics accepted 2026-07-16; implementation, physical retention, and archive decisions remain deferred.
+**Status:** Initial season implementation, the single combined local historical-and-season rehearsal, and retained-data API/performance smoke are complete. Physical retention and archive decisions remain deferred.
 
-**2026-07-16 direction:** Eventun will own explicit finite regular/off-season windows managed through its Extend App UI. Non-overlapping half-open windows may have gaps; uncovered matches are unseasoned and still contribute to lifetime behavior. Match facts resolve nullable season identity from their batch MatchStart. Seasons remain separate from PostgreSQL storage segments, retention tiers, game builds, AccelByte Season Pass, and MMR ownership. The accepted checkpoint and remaining implementation decisions are recorded in [[../../10_research/ascent-rivals/eventun-insights-progression-seasons-review]].
+**2026-07-17 implementation:** Eventun owns explicit finite regular/off-season windows managed through its Extend App UI. Non-overlapping half-open windows may have gaps; uncovered matches are unseasoned and still contribute to lifetime behavior. Server facts resolve nullable season identity from MatchStart. Client facts are season-eligible only when MatchStart and trusted batch receipt resolve to the same non-null season; this deliberately replaces the earlier occurrence-time-only statement. Seasons remain separate from PostgreSQL storage segments, retention tiers, game builds, AccelByte Season Pass, and MMR ownership. The accepted checkpoint is recorded in [[../../10_research/ascent-rivals/eventun-insights-progression-seasons-review]].
 
 ## Related
 
@@ -20,7 +20,15 @@ No current product decision yet defines:
 - the archive format, storage provider, or restore process; or
 - any additional retention-oriented PostgreSQL partition key or segment boundary beyond the implemented source/event-type hierarchy.
 
-The accepted logical model authorizes planning an Eventun season catalog and season-aware read/projection behavior after the event cutover. Eventun still must not require producers to submit a period id or partition telemetry by season. The earlier `competition_period_id` proposal conflated product and storage responsibilities that have different lifecycles. This does not retire the existing client/server and event-type partitions, which are query-performance structures rather than season-retention policy.
+The implemented logical model adds an Eventun season catalog and season-aware read/projection behavior without requiring producers to submit a period id or partitioning telemetry by season. The earlier `competition_period_id` proposal conflated product and storage responsibilities that have different lifecycles. This does not retire the existing client/server and event-type partitions, which are query-performance structures rather than season-retention policy.
+
+## Delivery Sequencing
+
+The one permitted production-scale combined local historical-and-season rehearsal completed successfully against the retained pre-cutover dump. It committed 3,219 reconstructed match facts, left converted history explicitly unseasoned, recorded match/player serving generation `2/2`, preserved gauntlet and sealed qualification generation `1/1`, and reconciled all 12 historical comparison rows as explained. The migrated isolated database and a resettable post-cutover dump were retained, and the API smoke matrix passed against ported history plus temporary season rows before restoring the catalog to empty. Production rehearsal is refreshed later against the final release delta and a current dump; this local run did not deploy or mutate a shared development or production database.
+
+The retained-data performance pass also exercised the exact player-facing read shapes. Match History now starts from source/player-selective facts and uses keyed match/artifact lookup. Lifetime and seasonal leaderboards assemble all course/category groups set-wise and resolve `player_view` once per request rather than once per group. The authentic 11-course lifetime leaderboard measured 36.313 ms SQL p95 and 25.862 ms handler p95 with 730 shared-hit buffers; Match History remained below 3.4 ms handler p95 at limits 30 and 100. These are implementation and capacity observations, not durable product latency guarantees or a reason to couple seasons to physical storage.
+
+Live production comparisons are optional sanity checks rather than equality gates: exact older match facts should remain stable, totals may increase, best times may improve, standings may move, and presentation may change after the dump cutoff.
 
 ## Terminology
 
@@ -72,12 +80,8 @@ Identified match ingestion now exposes one logical `game_event` relation while p
 
 ### 2. Define Product History
 
-Before the first deliberate season boundary, finish implementation design for:
+Before the first deliberate season boundary, complete product decisions for:
 
-- the minimal season catalog and Extend App UI authorization;
-- nullable MatchStart-based fact attribution and exact lifetime/season query scopes;
-- seasonal best-lap/best-finish projections and repair integration;
-- which historical season, leaderboard, match, and per-match detail views the product exposes; and
 - MMR rollover ownership and procedure.
 
 Season splitting and reassignment between already attributed seasons are low-priority recovery considerations, not initial administration features. Invalid facts caused by gameplay or telemetry bugs require targeted fact/contribution repair and projection rebuilds rather than artificial season boundaries.
@@ -88,7 +92,7 @@ Historical API/UI availability is separate from whether raw telemetry still exis
 
 Implement nullable Eventun season attribution on compact match facts from the accepted batch MatchStart. Keep the existing lifetime record and career projections, and add explicit season projections only for the selected record families. Do not generalize the initial work into a universal statistics-scope or producer-supplied period contract.
 
-Backfill retained matches using timestamps, game builds, and any authoritative competition metadata. Validate representative leaderboard, career, gauntlet, progression, and insight outputs before making the scope authoritative.
+Do not assign seasons to the initially converted retained matches. Validate representative leaderboard, career, gauntlet, progression, and insight outputs with those facts remaining unseasoned. A later reviewed repair may classify previously unseasoned facts from authoritative MatchStart time; ordinary season creation never performs that reassignment implicitly.
 
 ### 4. Measure And Select Storage Segments
 

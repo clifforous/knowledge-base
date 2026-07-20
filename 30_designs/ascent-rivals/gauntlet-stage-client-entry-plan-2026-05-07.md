@@ -12,6 +12,16 @@ The primary first-pass entry point is `PlayRootMenu`. The existing active-event 
 
 The final user-facing stage invitation UX is still undecided. A notification or toast when the stage lobby opens should be a follow-up entry point that consumes the same underlying client eligibility state.
 
+## Root-Menu Schedule Presentation And Freshness
+
+The 2026-07-18 game-client implementation establishes these rules for the root Play-menu active-event tile:
+
+- A future occurrence on the local calendar date is labeled `Starts at {time} today`.
+- A future occurrence within eight hours also shows a minute-rounded short countdown, for example `Starts at 7:00 PM today (8h 27m)`.
+- The tile re-evaluates its selected occurrence after both full-calendar refreshes and active-calendar transitions, and it chooses the earliest applicable qualifier rather than relying on API response order.
+- `UHGGauntletSubsystem` retains the hourly broad Gauntlet sync and performs a separate calendar-only refresh every five minutes so operator schedule adjustments reach running clients sooner.
+- Calendar-only refresh assumes the referenced Gauntlet definition is already cached. Newly created Gauntlets may still require the broader sync before the root tile can render their presentation data.
+
 ## Desired Player Behavior
 
 When the client is on the play root menu:

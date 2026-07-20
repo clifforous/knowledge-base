@@ -2,13 +2,14 @@
 
 Date: 2026-04-14
 Status: Approved content hierarchy; copy, assets, and visual design open
-Last reviewed: 2026-07-16
+Last reviewed: 2026-07-19
 
 ## Related
 
 - [[../unified-design]]
 - [[../information-architecture]]
 - [[../terminal-ops-design-system]]
+- [[../design-language-v0.1]]
 - [[../tone-and-voice]]
 - [[gauntlets-index]]
 - [[gauntlet-detail]]
@@ -146,11 +147,20 @@ The implementation must not claim that the game is installed or that a browser a
 
 ### Design Guidance
 
-- use the revised gritty sci-fi Terminal Ops visual language without making the hero resemble a modern Linux terminal;
-- let the terminal feel like an in-world race-information system embedded in worn industrial machinery;
+- use the revised race-control Terminal Ops visual language without making the hero resemble a modern Linux terminal;
+- let industrial grit come primarily from approved game imagery, atmosphere, and world context rather than distressed foreground components;
 - prioritize readable copy and gameplay proof over decorative diagnostic text;
 - avoid a long boot sequence, typing effect, or delayed CTA;
 - preserve immediate CTA access on mobile.
+
+### Provisional Implementation Background Direction
+
+The approved image-neutral mock validates composition and hierarchy without committing to a final background asset. During implementation, test one large atmospheric background behind the open homepage composition. Leading candidates are:
+
+- an oversized Ascent Rivals logo treatment similar in role to the MSI tournament page composition;
+- an approved environmental capture from the current game, similar in role to the current marketing homepage background.
+
+Whichever treatment is selected must be dimmed or covered by a deliberate scrim so headings, body copy, navigation, and CTAs retain verified contrast. Use responsive art direction and crop review rather than relying on one desktop image at every breakpoint. The neutral graphite/atmospheric field remains the fallback when no approved asset works. Do not add background art to the current calibration mock solely to settle this implementation choice.
 
 ## 2. Gameplay and Ascension Mode
 

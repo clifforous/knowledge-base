@@ -10,6 +10,7 @@ Status: Active Draft
 - [[delivery-plan]]
 - [[route-api-matrix]]
 - [[terminal-ops-design-system]]
+- [[design-language-v0.1]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
 - [[flows/wallet-linking]]
@@ -77,7 +78,7 @@ The remaining gaps are mostly specification gaps rather than strategy gaps.
 
 ## Current Status
 
-As of 2026-07-17, the design documentation has moved from broad discovery into focused draft specifications.
+As of 2026-07-18, the design documentation has moved from broad discovery into focused draft specifications and applied visual calibration.
 
 Completed or substantially drafted:
 
@@ -89,6 +90,8 @@ Completed or substantially drafted:
 - Page specs exist for homepage, gauntlets, gauntlet detail, player directory, player profile, course leaderboards, teams, team profile, and sponsors.
 - Flow specs exist for authentication, wallet linking, team lifecycle, and core gauntlet authoring workflows.
 - Terminal Ops concept images and the original broad [[pencil-design-brief]] are preserved as durable reference artifacts.
+- Focused Pencil studies established a provisional clean race-control/HUD direction, CTA and progression motifs, and a reusable corner grammar while rejecting faux scrap-metal component styling and arbitrary per-card polygons. The applied homepage subsequently restricted mid-edge cutouts to narrow structural exceptions.
+- The approved desktop and mobile homepage calibration frames have been extracted into [[design-language-v0.1]], including the applied open composition, restrained corner grammar, restricted cutout use, responsive navigation, typography, color, motion, and implementation rules.
 
 Still missing or incomplete:
 
@@ -97,7 +100,7 @@ Still missing or incomplete:
 - A standalone content strategy.
 - Vercel provisioning and cutover remain implementation work. Accessibility, responsive/performance, SEO, and hosting/deployment have approved baselines in [[non-functional-baseline]]; external analytics and observability are deliberately deferred rather than missing launch requirements.
 - A dedicated sponsor-administration flow. Core gauntlet create/edit now has a flow spec; initially administrator-only bracket authoring and runtime-repair operations are assigned to the Eventun Extend App UI, while their detailed implementation flows remain unwritten. Prize/reward flows are deferred outside Website V2.
-- A second Pencil pass against constrained page specs and Terminal Ops instead of another broad shell exploration.
+- Representative interior mocks for gauntlet listing/calendar, gauntlet detail, player profile, course detail/leaderboard, and later team pages.
 
 ## Outstanding Work
 
@@ -166,11 +169,12 @@ Phase-1 page state matrix should cover:
 
 ### 3. Design system specification
 
-Status: substantially drafted.
+Status: substantially drafted; the homepage visual calibration and Design Language v0.1 extraction are complete.
 
 Current draft:
 
 - [[terminal-ops-design-system]]
+- [[design-language-v0.1]]
 
 Required content:
 
@@ -199,8 +203,9 @@ Initial components to specify:
 
 Recommendation:
 
-- mark Terminal Ops as the primary working direction, not the irreversible final decision
-- revisit after player profile, course leaderboard, gauntlet detail, and mobile mocks are reviewed
+- keep Terminal Ops as the primary working direction, not an irreversible final decision
+- treat [[design-language-v0.1]] as the current implementation baseline for new mocks
+- revisit and extend the language after gauntlet listing, gauntlet detail, player profile, and course leaderboard mocks are reviewed
 
 ### 4. Page specifications
 
@@ -363,19 +368,21 @@ Conditions for revisiting:
 
 ## Next Mock Pass Recommendation
 
-Use [[pencil-terminal-ops-follow-up-prompt]] for the next pass.
-
-Before asking Pencil for another broad exploration, provide tighter page constraints.
+Do not run another isolated shell or silhouette exploration.
 
 Recommended next mocks:
 
-1. player profile
-2. course leaderboard
-3. gauntlet detail refinement
-4. mobile shell state
+1. gauntlet listing/calendar
+2. gauntlet detail refinement
+3. player profile
+4. course detail/leaderboard
+5. team pages after the team model is stable enough
 
 Design goals:
 
+- test [[design-language-v0.1]] against dense public-data page hierarchies
+- determine when data should remain open, use a calm surface, or receive a stronger frame
+- define filter, table, chart, state, and imagery-fallback behavior
 - test dense stats with Terminal Ops
 - test contextual navigation
 - test player strength modules
@@ -387,20 +394,21 @@ Design goals:
 
 Recommended order:
 
-1. Complete or accept the current draft design system specification. Status: drafted.
-2. Complete or accept the current draft information architecture spec with page state matrix. Status: drafted.
-3. Run the next Pencil pass against the completed core page specs. Status: prompt drafted in [[pencil-terminal-ops-follow-up-prompt]].
-4. Keep `/game` deferred until material content justifies it. Status: not an initial-release documentation gap.
-5. Maintain the accessibility, responsive/performance, and SEO portions of [[non-functional-baseline]]. Status: approved; implementation verification remains.
-6. Create remaining user-flow specs for later bracket/runtime operations; sponsor administration is assigned to the approved Eventun Extend App handoff. Status: partial.
-7. Create content strategy. Status: not started.
-8. Consolidate open questions. Status: not started.
+1. Apply the provisional visual grammar to a complete desktop homepage, review it, and create the mobile companion. Status: complete.
+2. Extract [[design-language-v0.1]] from the approved applied composition. Status: complete.
+3. Create the gauntlet listing/calendar calibration and revise the language when real public-data requirements expose gaps. Status: next.
+4. Run the remaining representative interior-page mocks in the sequence above. Status: pending.
+5. Keep `/game` deferred until material content justifies it. Status: not an initial-release documentation gap.
+6. Maintain the accessibility, responsive/performance, and SEO portions of [[non-functional-baseline]]. Status: approved; implementation verification remains.
+7. Create remaining user-flow specs for later bracket/runtime operations; sponsor administration is assigned to the approved Eventun Extend App handoff. Status: partial.
+8. Create content strategy. Status: not started.
+9. Consolidate open questions. Status: not started.
 
 Reason:
 
 - design-system and IA decisions unblock all page specs
 - player profile, gauntlet detail, and course leaderboard are the highest-risk data-heavy pages for the Terminal Ops shell
-- another open-ended mock pass would likely create more attractive but underspecified screens
+- another open-ended shell or silhouette pass would likely create more attractive but underspecified artifacts
 
 ## Verification Checklist
 
@@ -416,3 +424,7 @@ Reason:
 - [ ] SEO baseline exists for public entity pages.
 - [x] Navigation has a recorded working decision and revisit criteria.
 - [x] Next Pencil pass prompt exists for Terminal Ops validation.
+- [x] Focused Pencil calibration has produced a provisional panel, CTA, progression, and clean HUD grammar.
+- [x] A complete desktop homepage validates the provisional grammar in composition.
+- [x] A mobile homepage companion validates responsive reduction.
+- [x] Design Language v0.1 records the approved applied homepage baseline and its validation boundary.

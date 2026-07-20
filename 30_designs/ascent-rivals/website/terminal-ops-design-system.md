@@ -1,10 +1,12 @@
 # Ascent Rivals Terminal Ops Design System
 
 Date: 2026-04-13
+Last reviewed: 2026-07-18
 Status: Draft
 
 ## Related
 - [[unified-design]]
+- [[design-language-v0.1]]
 - [[information-architecture]]
 - [[design-doc-roadmap]]
 - [[tone-and-voice]]
@@ -26,6 +28,8 @@ Status: Draft
 
 This note defines the working Terminal Ops design system direction for the unified Ascent Rivals website.
 
+[[design-language-v0.1]] is the current applied visual baseline. This document retains the broader rationale, component inventory, and unresolved design-system requirements; where its earlier exploratory geometry conflicts with v0.1, the applied v0.1 rule takes precedence.
+
 It should guide:
 
 - Pencil follow-up prompts
@@ -44,18 +48,20 @@ Direction refined: 2026-07-15
 
 Terminal Ops should represent an in-world Ascent Rivals information terminal rather than a contemporary Linux terminal. It is the interface through which visitors inspect gauntlets, teams, pilots, planets, courses, ships, and other world or competition entities.
 
-The terminal has two inseparable layers:
+The terminal has two coordinated layers:
 
-1. salvaged physical hardware
-   - rusted hard metal
-   - welded or repaired armor plates
-   - exposed fasteners, seams, abrasion, heat staining, and industrial wear
-   - modular construction that plausibly came from scrapyard machinery or race equipment
+1. purpose-built race-control interface
+   - matte graphite panels and flat tonal surfaces
+   - crisp seams, selective edge cuts, restrained inset depth, and sparse signal lighting
+   - a consistent fabricated-panel grammar rather than arbitrary card silhouettes
+   - conventional readable information architecture beneath the in-world presentation
 2. advanced information display
    - entity indexing and scanning
    - telemetry, maps, diagnostics, and system state
    - emissive status light and display behavior
    - an original, readable in-world command vocabulary rather than Linux shell syntax
+
+Scrapyard material and physical wear remain optional atmospheric cues, not the foreground component system. Do not simulate metal through smooth gray gradients, rust colors, repair plates, scratches, or decorative rivets on ordinary UI panels. When grit is useful, prefer approved background art, gameplay imagery, restrained texture, or a small number of physical shell details.
 
 The terminal metaphor is a product and worldbuilding decision, not a decorative layer to remove when pages become editorial or data-heavy.
 
@@ -79,7 +85,7 @@ Betting may inform the rough outlaw-sport atmosphere, but Website V2 must not pr
 Design implication:
 
 - the UI should feel like it is receiving a contested, time-sensitive race signal rather than browsing a clean institutional league database
-- advanced scans, maps, telemetry, and registries sit inside repaired physical hardware
+- advanced scans, maps, telemetry, and registries sit inside a modern race-control surface whose surrounding atmosphere may carry industrial wear
 - information can show source, freshness, signal quality, verification, and event-window state where real data supports those concepts
 - avoid fake live state or fabricated urgency when the product has no authoritative source for it
 
@@ -170,36 +176,37 @@ Working token set from the Terminal Ops concept:
 
 ## Display and Light Direction
 
-The advanced display should feel integrated into battered physical hardware.
+The advanced display should feel integrated into a purpose-built race-control terminal.
 
 - Use amber or gold as the dominant emissive display color.
 - Reserve green, cyan, and red primarily for functional state, confirmation, information, warning, or failure.
-- Present selected information through smoked, scratched, dusty, or heat-marked display glass without reducing text contrast.
+- Present selected information through dark illuminated display surfaces without reducing text contrast.
 - Allow localized bloom, scan acquisition, signal breakup, and brief interference as state or transition effects.
 - Present current approved game imagery in full color where it represents received race footage, a scan, or an entity image.
-- Let display light catch nearby chassis edges, seams, fasteners, and repaired metal to connect the digital and physical layers.
+- Let display light catch nearby panel edges or the surrounding scene where imagery supports that treatment.
 
 Avoid constant CRT noise, persistent flicker, rainbow-neon color, and decorative typewriter animation.
 
 ## Grit and Material Direction
 
-Terminal Ops should not become a clean terminal dashboard.
+The foreground UI should remain clean enough to read as advanced equipment rather than faux-metal decoration.
 
-Add grit through:
+Preferred material treatment:
 
-- armored or plated panel surfaces
-- subtle scratches, abrasion, grime, or heat-stained overlays
-- industrial framing lines
-- restrained image overlays
-- telemetry marks
-- stenciled labels
-- welded/bolted/modular construction cues
-- scrapyard rust, oxidized edges, repaired seams, and heat-stained hard metal
+- matte graphite and dark-blue panel surfaces
+- flat tonal separation with crisp seams and restrained inset depth
+- localized display illumination and atmospheric gradients
+- sparse stenciled labels, telemetry marks, and physical-shell cues
+- approved background art, gameplay captures, or low-contrast texture when a scene needs more grit
 
-Guardrail:
+Avoid:
 
-- the UI must remain readable and premium
-- grime should be subtle and systematic, not random decoration
+- smooth gray gradients presented as metal
+- rust, heat staining, scratches, repair plates, or rivets distributed across ordinary components
+- random gray and gold border fragments with no structural or state role
+- texture that reduces text or data contrast
+
+The scrapyard influence should be felt primarily through atmosphere, imagery, world context, and occasional shell details. It is not a requirement for every panel.
 
 ## Typography
 
@@ -315,7 +322,7 @@ Recommended hierarchy:
 Default direction:
 
 - use dark textural backgrounds rather than flat single-color canvases
-- prefer subtle material noise, faint grid marks, scuffed metal, scanline texture, or atmospheric gradients
+- prefer subtle material noise, faint grid marks, restrained scan treatment, or atmospheric gradients
 - keep texture low-contrast enough that tables and copy remain readable
 - do not require a giant bespoke background illustration for every page
 
@@ -362,17 +369,58 @@ Asset guardrails:
 
 ## Shape and Border Language
 
+Status: refined through the approved desktop and mobile homepage calibration frames on 2026-07-18. It must still be tested on a data-heavy interior page.
+
 Approved motifs:
 
 - cut-corner panels
 - angled CTA edges
-- bracket-like section frames
-- thin technical border accents
+- paired forward chevrons and short directional terminations for interactive controls
+- restrained bracket-like section frames
+- thin technical border accents attached to a real edge or state
 - inset image boxes
-- small marker glyphs near section headings
+- compact `//` notation and ASCII-adjacent labels inherited from the clean HUD Overlay direction
+- diamond nodes for Ascension progression and related ordered race-state diagrams
 - Ascent icon/logo marks as section header identifiers
-- physical chassis seams, access plates, fasteners, and repaired modular joints
+- physical chassis seams or access details when a major shell or media module justifies them
 - advanced scan, targeting, map, diagnostic, and entity-index overlays
+
+Rejected or restricted motifs:
+
+- generic hexagons used as unexplained identity markers
+- evenly dashed one-pixel borders around a rectangular safe-area panel
+- detached gray or gold border fragments with no structural or state role
+- circuit traces used as general decoration rather than a specific connector or relationship
+- a different arbitrary polygon silhouette for every card
+
+### Corner grammar
+
+Treat corner cuts separately from mid-edge cutouts. Valid corner topologies are:
+
+- zero cut corners
+- one intentional cut corner
+- two diagonally opposed cut corners
+- all four cut corners
+
+Do not use three cut corners or two adjacent cuts on the same side. The current directional-panel calibration uses top-right and bottom-left cuts as its default two-corner configuration. Other valid configurations remain available when a component role gives them a consistent reason.
+
+### Mid-edge cutout grammar
+
+The focused studies established how to balance mid-edge cutouts, but the complete homepage showed that repeated cutouts become gimmicky when several cards compose together. They are therefore restricted rather than graduated by component importance.
+
+Allowed exceptions:
+
+- one shallow top cut that behaves as a header or tab attachment
+- one shallow left or right cut that expresses a relationship to adjacent open content
+- a bespoke major media or hero frame with a clear structural reason
+
+Do not use the earlier zero-through-four cutout study as a production complexity ladder. Default repeated cards to zero mid-edge cutouts and a consistent corner grammar. Ordinary tables, lists, metadata regions, and long-form copy may remain unframed or use calm rectangular surfaces.
+
+### Signal rails and interaction geometry
+
+A short neutral rail with a smaller gold termination is an optional state treatment, not required perimeter decoration. Default gold remains subdued; hover or focus may advance the termination approximately 4px once and return on blur; selected or active state may retain restrained gold at the endpoint. Do not use continuous motion.
+
+Primary and secondary CTAs may use the approved paired-chevron and directional-termination motifs with the same short, one-time mechanical response. Critical control meaning must remain available without motion.
 
 The current static exploded ship image is not an approved reusable motif. A future schematic treatment must use current approved models or data and provide meaningful diagnostic, modular, or interactive information.
 
@@ -447,7 +495,9 @@ Use calmer framing for:
 
 Implementation guidance:
 
-- prefer CSS borders, masks, clip-paths, pseudo-elements, and tokenized corner treatments
+- prefer CSS `clip-path` or masks for the filled panel surface and tokenized corner/cutout geometry
+- use inline SVG for sparse perimeter rails, broad edge pieces, or geometry that CSS pseudo-elements cannot express cleanly
+- keep text and interactive content as ordinary semantic HTML inside an invisible safe area; do not render a visible rectangular safe-area panel inside the silhouette
 - image-based borders are acceptable for marketing accents, but should not become the default component border system
 - decorative borders must not carry required semantic meaning
 - avoid placing ornate tech borders around every card or the interface will become noisy
@@ -537,6 +587,8 @@ Required visible items:
 - menu
 - login/avatar
 
+The three compact action controls use equal 44px touch targets. Their default visual state is borderless: search and menu use muted icons, while login/account may use a restrained gold icon. A visible surface may appear for hover, focus, or pressed state but should not persist at rest.
+
 The drawer contains the complete destination list in stable order, beginning with `Gauntlets`, followed by the secondary `About` and `Brand` destinations.
 
 Mobile is not the primary player-side use case, but it must remain usable.
@@ -577,7 +629,7 @@ Brand, search, and login/account remain directly accessible independently of des
 
 The login/avatar area opens a dropdown menu.
 
-Anonymous state uses a direct `Sign in with Steam` control. Do not use a one-option provider menu. Wide layouts use the full label; compact layouts may show the Steam icon with `Sign In` while preserving `Sign in with Steam` as the accessible name.
+Anonymous state uses a direct `Sign in with Steam` control. Do not use a one-option provider menu. Wide layouts use the full label; compact layouts use a generic login/account icon while preserving `Sign in with Steam` as the accessible name and tooltip. Do not create or approximate a Steam logo; use approved Valve artwork if Steam branding is displayed.
 
 Approved initial items:
 
@@ -889,6 +941,7 @@ Allowed motifs:
 - short type-on effect for concise status or query labels
 - hard-cut or stepped transitions rather than soft SaaS easing
 - short mechanical shifts for menus, latches, and panel controls
+- a one-time approximately 4px advance and return for paired chevrons, directional terminations, or signal-rail endpoints on hover/focus
 - localized signal breakup for genuine loading, stale, disconnected, or error state
 
 Guardrail:
@@ -982,7 +1035,6 @@ Priority SEO surfaces:
 - gauntlet detail
 - player profile
 - team profile
-- permissioned sponsor operational pages
 - course pages
 - historical event pages
 
@@ -996,13 +1048,15 @@ Each public entity page should support:
 
 ## Open Questions
 
-- Which font candidate passes the approved specimen test without losing the in-world terminal character?
-- How gritty should production surfaces become before readability suffers?
-- Which component should receive the first implementation prototype?
+- Does Saira Semi Condensed with IBM Plex Sans and Mono pass data-table, form, and ambiguous-identifier testing?
+- How much atmospheric grit can interior pages carry without weakening the clean race-control surface?
+- Which calm panel and table variants remain coherent in dense data layouts and at mobile sizes?
 - Should terminal type-on motion be used at all outside search/path labels?
 
 ## Next Steps
 
-- Use this spec to create page specs for player profile, course leaderboard, and gauntlet detail.
-- Ask the concept/design AI to refine exact font choices, component details, and color token tuning.
-- Run another Pencil pass using this design system plus the IA spec, not the original broad prompt.
+1. Use [[design-language-v0.1]] to create the gauntlet listing and calendar calibration.
+2. Extend the applied language through gauntlet detail, player profile, and course detail/leaderboard mocks.
+3. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.
+4. Validate team pages after the team model is stable enough.
+5. Promote the applied language to v0.2 when the representative interior archetypes are coherent at desktop and mobile widths.

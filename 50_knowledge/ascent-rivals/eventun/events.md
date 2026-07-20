@@ -5,6 +5,7 @@
 - [[overview]]
 - [[api]]
 - [[data-model]]
+- [[identified-match-ingestion]]
 - [[../competition-runtime-terms]]
 - [[../game-client]]
 
@@ -16,7 +17,7 @@ This note documents the event types currently tracked by Eventun and the current
 - `github.com/ikigai-github/eventun/blob/main/event/service.go`
 - `github.com/ikigai-github/eventun/blob/main/event/validation.go`
 - `github.com/ikigai-github/eventun/blob/main/migration/c9_func_match_facts.sql`
-- `github.com/ikigai-github/eventun/blob/main/docs/identified-match-ingestion.md`
+- [[identified-match-ingestion|Identified Match Ingestion]]
 - Ascent Rivals source: `Source/AscentRivals/Public/Server/Subsystems/HGEventunServerSubsystem.h`
 - Ascent Rivals source: `Source/AscentRivals/Private/Server/Subsystems/HGEventunServerSubsystem.cpp`
 - Ascent Rivals source: `Source/AscentRivals/Private/Server/HGServerScript.cpp`
@@ -49,6 +50,8 @@ Event fields:
 - `event_data`: event-specific JSON payload
 
 Eventun derives and persists `source_kind`, producer OAuth client, submitting player when present, receipt time, event count, bounds, and canonical SHA-256 hashes. A player subject is retained as self-reported `client` provenance. An exactly subjectless Server-authorized caller is retained as higher-trust `server` provenance. The producer cannot select this classification.
+
+Season attribution exists only on the accepted compact `match_fact`, never on raw events or `match_player_fact`. Server facts resolve the catalog window containing MatchStart. Client facts are season-eligible only when the windows containing MatchStart and trusted batch receipt are the same non-null season; otherwise they remain unseasoned while still contributing to lifetime behavior. This policy classifies seasonal eligibility and does not validate gameplay or provide anti-cheat. Intention-specific historical derivation always leaves converted facts unseasoned.
 
 ## Runtime Terminology Guardrail
 
@@ -154,7 +157,7 @@ The schema extracts and stores these `event_data` fields for indexing or direct 
 - `singlePlayerMode`: explicit canonical game enum name such as `None` or `TimeTrial`; it is not inferred from `raceMode`
 - `stage`: stage index
 - `gauntletId`: gauntlet identifier when the match is tied to a gauntlet
-- `activeQualifiers`: qualifier ids active for the match; these are gauntlet qualification windows, not heats
+- `activeQualifiers`: gauntlet ids whose qualification windows should be evaluated for the match; Eventun resolves the applicable qualifier from MatchStart time
 
 For gauntlet stage runs, Eventun match acceptance verifies `MatchStart` by `session_id`, `match_id`, `gauntletId`, and `stage`. Multi-match stages accept each required match summary separately before completing the aggregate stage run.
 
@@ -264,7 +267,7 @@ Replay association is not `event_data` and is not part of the complete match lis
 
 ## Event Catalog
 
-The storage column describes new identified ingestion. Legacy `client_event` and `server_event` relations remain available to existing reads until the F14/F15 projection cutover and deterministic conversion are complete.
+The storage column describes new identified ingestion. Legacy `client_event` and `server_event` relations remain available to existing reads until serving projection cutover and deterministic historical conversion are complete.
 
 | Event Key | Display Name | Description | Storage | Payload Shape | Evidence Status |
 |---|---|---|---|---|---|

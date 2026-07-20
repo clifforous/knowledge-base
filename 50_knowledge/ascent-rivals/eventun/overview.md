@@ -4,6 +4,7 @@
 - [[../overview]]
 - [[api]]
 - [[data-model]]
+- [[identified-match-ingestion]]
 - [[gauntlet-stage-runtime-contract]]
 - [[../game-client]]
 - [[../website]]
@@ -17,6 +18,7 @@ Eventun is the central competition domain service responsible for operational to
 - Interface behavior and responsibility boundaries: [[api]]
 - Domain entities and relationships: [[data-model]]
 - Event catalog and payload shapes: [[events]]
+- Identified telemetry ingestion, derivation, cutover, and recovery contract: [[identified-match-ingestion]]
 - Gauntlet stage runtime rules and DS/client contract: [[gauntlet-stage-runtime-contract]]
 - Current team-gauntlet implementation facts and gaps: [[../team-gauntlet-current-state]]
 

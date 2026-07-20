@@ -127,7 +127,7 @@ The generated GameServer surface selects this ClientService operation; Eventun a
 
 Match acceptance derives standings from `match_summary(session_id, match_id)`, so the accepted server-source envelope must contain the expected `MatchStart` and `PlayerMatchEnd` data before each match is accepted. The producer records stable batch/event identities and sequence but remains best-effort/at-most-once; automatic match retransmission is separate deferred work.
 
-Foundation cutover remains coordinated: current `match_summary` and other product reads still use the legacy event relations. The new producer/ingest path is not independently deployable until F13-F15 move progression and serving reads, convert retained history, compare outputs/query plans, and remove the legacy dependency.
+Foundation cutover remains coordinated: current `match_summary` and other product reads still use the legacy event relations. The new producer/ingest path is not independently deployable until progression and serving reads move to the replacement model, retained history is converted, outputs and query plans are compared, and the legacy dependency is removed.
 
 For multi-match stages, each match has its own `session_id + match_id` event and replay identity. Eventun stores accepted stage-run match rows separately from final aggregate placement rows.
 

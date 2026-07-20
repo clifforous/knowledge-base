@@ -20,6 +20,7 @@ Framework decision updated: 2026-07-15
 - [[delivery-plan]]
 - [[route-api-matrix]]
 - [[terminal-ops-design-system]]
+- [[design-language-v0.1]]
 - [[tone-and-voice]]
 - [[flows/authentication]]
 - [[flows/team-lifecycle]]

@@ -2,13 +2,14 @@
 
 Date: 2026-04-13
 Status: Approved discovery model and compact discovery contract; visual design open
-Last reviewed: 2026-07-17
+Last reviewed: 2026-07-19
 
 ## Related
 
 - [[../unified-design]]
 - [[../information-architecture]]
 - [[../terminal-ops-design-system]]
+- [[../design-language-v0.1]]
 - [[../tone-and-voice]]
 - [[../flows/gauntlet-authoring]]
 - [[gauntlet-detail]]
@@ -241,7 +242,7 @@ Shared controls:
 - title search;
 - later filters only when event volume and supported metadata justify them.
 
-Use segmented controls for the two small view/scope choices. Keep their state in the URL. Do not use content tabs that depend on client-only state and cannot be shared.
+Use a segmented control for the primary `Gauntlets` / `Schedule` view choice. Present entity scope as a quieter directory-context row rather than a second equivalent tab set: the active scope is a heading and the alternate scope is an unboxed link such as `View Past Gauntlets` or `View Current & Upcoming`. Keep both choices in URL state. Do not use client-only state that cannot be shared.
 
 ## 3. Unique Gauntlet List
 
@@ -275,12 +276,14 @@ Do not render:
 
 Reuse gauntlet imagery without copying the game-client composition directly.
 
-- Ordinary directory cards use a fixed-ratio media bay beside the information region on wider screens and above it on narrow screens.
-- Keep titles, timing, and actions on an opaque or near-opaque terminal surface. Do not make variable uploaded artwork responsible for text contrast.
-- A gauntlet `Background` image may be cropped into that media bay when it is the best verified asset, but it is not the default full-card background.
-- Reserve full-bleed or atmospheric `Background` treatment for the gauntlet-detail summary or one deliberately featured module. Those uses require a strong scrim, crop review at each breakpoint, and verified text contrast.
+- The approved image-neutral directory mock uses a fixed-ratio scan/media bay beside the information region on wider screens and above it on narrow screens. Preserve that composition as the missing-media and unsuitable-media fallback.
+- During implementation, test an asset-backed variant in which the uploaded gauntlet `Background` image spans the list-item envelope as a dimmed atmospheric underlay. This is the leading implementation direction when a usable background exists, but it remains provisional until tested with representative real uploads.
+- A full-row background may replace the visible media-bay separation, but it must not replace the card's information hierarchy. Keep titles, timing, state, and actions over a deliberate scrim, gradient, or opaque-to-near-opaque information region. Variable artwork must never be solely responsible for text contrast.
+- Review crops at desktop, tablet, and mobile widths. Use responsive image sizing and avoid eagerly loading every below-fold full-resolution upload.
+- Reserve stronger full-bleed atmospheric treatment for the gauntlet-detail summary or a deliberately featured module. Directory rows should remain quieter even when they use the same source asset.
 - Treat the existing media-purpose labels as selection hints until the media-consumer audit establishes a reliable Website priority and aspect-ratio contract.
-- Preserve the card dimensions and information hierarchy when no usable media exists; render the terminal-native fallback in the same bay.
+- Preserve card dimensions and information hierarchy when no usable media exists; render the terminal-native fallback without leaving a broken or visibly empty artwork region.
+- Keep the Schedule agenda image-light. Do not extend the list-item background treatment to every occurrence row.
 
 ## 4. Schedule Agenda
 
@@ -407,7 +410,7 @@ Missing media:
 Desktop:
 
 - use a compact header and clear view/scope controls;
-- cards use a fixed-ratio media bay plus a structured, independently readable content region;
+- cards use either the image-neutral media-bay fallback or the approved dimmed-background variant while preserving a structured, independently readable content region;
 - the agenda may group occurrences by date.
 
 Tablet:
@@ -418,7 +421,7 @@ Tablet:
 Mobile:
 
 - use one-column cards and agenda rows;
-- place the fixed-ratio card media bay above its content when shown, rather than moving text over the image;
+- place the fixed-ratio fallback media bay above its content when used; an adopted full-row background variant requires a mobile-specific crop and stronger content scrim;
 - keep current/next occurrence and primary detail action visible before secondary metadata;
 - retain URL-backed `Gauntlets`/`Schedule` and `Current & Upcoming`/`Past` controls;
 - do not use a month-grid calendar as the initial mobile experience.
@@ -461,7 +464,7 @@ Mobile:
 - Past gauntlets remain publicly readable, searchable, and linked through the Past scope;
 - the Website does not infer private, hidden, or unpublished state from schedule timing;
 - the initial directory fetches one compact public collection and searches, filters, sorts, and incrementally presents it client-side;
-- ordinary directory cards do not place essential text directly over gauntlet artwork;
+- ordinary directory cards never rely on raw gauntlet artwork for essential-text contrast; a full-row background requires a deliberate dimming and content-surface treatment;
 - the Schedule agenda does not use per-row background images;
 - the schedule agenda remains usable on mobile without a month grid.
 
