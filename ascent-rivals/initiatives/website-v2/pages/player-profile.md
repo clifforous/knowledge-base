@@ -92,7 +92,7 @@ Guardrail:
 
 This section is based on the current `ascentun` code and OpenAPI data.
 
-Foundation readiness note (2026-07-15): Eventun F14 implements incremental pilot career, pilot-course career, current-record, player-rank, and bounded match-history reads in the current worktree. Website V2 launch use remains gated on F14 review and the F15 production historical backfill and cutover.
+Foundation readiness note (updated 2026-07-20): Eventun implements incremental pilot career, pilot-course career, current-record, player-rank, and bounded match-history reads. The production-scale local cutover and retained-data smoke passed, while shared-development and production cutovers remain pending. Website V2 launch use requires deployed production behavior.
 
 ### Player identity
 
@@ -589,7 +589,7 @@ Season direction:
 - once the Eventun season catalog and nullable match attribution ship, use backend season identity and windows rather than calculating seasons in the Website;
 - expect seasons to become the primary history grouping/boundary and expose only a bounded number of recent seasons;
 - preserve Eventun's distinction between regular seasons, explicit off-seasons, and unseasoned matches; explicit off-seasons remain absent from ordinary player history by default;
-- defer the exact default season, number of historical seasons, and treatment of unseasoned legacy matches until the implemented F16A contract can be reviewed.
+- define the exact default season, number of historical seasons, and presentation of explicitly unseasoned legacy matches against the implemented Eventun season contract before freezing this Website contract.
 
 V1 caution:
 
@@ -817,7 +817,7 @@ These ideas are valuable but should not block V1 if unsupported:
 9. Career-summary visualization is optional. Podium share is the only approved initial aggregate visualization because it has a clear matches-played denominator; charts must not be fabricated from aggregate totals that contain no time series.
 10. The initial recent-races chart shows raw per-match circuit points for the dominant Ascent Mode cohort as discrete results, supports an optional local course filter, and has no rolling/improvement trend. The exact table contains all supported race modes in the bounded collection.
 11. Cross-course pilot performance uses an exact sortable table plus an optional normalized gap-to-record view for one explicit leaderboard category. Raw times from different courses are never placed on one shared scale.
-12. The initial recent-races bound is the newest 100 public-course matches. Eventun seasons are expected to become the later grouping/boundary, but exact Website season navigation waits for the implemented F16A contract.
+12. The initial recent-races bound is the newest 100 public-course matches. Eventun now provides explicit regular/off-season catalog entries plus nullable Match History season identity; exact Website season navigation remains a Website product decision.
 13. Public recent-race data excludes hidden course matches and unused implementation identifiers before reaching the browser.
 14. Match-stat presence must be preserved through the Website contract. Protobuf optionality is preferred when generation proves it survives; otherwise use explicit availability metadata. Zero-as-missing is forbidden where zero or false is a valid result.
 15. The public profile uses a `Gauntlet History` section. Active participation with public results appears before completed history; completed entries are ordered by actual player activity. Qualifier rank, stage placement, and generic participation remain distinct, and invitations or status-only state are never exposed as public history.

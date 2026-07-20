@@ -1,57 +1,106 @@
-# Ascent Rivals - Website
+# Ascent Rivals Website Surfaces
 
-## Related
-- [[overview]]
-- [[eventun/overview|eventun]]
-- [[eventun/api|eventun-api]]
-- [[accountun]]
-- [[cardano]]
-- [[midnight]]
-- [[team-gauntlet-current-state]]
-- [[ascent-rivals/initiatives/teams-and-team-gauntlets/teams-solution-design|teams-solution-design]]
-- [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design|team-experience-and-progression-solution-design]]
-- [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design|team-gauntlets-and-brackets-solution-design]]
+Applicability: Known current behavior and deployment boundaries; production statements are
+limited to the explicitly described hosted sites.
 
-## Role
-Primary web application surface for player-facing and operations-facing workflows.
+## Current State
 
-## Responsibilities
-- player identity and profile experiences
-- competition discovery and context views
-- team and social participation workflows
-- sponsor and administrative operations
-- entitlement and wallet-linked interaction flows
+Ascent Rivals currently uses two separate web applications.
 
-## Current Implementation Notes
+### Marketing website
 
-Ascentun is hosted on the existing Vercel Pro plan with a two-environment deployment split: `ascentun` for production and `ascentundev` for development. Each deployment connects to Eventun in the corresponding AccelByte production or development game environment. Website V2 is expected to preserve the same two-environment boundary. Reuse of `ascentrivals.com` is the working production-domain assumption pending final cutover confirmation.
+The `ascent-website` application is the current public marketing surface. Its known content
+includes:
 
-Ascentun currently implements the core team lifecycle: team list/profile/create, open join, request-to-join, invite acceptance, owner/manager/admin team management, roster rank/designation edits, pending invites, pending join requests, owner transfer, and disband.
+- `/` for the game proposition, Steam conversion, partner proof, gameplay features, video,
+  ship customization, gallery, and community links;
+- `/about` for studio mission, team, recognition, appearances, and development/event video;
+- `/brand` for downloadable brand assets and usage guidance;
+- `/tournaments` and `/tournaments/msi-grand-prix-2026` for code-authored current and
+  historical tournament material.
 
-The retired Eventun token catalog and team gate API consumers have been removed from Ascentun. The website supports only open, invite-only, and request-to-join membership modes. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
+Marketing changes use the existing designer-to-code workflow: an approved mock, copy, and
+assets are implemented directly in the repository and shipped with the application. There is
+no current CMS requirement.
 
-For the next teams iteration, Ascentun remains the minimal administration surface for team creation/disband, ownership transfer, title and capability assignment, member administration, recruiting metadata, watch/community links, the website-uploaded team avatar, and fixed team-cosmetic management. The game client focuses on browsing, viewing, joining, invitations, leave, and member presentation preferences. Text search comes after controller browsing, and pagination is deferred for the current expected roster scale.
+### Ascentun
 
-Ascentun gauntlet authoring currently carries `playersPerTeam`, `allowedTeams`, `requiredStageWins`, `requiredStageLosses`, and `groups` in TypeScript/schema state, but the visible create/edit UI does not expose team-stage or bracket authoring controls. The visible stage form is limited to stage type, start time, race mode, competitor/lobby counts, and circuit configuration. The stage detail view does not show allowed teams, per-team caps, bracket filters, overflow policy, admission priority rule, roster lock point, or join status.
+Ascentun is the current player-facing and operations-facing web application. It is hosted on
+the existing Vercel Pro plan as `ascentun` for production and `ascentundev` for development.
+Each deployment connects to Eventun in the corresponding AccelByte production or development
+game environment.
 
-Required core gauntlet changes should extend the create/detail flows to author allocation rules, top-N team scoring, racer slots per owner, roster admission policy, and field publication. Bracket setup/repair remains a separate administrator operation in the Eventun Extend App UI. The future v2 website remains the target for the polished public competition experience and delegated core authoring.
+Current responsibilities include:
 
-Website V2 remains the intended core gauntlet create/edit/delete surface because Eventun's player-facing domain authorization supports delegated `gauntlet_creator` users as well as administrators. The Eventun Extend App UI is the initial surface for deliberately administrator-only bracket generation/publication/repair and runtime result or stage-operation repair. Public Website rendering of published bracket/match state remains separate from mutation permission. Do not duplicate the core authoring form across both applications.
+- public player, team, gauntlet, standing, and competition views;
+- Steam OpenID login followed by the AccelByte `steamopenid` platform-token exchange,
+  session refresh, permission-aware navigation, and logout;
+- team list/profile/create, open join, request-to-join, invite acceptance, owner/manager/admin
+  management, roster rank/designation edits, pending invitations and requests, ownership
+  transfer, and disband;
+- gauntlet list/detail/create/edit/delete, qualifier and stage configuration, standings,
+  media, and sponsor association;
+- administrator sponsor list/detail and sponsor/media management;
+- the explicitly retained Midnight/blockchain sponsored-tournament workflow that prevents
+  describing Ascentun as fully retired at Website V2 cutover.
 
-Administrator-only sponsor list/detail, CRUD, and sponsor-owned media administration also belong in the Eventun Extend App rather than Website V2. Website V2 has no sponsor registry routes; it retains only bounded gauntlet-context sponsor display, an optional form-scoped existing-sponsor selector, and direct gauntlet-owned billboard upload. The Extend App sponsor workflow and an administrator-authorized sponsor media upload boundary must be working before Ascentun's sponsor pages are retired.
+The retired Eventun token catalog and team-gate consumers have been removed. Current team
+membership supports open, invite-only, and request-to-join behavior; token gating is not a
+current capability.
 
-Website V2 team and gauntlet media retain direct browser-to-R2 transfer through a same-origin upload-intent route. Intents require the corresponding Eventun-backed create/manage permission, accept no more than 10 JPEG/PNG/WebP images of no more than 10 MB each per submission, use ten-minute signed URLs and server-generated keys, and exclude sponsor/course uploads and new `WideBillboard` records. Occasional unreferenced objects from abandoned forms are an accepted initial low-volume tradeoff rather than a reason to add a pending-upload service.
+Ascentun has no current end-user wallet-management page. Some wallet-related components and
+routes remain as inactive implementation remnants, and Website V2 must not treat them as a
+working parity requirement.
 
-Team progression definitions, caps, level thresholds, unlock mappings, diagnostics, and projection repair belong in Eventun's existing AccelByte Extend App UI rather than Ascentun.
+## Known Gaps
 
-For team gauntlet iteration planning, see [[team-gauntlet-current-state]].
+- Ascentun gauntlet state carries `playersPerTeam`, `allowedTeams`, `requiredStageWins`,
+  `requiredStageLosses`, and `groups`, but the visible create/edit UI does not expose the
+  complete team-stage or bracket model.
+- The visible stage form is limited to stage type, start time, race mode,
+  competitor/lobby counts, and circuit configuration. Stage detail omits allocation,
+  bracket, roster-lock, admission, and join-state information.
+- The current Steam callback/session implementation works in the Ascent Rivals environment,
+  but the Website V2 authentication specification records callback validation, browser-cookie
+  trust, Login Queue, refresh serialization, revocation, and safe-logging gaps that should not
+  be copied into the replacement.
+- Sponsor media administration depends on the existing web workflow; the Eventun Extend App
+  does not yet provide the complete replacement and authorized upload boundary required for
+  cutover.
 
-## Domain Boundary
-- competition domain data is owned by [[eventun/overview|eventun]]
-- accounting transitions are owned by [[accountun]] / [[midnight]]
-- wallet/community identity context intersects with [[cardano]]
+## System Boundaries
 
-## Open Questions
-- Which data requires strict real-time freshness versus eventual consistency?
-- Which operations belong in public web workflows versus restricted operations tooling?
-- Which views should expose private-versus-public distinction explicitly?
+- Eventun owns competition, player, team, gauntlet, standing, and related domain behavior.
+- AccelByte owns platform identity and authoritative course configuration.
+- Accountun and Midnight own accounting and blockchain-related prize/reward transitions.
+- The marketing repository owns code-authored public/editorial content and static brand
+  assets for the current marketing application.
+
+## Future Direction
+
+[Website V2](../initiatives/website-v2/README.md) is an active initiative, not current or
+deployed behavior. It is intended to:
+
+- replace the marketing website and approved public/player non-blockchain Ascentun behavior
+  with one greenfield Next.js/React application;
+- retain the current two-environment website-to-AccelByte/Eventun boundary, with
+  `ascentrivals.com` as the working production-domain assumption pending cutover;
+- keep delegated team and core gauntlet workflows in Website V2 while assigning
+  administrator-only sponsor administration, bracket mutation, and runtime repair to the
+  Eventun Extend App;
+- exclude wallet linking, token gating, and Accountun-related prize/reward data or workflow
+  links from the initial release;
+- preserve the legacy Ascentun host only for the explicitly deferred Midnight/blockchain
+  workflow until that dependency is retired or relocated.
+
+Future Website V2 media limits, cache policy, route composition, and permission boundaries
+are authoritative only within that initiative until implemented and incorporated here.
+
+## Evidence And Decisions
+
+- [Website V2 initial-release scope](../initiatives/website-v2/initial-release-scope.md)
+- [Website V2 delivery plan](../initiatives/website-v2/delivery-plan.md)
+- [Authentication flow and current Ascentun observations](../initiatives/website-v2/flows/authentication.md)
+- [Sponsor-administration handoff](../initiatives/website-v2/sponsor-administration-handoff.md)
+- [Team and gauntlet current state](team-gauntlet-current-state.md)
+- [Ascent Rivals decision log](../decisions/README.md)

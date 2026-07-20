@@ -2,15 +2,17 @@
 
 Status: Solution design draft
 Date: 2026-07-10
-Last updated: 2026-07-15
+Last updated: 2026-07-20
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: team implementation remains gated by F15 and T00. Membership validity and correction semantics below are required inputs to the team qualification capability described in [[team-gauntlets-and-brackets-solution-design]].
+Foundation alignment: local foundation implementation and rehearsal are complete. T00 remains gated by the coordinated shared-development cutover, and implementation remains gated by runtime hardening. Membership validity and correction semantics below are required inputs to the team qualification capability described in [[team-gauntlets-and-brackets-solution-design]].
 
 ## Related
 
+- [Delivery plan and gates](delivery-plan.md)
+- [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [[ascent-rivals/system/game-client|game-client]]
 - [[ascent-rivals/system/website|website]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]

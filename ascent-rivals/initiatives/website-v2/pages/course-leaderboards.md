@@ -71,7 +71,7 @@ Secondary:
 
 ## Current V1 Data Availability
 
-Foundation readiness note (2026-07-15): Eventun F14 moves current course records and player ranks to incremental serving projections in the current Eventun worktree. Website V2 launch use remains gated on F14 review and the F15 production historical backfill and cutover.
+Foundation readiness note (updated 2026-07-20): Eventun serves current course records and player ranks from incremental projections. The production-scale local cutover and retained-data smoke passed, while shared-development and production cutovers remain pending. Website V2 launch use requires deployed production behavior.
 
 ### Course metadata
 

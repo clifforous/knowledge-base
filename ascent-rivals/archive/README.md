@@ -8,7 +8,7 @@ retrieval.
 - [Archived initiative index](initiatives/README.md)
 - completed or superseded progression, Insights, and gauntlet-runtime implementation designs;
 - the historical reconnect restoration plan;
-- the superseded initial Website V2 Pencil brief.
+- the superseded initial Website V2 Pencil brief and excluded wallet-linking flow.
 
 Daily notes, task lists, generated summaries, coder prompts, and obsolete automation were
 removed during pass 2 after durable decisions and current behavior were incorporated. Their

@@ -1,20 +1,23 @@
 # Ascent Rivals Wallet Linking User Flow
 
 Date: 2026-04-14
-Status: Draft
+Status: Archived; excluded from Website V2
+
+Archive notice: Archived 2026-07-20 because wallet linking, wallet management, token gating,
+and Accountun-related prize/reward workflows are outside the Website V2 initial-release
+boundary. Use the active Website V2 scope and authentication flow for current direction.
 
 Website V2 exclusion (2026-07-15): this entire flow is deferred and must not be implemented or linked from Website V2. Wallet, prize, reward, funding, claim, and payout behavior requires a later Accountun boundary review. The remaining document is future/historical design input only, not an initial-release specification.
 
 ## Related
-- [[authentication]]
-- [[../unified-design]]
-- [[../information-architecture]]
-- [[../README|Website V2 initiative index]]
-- [[../terminal-ops-design-system]]
-- [[../tone-and-voice]]
-- [[../pages/player-profile]]
-- [[../pages/team-profile]]
-- [[../pages/gauntlet-detail]]
+- [[README|Archived Website V2 exploration]]
+- [[ascent-rivals/initiatives/website-v2/flows/authentication|active authentication flow]]
+- [[ascent-rivals/initiatives/website-v2/initial-release-scope|active initial-release scope]]
+- [[ascent-rivals/initiatives/website-v2/unified-design|active unified design]]
+- [[ascent-rivals/initiatives/website-v2/information-architecture|active information architecture]]
+- [[ascent-rivals/initiatives/website-v2/pages/player-profile|active player-profile specification]]
+- [[ascent-rivals/initiatives/website-v2/pages/team-profile|active team-profile specification]]
+- [[ascent-rivals/initiatives/website-v2/pages/gauntlet-detail|active gauntlet-detail specification]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 

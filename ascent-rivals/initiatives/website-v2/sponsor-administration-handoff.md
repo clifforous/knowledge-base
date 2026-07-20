@@ -1,20 +1,20 @@
 # Ascent Rivals Sponsor Administration Handoff
 
 Date: 2026-04-14
-Updated: 2026-07-17
+Updated: 2026-07-20
 Status: Approved boundary; Eventun Extend App implementation required before Website V2 cutover
 
 ## Related
 
-- [[../unified-design]]
-- [[../information-architecture]]
-- [[../initial-release-scope]]
-- [[../delivery-plan]]
-- [[../route-api-matrix]]
-- [[gauntlet-detail]]
+- [[unified-design]]
+- [[information-architecture]]
+- [[initial-release-scope]]
+- [[delivery-plan]]
+- [[route-api-matrix]]
+- [[pages/gauntlet-detail]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
-- [[../flows/gauntlet-authoring]]
+- [[flows/gauntlet-authoring]]
 
 ## Decision
 

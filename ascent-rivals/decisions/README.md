@@ -103,3 +103,70 @@ evidence and must not be presented as current truth before incorporation.
   [data model](../system/eventun/data-model.md), [game client](../system/game-client.md), and
   [team current state](../system/team-gauntlet-current-state.md).
 - **Evidence:** [foundation/API review](../sources/analysis/eventun-foundation-api-simplification-review.md).
+
+### AR-2026-007 — Coordinate development cutover with the game-client mainline
+
+- **Date:** 2026-07-19
+- **Status:** Active sequencing decision; the shared-development cutover remains pending and
+  production remains unscheduled.
+- **Changed:** From applying the accepted Eventun migration as soon as its local rehearsal passed
+  to waiting until the coordinated game-client API changes complete their next copy to main,
+  then migrating the development database and service together.
+- **Why:** The combined identified-match and season foundation should soak in development before
+  production, but migrating Eventun first would create an avoidable shared-development
+  service/client mismatch. The successful local rehearsal and retained snapshot make an earlier
+  shared mutation unnecessary.
+- **Affected knowledge:** [development cutover and runtime hardening](../initiatives/eventun-foundation/development-cutover-and-runtime-hardening.md),
+  [teams delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md), and the
+  [teams program design](../initiatives/teams-and-team-gauntlets/teams-solution-design.md).
+- **Evidence:** [season and retained-data review](../sources/analysis/eventun-insights-progression-seasons-review.md)
+  records the accepted local rehearsal and the still-pending development cutover.
+
+### AR-2026-008 — Website V2 is one greenfield Next.js/React replacement
+
+- **Date:** 2026-07-15
+- **Status:** Approved initiative direction; implementation and deployment remain pending.
+- **Changed:** From considering reuse of the existing sites or an alternate Nuxt/Svelte-style
+  stack to one new Next.js/React/TypeScript application that replaces the marketing site and
+  approved public/player Ascentun behavior.
+- **Why:** The familiar stack provides the clearest maintainability, designer-to-code, AI-coder,
+  review, Vercel, authentication, and data-heavy page workflow without coupling the new product
+  structure to either legacy implementation.
+- **Affected knowledge:** [Website V2 initiative](../initiatives/website-v2/README.md),
+  [unified design](../initiatives/website-v2/unified-design.md), and
+  [initial-release scope](../initiatives/website-v2/initial-release-scope.md).
+- **Evidence:** The approved framework and replacement boundary are consolidated in the linked
+  initiative documents; the [current website document](../system/website.md) records the two
+  existing surfaces being replaced.
+
+### AR-2026-009 — Website V2 excludes wallet and Accountun reward workflows
+
+- **Date:** 2026-07-15
+- **Status:** Approved initial-release boundary; future redesign remains possible.
+- **Changed:** From treating wallet, token-gating, prize, and reward behavior as potential
+  Ascentun parity to excluding wallet management, Cardano/Midnight wallet support, token gates,
+  and every Accountun-driven prize/reward workflow or link from Website V2.
+- **Why:** Those capabilities lack an approved product and ownership boundary and are not needed
+  for the initial public website. Partial migration would expose confusing or unsafe state while
+  delaying the replacement release.
+- **Affected knowledge:** [initial-release scope](../initiatives/website-v2/initial-release-scope.md),
+  [delivery plan](../initiatives/website-v2/delivery-plan.md), and the
+  [archived wallet flow](../archive/initiatives/website-v2/wallet-linking.md).
+- **Evidence:** The active scope excludes the workflows explicitly; the archived flow preserves
+  the superseded design without presenting it as current intent.
+
+### AR-2026-010 — Sponsor administration moves to the Eventun Extend App
+
+- **Date:** 2026-07-17
+- **Status:** Approved cutover boundary; Extend App implementation remains required.
+- **Changed:** From preserving public-site sponsor registry/detail/CRUD routes to keeping only
+  bounded gauntlet-context sponsor display and authoring selection in Website V2 while moving
+  administrator registry and media operations to the Eventun Extend App.
+- **Why:** Sponsor administration is restricted operational work, while public Website V2 needs
+  only the approved identity and campaign presentation associated with a gauntlet. Separating
+  the surfaces avoids creating public sponsor routes or duplicating administration.
+- **Affected knowledge:** [sponsor-administration handoff](../initiatives/website-v2/sponsor-administration-handoff.md),
+  [gauntlet authoring](../initiatives/website-v2/flows/gauntlet-authoring.md), and
+  [Website V2 delivery](../initiatives/website-v2/delivery-plan.md).
+- **Evidence:** The handoff defines the required Eventun contract, upload, preservation, and
+  cutover acceptance boundaries.

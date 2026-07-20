@@ -31,7 +31,7 @@ Framework decision updated: 2026-07-15
 - [[ascent-rivals/initiatives/website-v2/pages/course-leaderboards]]
 - [[ascent-rivals/initiatives/website-v2/pages/teams-index]]
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile]]
-- [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]]
+- [[sponsor-administration-handoff]]
 - [[flows/gauntlet-authoring]]
 - [[ascent-rivals/initiatives/gauntlet-runtime/gauntlet-finals-and-tournament-modes-design-review]]
 
@@ -129,7 +129,7 @@ Default design implementation loop:
 
 Storybook, automated screenshots, and visual-regression tooling are optional. Add them only when repeated component states, collaboration needs, or regression risk justify their ongoing cost.
 
-This decision supersedes Nuxt/Vue/Reka UI references in the decomposed Website V2 drafts. Those references should be reconciled during the dedicated knowledge-base cleanup rather than treated as active constraints.
+This decision supersedes Nuxt/Vue/Reka UI references. Active Website V2 documents now use the greenfield Next.js/React direction; the archived exploratory Pencil and wallet documents retain their original stack references only as historical evidence.
 
 ## Marketing Content Authoring Decision
 
@@ -886,7 +886,7 @@ Individual pilot performance remains the primary competitive lens during the cur
 
 Tables remain the primary representation for exact standings, leaderboards, rosters, schedules, and match rows. Visualizations are required where they communicate a bounded trend, comparison, gap, or contribution more clearly than a table. They must not imply population percentiles from top-N data, compare unlike course times on one scale, or derive historical team performance from current rosters.
 
-Eventun F14 supplies incremental pilot career, pilot-course career, current-record, player-rank, recent-match-history, and gauntlet read paths in its current worktree. Website launch depends on F14 review and the F15 production backfill/cutover. Credible team analytics also depend on the planned T03 fact-backed team reads and event-time membership attribution after the F15/T00 checkpoint.
+Eventun supplies locally implemented and rehearsed incremental pilot career, pilot-course career, current-record, player-rank, recent-match-history, and gauntlet read paths. Website launch depends on those contracts being deployed and accepted in production, not merely on local evidence. Credible team analytics also depend on the planned [T03 fact-backed team reads](../teams-and-team-gauntlets/delivery-plan.md#t03--add-fact-backed-team-views) and membership-at-performance-time attribution after the coordinated development cutover and T00 checkpoint.
 
 See [[initial-release-scope]] for the initial analytics matrix and contract gaps.
 

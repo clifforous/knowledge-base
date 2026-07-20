@@ -10,6 +10,7 @@
 - [[website]]
 - [[ascent-rivals/initiatives/gauntlet-runtime/gauntlet-finals-and-tournament-modes-design-review|gauntlet-finals-and-tournament-modes-design-review]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/teams-solution-design|teams-solution-design]]
+- [[ascent-rivals/initiatives/teams-and-team-gauntlets/delivery-plan|teams delivery plan]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design|team-experience-and-progression-solution-design]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design|team-gauntlets-and-brackets-solution-design]]
 - [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review|eventun-team-postgresql-derivation-review]]
@@ -17,13 +18,13 @@
 
 ## Review Snapshot
 
-Product/team sources were reviewed through 2026-07-10. The migration audit refreshed committed implementation state through accepted F13 work on 2026-07-14, the unstaged F14 Eventun implementation was incorporated on 2026-07-15, and the current correction rechecked both repositories on 2026-07-15:
+The team-specific code review baseline remains 2026-07-15. Later foundation knowledge is reconciled through the accepted Eventun season and retained-data correction at `37c0307`, including one successful production-scale local cutover rehearsal and populated smoke. Those later changes did not implement the team, slot, or bracket gaps listed here, and shared-development cutover remains pending:
 
-- `github.com/ikigai-github/eventun` on `teams` at committed base `5aaaea2`, with the current correction in the review worktree
-- `github.com/ikigai-github/ascentun` on `dev` at `a0a40ad`; the locally recorded `main`, `origin/main`, and `origin/dev` refs identify the same commit
+- Eventun team behavior was originally inspected at `5aaaea2`; the foundation and season implementation is reconciled through `37c0307`
+- Ascentun team behavior was inspected on `dev` at `a0a40ad`
 - Ascent Rivals game-client/server source, focused on gauntlet stage admission, session joins, team presentation, minimap behavior, party integration, and inbox behavior
 
-This note captures implementation facts for the next teams design iteration. It should not be read as final product design.
+This note captures known implementation facts for T00. T00 must recheck the live repositories after the coordinated development cutover; this note is not final product design.
 
 ## Confirmed Current Behavior
 

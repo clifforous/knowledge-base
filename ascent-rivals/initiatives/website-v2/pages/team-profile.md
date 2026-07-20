@@ -14,7 +14,7 @@ Membership direction confirmed: 2026-07-15. The stable public concepts are `Open
 - [[../tone-and-voice]]
 - [[../flows/team-lifecycle]]
 - [[teams-index]]
-- [[sponsors-index]]
+- [[../sponsor-administration-handoff]]
 - [[player-profile]]
 - [[gauntlet-detail]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]

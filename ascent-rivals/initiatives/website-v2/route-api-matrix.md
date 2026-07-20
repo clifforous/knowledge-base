@@ -118,7 +118,7 @@ An unavailable standings, bracket, sponsor, or personal module must fail indepen
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
 | `/players` | Eventun public pilot identity, team summary, and approved shallow career context | Return one cached compact collection; exclude only source-classified bot, test, and internal identities; strip profile-detail and private fields before serialization | Client-side name/team search, approved sorts, and display pagination/progressive reveal over the complete collection | None required; an own-profile link is ordinary navigation | Existing `GET /v1/player` is a candidate while measured payload cost remains acceptable; otherwise add a compact domain-neutral directory projection |
-| `/players/[id]` | Eventun pilot career and pilot-course career projections, current records/ranks, bounded match history, gauntlet participation/results, and public recognition; public course metadata originates in AccelByte through the approved Eventun projection | Compose independently cached public modules; filter history through the public course projection; preserve missing-value semantics; remove raw evidence and unrendered identifiers; return not found for an unusable public identity | Section navigation, local table/chart controls, and exact-value accessible alternatives; no browser N+1 joins | Request-time own-profile team/account actions only; no wallet, exact MMR, rank history, or private progression | F14 serving reads are candidates after review and F15 cutover; compact gauntlet-history and recognition reads are required; own-profile contract depends on the implemented team model |
+| `/players/[id]` | Eventun pilot career and pilot-course career projections, current records/ranks, bounded match history, gauntlet participation/results, and public recognition; public course metadata originates in AccelByte through the approved Eventun projection | Compose independently cached public modules; filter history through the public course projection; preserve missing-value semantics; remove raw evidence and unrendered identifiers; return not found for an unusable public identity | Section navigation, local table/chart controls, and exact-value accessible alternatives; no browser N+1 joins | Request-time own-profile team/account actions only; no wallet, exact MMR, rank history, or private progression | Serving reads are implemented and locally rehearsed; shared use waits for the coordinated environment cutovers. Compact gauntlet-history and recognition reads remain required, and the own-profile contract depends on the implemented team model |
 
 ### Pilot Profile Read Decomposition
 
@@ -147,7 +147,7 @@ Identity/career, course performance, recent races, gauntlet history, recognition
 
 ### Pilot Contract Gaps
 
-- review the Eventun F14 career, pilot-course, current-record/rank, and bounded-history contracts, then require the F15 historical backfill and cutover before launch use;
+- finalize the reviewed Eventun career, pilot-course, current-record/rank, and bounded-history contracts, then require deployed production behavior before launch use;
 - verify that the directory source supplies explicit public identity classification; do not infer bots, test accounts, or internal identities from naming or activity;
 - add a compact directory projection when the measured `GET /v1/player` response is no longer appropriate for a full client-side collection;
 - define a public recent-races projection that applies course visibility, maps race-mode labels, preserves missing versus zero/false, and strips internal identifiers before serialization;
@@ -163,7 +163,7 @@ AccelByte Cloud Save remains authoritative for course configuration and publicat
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
 | `/courses` | AccelByte Cloud Save course configuration through Eventun's public-safe course projection; Eventun current record summaries | Return one cached compact collection of `published` courses by default and explicitly `archived` courses only when requested; never serialize hidden classifications; include bounded best-finish/lap summaries where approved | Client-side course/planet search, archive filter, sort, selection, and display pagination/progressive reveal over the complete collection | None | Current `GET /v1/course` is not safe to consume unchanged because its derived `active` value collapses retired and unreleased states; revise it or add a purpose-built domain-neutral projection |
-| `/courses/[code]` | AccelByte course metadata through Eventun; Eventun category leaderboard/current record; Eventun player-specific placement | Resolve the stable course code; return not found for hidden/unknown courses; cache stable metadata separately from short-cache selected-category records; preserve the category query in shareable state | Category switching, exact leaderboard table, bounded top-N gap visualization, accessible row detail, and public pilot links | Request-time logged-in pilot rank/time for the selected course/category, including placement outside the public top-N | Existing leaderboard reads are candidates after F14 review/F15 cutover; final public board and private placement projections require contract verification |
+| `/courses/[code]` | AccelByte course metadata through Eventun; Eventun category leaderboard/current record; Eventun player-specific placement | Resolve the stable course code; return not found for hidden/unknown courses; cache stable metadata separately from short-cache selected-category records; preserve the category query in shareable state | Category switching, exact leaderboard table, bounded top-N gap visualization, accessible row detail, and public pilot links | Request-time logged-in pilot rank/time for the selected course/category, including placement outside the public top-N | Leaderboard reads are implemented and locally rehearsed; final public-board/private-placement presentation requires contract verification and deployed production behavior |
 
 ### Course Read Decomposition
 
@@ -183,7 +183,7 @@ The course index may include bounded cross-course record summaries, but it must 
 
 - revise `GET /v1/course` or add a purpose-built Eventun public projection that reads authoritative AccelByte feature/archive metadata, returns `published` by default, returns `archived` only explicitly, and treats hidden detail as not found;
 - ensure the same public projection filters player recent-race history, player-course rows, global search, route metadata, canonicals, and sitemaps;
-- review F14 current-record and player-rank serving contracts and require the F15 historical backfill/cutover before launch use;
+- finalize current-record and player-rank serving contracts and require deployed production behavior before launch use;
 - verify the public leaderboard projection exposes exact category, rank, time, public pilot identity, loadout value, bounded population context, and useful as-of metadata without raw source-policy or internal identifiers;
 - verify a small authenticated personal-placement response for ranks outside the public top-N;
 - preserve the approved player-facing Race, Time Trial, `3K Class`, and `10K Class` mappings while keeping server/client authority and validation terminology out of public copy;
@@ -192,7 +192,7 @@ The course index may include bounded cross-course record summaries, but it must 
 
 ## Team Route Group
 
-This route group is provisional until the Eventun T00-T03 team work is implemented and reviewed. It fixes Website ownership, public/private separation, and required semantics without freezing legacy endpoint names, numeric designations, or speculative statistics fields.
+This route group is provisional until the Eventun [T00–T03 team work](../teams-and-team-gauntlets/delivery-plan.md) is implemented and reviewed. It fixes Website ownership, public/private separation, and required semantics without freezing legacy endpoint names, numeric designations, or speculative statistics fields.
 
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
@@ -226,7 +226,7 @@ Public identity/roster and fact-backed statistics may fail independently. Privat
 
 ### Team Contract Gaps
 
-- complete and review T00-T03 before freezing Website contracts; Website V2 launch requires fact-backed T03 reads and membership-at-performance-time attribution;
+- complete and review [T00–T03](../teams-and-team-gauntlets/delivery-plan.md) before freezing Website contracts; Website V2 launch requires fact-backed T03 reads and membership-at-performance-time attribution;
 - add a compact reusable public team browse projection rather than shipping the legacy every-team-plus-full-roster response to the browser indefinitely;
 - finalize public team identity, recruiting, region/time-zone, watch/community link, media, roster, title, competition-rank, and affiliation-visibility fields against the implemented model;
 - expose one bounded current-player/team action-state response with unexpired pending state and explicit allowed actions; do not make the Website derive transition eligibility from membership mode alone;
@@ -370,7 +370,7 @@ The approved account menu remains `My Career`, `My Team`, conditional `Admin / O
 
 ## Sponsor Administration Exclusion
 
-Website V2 does not implement `/sponsors`, `/sponsors/[id]`, sponsor CRUD, or sponsor-owned media administration. Those operations move to the Eventun Extend App before cutover as specified in [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]].
+Website V2 does not implement `/sponsors`, `/sponsors/[id]`, sponsor CRUD, or sponsor-owned media administration. Those operations move to the Eventun Extend App before cutover as specified in [[sponsor-administration-handoff]].
 
 The Website route boundary retains only:
 

@@ -2,15 +2,17 @@
 
 Status: Solution design draft
 Date: 2026-07-10
-Last updated: 2026-07-15
+Last updated: 2026-07-20
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: the capability review below uses the approved F14 pre-implementation projection and individual-cutoff contract. Team implementation remains gated by F15 and the T00 design checkpoint, where this design must be checked against the implemented schema rather than the checkpoint alone.
+Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, and historical rehearsal work is now implemented locally. T00 remains gated by the coordinated shared-development cutover and must revalidate this design against the implemented schema; implementation remains gated by runtime hardening.
 
 ## Related
 
+- [Delivery plan and gates](delivery-plan.md)
+- [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [[team-experience-and-progression-solution-design]]
 - [[ascent-rivals/system/team-gauntlet-current-state|team-gauntlet-current-state]]
 - [[ascent-rivals/system/eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]]
@@ -81,7 +83,7 @@ The design avoids separate “individual wildcard” and “team wildcard” sys
 | Stage runs are created with a primary shard in the reviewed path | A bracket needs multiple distinct runs for one logical stage |
 | `gauntlet_stage_placement` includes `stage_run_id` but its primary key is gauntlet, stage, player | Multiple bracket matches in the same stage cannot persist independent accepted placements |
 | Bracket configuration is limited to required prior wins and losses | It cannot express seeds, high-versus-low pairing, byes, explicit assignments, or visible upstream routing |
-| Hourly materialized-view refresh underlies existing qualifier reads | It is too stale and too rebuild-oriented to be the authoritative cutoff mechanism |
+| The implemented cutoff is player-specific selection evidence rather than a generalized competition field | Team qualification, explicit assignment, mixed owners, slots, and bracket positions require a cohesive field layer without widening one player snapshot into every concept |
 
 ## Terminology
 
@@ -190,7 +192,7 @@ Top-N team scoring includes `N = 1`; that is “best member represents the team,
 
 | Use case | Configuration | Coverage assessment |
 |---|---|---|
-| Individual qualifier final | Top 16 players by individual qualification score; one slot each | **Covered by design:** F14 supplies immutable individual selection evidence; G01 expands it into the unified field and slots. |
+| Individual qualifier final | Top 16 players by individual qualification score; one slot each | **Covered by design:** the implemented individual cutoff supplies immutable selection evidence; G01 expands it into the unified field and slots. |
 | Individual invitational | Sixteen explicitly invited players; one slot each | **Covered by design:** explicit player allocation does not require a standings query. |
 | Team qualifier final | Top eight teams by the sum of their top three member scores; one racer per team; manager rank controls admission | **Covered by design after membership intervals:** team cutoff snapshots contributors, then team owners expand to one slot each. |
 | Team invitational | Eight explicitly invited teams; one racer per team; first-come admission | **Covered by design:** only the owner selection source differs from team qualification. |
@@ -308,27 +310,27 @@ At cutoff:
 
 A delayed complete-match batch or rewritten historical fact does not silently mutate a published field. An operator may run a recomputation, review the delta, and publish a replacement only before a stage run is claimed and bound to that field. Claim validates that the field still references the current valid source snapshots and configuration, then atomically binds the field and instantiates its concrete stage-run slots. Once bound, field owners and slots remain fixed; only provisional occupants may change until roster lock. A later field correction requires an explicit audited void/rebind or repair decision rather than an ordinary replacement.
 
-### F14 Integration Boundary
+### Current Individual Projection And Cutoff Boundary
 
-The F14 individual qualification snapshot is immutable selection evidence, not the generalized competition field. Team work should preserve that boundary instead of widening the player-specific snapshot until it also means team selection, invitations, bracket positions, slots, and roster state.
+The implemented individual qualification snapshot is immutable selection evidence, not the generalized competition field. Team work should preserve that boundary instead of widening the player-specific snapshot until it also means team selection, invitations, bracket positions, slots, and roster state.
 
-| Layer | Responsibility | F14 and team-phase relationship |
+| Layer | Responsibility | Current foundation and team-phase relationship |
 |---|---|---|
-| Incremental performance projection | Maintain player qualifier contributions, best sequences, overall scores, and the gauntlet projection revision | F14 foundation; team scoring reuses the narrow contributions and evidence, not a current-team join over the collapsed player score |
-| Source-specific selection snapshot | Freeze selected player owners or selected team owners and their exact scoring evidence | F14 supplies individual qualification; G02 adds team qualification and contributor evidence |
+| Incremental performance projection | Maintain player qualifier contributions, best sequences, overall scores, and the gauntlet projection revision | Implemented foundation; team scoring reuses the narrow contributions and evidence, not a current-team join over the collapsed player score |
+| Source-specific selection snapshot | Freeze selected player owners or selected team owners and their exact scoring evidence | The current foundation supplies individual qualification; G02 adds team qualification and contributor evidence |
 | Published field snapshot | Resolve all allocation rules into one ordered, versioned owner field | G01 references qualification snapshots, explicit assignments, and later bracket sources |
 | Concrete stage-run slots | At stage-run claim, expand each published owner into the configured racer-seat count | G01/G03; slots reference the field owner and retain source provenance |
 | Locked roster and owner results | Persist actual occupants, slot results, owner aggregation, and downstream advancement | G03 through G05 |
 
 The conceptual field relations are `gauntlet_field_snapshot` and `gauntlet_field_owner`; final names should follow the implemented schema conventions. A field snapshot identifies its logical target, not merely `(gauntlet_id, stage)`: the opening/default field uses the stage target, while each bracket match uses its bracket-match or shard target. A stage run binds exactly one matching field snapshot. Each field owner records its owner type/id, allocation rule, selection order, source snapshot or bracket position, and display label. Slots reference field owners rather than binding runtime admission directly to a player-only qualification row.
 
-Because compatibility with the pre-alpha runtime shape is not required, G01 should replace the F14 direct `qualification_snapshot_id` admission dependency with the unified field/slot binding. It should retain the F14 snapshot reference as provenance for owners selected by individual qualification.
+Because compatibility with the pre-alpha runtime shape is not required, G01 should replace the current direct `qualification_snapshot_id` admission dependency with the unified field/slot binding. It should retain the individual snapshot reference as provenance for owners selected by individual qualification.
 
-G02 must not calculate team standings by joining `gauntlet_player_score_projection` to current membership. Event-time membership can split one player's matches across several teams, changing sequence windows and top-K results. G02 should maintain targeted team-attributed member qualifier/overall projections from F14's narrow match contributions, with the same score algorithm and deterministic evidence order. The bounded top-N team aggregate then operates over those member-score rows.
+G02 must not calculate team standings by joining `gauntlet_player_score_projection` to current membership. Event-time membership can split one player's matches across several teams, changing sequence windows and top-K results. G02 should maintain targeted team-attributed member qualifier/overall projections from the implemented narrow match contributions, with the same score algorithm and deterministic evidence order. The bounded top-N team aggregate then operates over those member-score rows.
 
-Team qualification adds a second consistency domain that F14 does not need: membership-at-performance-time. A team cutoff preview must therefore bind all of:
+Team qualification adds a second consistency domain that individual qualification does not need: membership-at-performance-time. A team cutoff preview must therefore bind all of:
 
-- the exact F14 gauntlet projection revision and scoring/configuration hash;
+- the exact gauntlet projection revision and scoring/configuration hash;
 - a membership-attribution revision or an exact fingerprint of every membership interval used;
 - the team metric definition, including top N and deterministic tie-breaks;
 - the complete selected-team, contributing-member, and selected-match evidence.
@@ -722,7 +724,7 @@ Automated game-client tests are not required for this iteration. Backend and ded
 | Late telemetry changes published finalists | Snapshot at exact projection/configuration revisions and require audited replacement before stage-run binding |
 | Multiple team racers have no winner rule | Require owner-result aggregation before enabling slots per owner above one |
 | Bracket repair corrupts history | Version, void, audit, and prohibit silent edits to started runs |
-| Hourly materialized views remain stale or become authoritative accidentally | Replace them with incremental qualification projections and publish immutable cutoff tables |
+| Broad live standings are reused as team cutoff evidence | Extend the revisioned contribution/projection model and publish immutable source-specific snapshots before resolving the unified field |
 | Session creation failure blocks result transaction | Advance database state first and allocate external sessions through durable work |
 
 ## Questions

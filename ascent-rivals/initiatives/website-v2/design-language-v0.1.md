@@ -2,7 +2,7 @@
 
 Date: 2026-07-18
 Status: Provisional applied baseline
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-20
 
 ## Related
 
@@ -15,15 +15,19 @@ Last reviewed: 2026-07-19
 
 ## Purpose
 
-This document is the first applied visual-language baseline for Website V2. It translates the approved homepage desktop and mobile calibration frames into rules that can guide Pencil mocks and the Next.js/React implementation.
+This document is the first applied visual-language baseline for Website V2. It translates the approved homepage and gauntlet-discovery desktop/mobile calibration frames into rules that can guide Pencil mocks and the Next.js/React implementation.
 
 Source calibration frames:
 
 - `Ascent V2 — Homepage Composition Calibration`
 - `Ascent V2 — Homepage Mobile Calibration`
 - `Homepage Composition — Interaction Notes`
+- `Ascent V2 — Gauntlets Index Calibration`
+- `Ascent V2 — Gauntlets Schedule Calibration`
+- `Ascent V2 — Gauntlets Index Mobile Calibration`
+- `Ascent V2 — Gauntlets Schedule Mobile Calibration`
 
-This version is intentionally provisional. It has been validated on one marketing composition at desktop and mobile widths, but not yet on data tables, filters, charts, forms, or dense entity pages.
+This version is intentionally provisional. It has been validated on marketing and gauntlet-discovery compositions at desktop and mobile widths, including local search, URL-backed view/scope controls, entity rows, and a repeated-occurrence agenda. Dense standings tables, charts, forms, and complete entity-detail pages remain unvalidated.
 
 ## Design Thesis
 
@@ -445,12 +449,13 @@ Applied patterns:
 
 ## Validation Boundary
 
-Version 0.1 confirms the marketing shell and responsive visual thesis. It does not yet finalize:
+Version 0.1 confirms the marketing shell, responsive visual thesis, and gauntlet directory and
+Schedule composition. It does not yet finalize:
 
 - leaderboard and table density;
-- filters, sorting, pagination, and search-result presentation;
+- complex filters, sorting, pagination, and grouped search-result presentation;
 - charts and career-summary visualization;
-- gauntlet schedule, stage, qualifier, and bracket composition;
+- gauntlet-detail stage, qualifier, result, and bracket composition;
 - player and team identity modules;
 - forms and permissioned workflows;
 - loading, empty, error, stale, and partial-data visuals;
@@ -459,10 +464,9 @@ Version 0.1 confirms the marketing shell and responsive visual thesis. It does n
 
 Revise this language through representative page mocks in this order:
 
-1. gauntlet listing and calendar;
-2. gauntlet detail;
-3. player profile;
-4. course detail and leaderboard;
-5. team pages after the team model is stable enough.
+1. review the active gauntlet-detail calibration, then add its sparse/upcoming companion;
+2. player profile;
+3. course detail and leaderboard;
+4. team pages after the team model is stable enough.
 
 Promote the document to v0.2 only after the interior mocks establish reusable rules for dense data, controls, charts, and responsive entity layouts.

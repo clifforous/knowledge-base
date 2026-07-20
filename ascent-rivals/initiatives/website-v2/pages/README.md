@@ -14,7 +14,10 @@ and contract details; read each status line.
 - [Course leaderboards](course-leaderboards.md)
 - [Teams index](teams-index.md)
 - [Team profile](team-profile.md)
-- [Sponsors index](sponsors-index.md)
 
 These specifications describe Website V2 intent. They do not override the
 [current website](../../../system/website.md) or current Eventun API.
+
+Website V2 has no sponsor index or detail page. The active
+[sponsor-administration handoff](../sponsor-administration-handoff.md) assigns registry and
+media operations to the Eventun Extend App while retaining bounded gauntlet-context display.

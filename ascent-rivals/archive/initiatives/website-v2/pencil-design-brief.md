@@ -21,7 +21,7 @@ direction. The follow-up prompt was removed after its durable results were incor
 - [[ascent-rivals/initiatives/website-v2/pages/course-leaderboards]]
 - [[ascent-rivals/initiatives/website-v2/pages/teams-index]]
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile]]
-- [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]]
+- [[ascent-rivals/initiatives/website-v2/sponsor-administration-handoff]]
 - [[ascent-rivals/system/design-language|design-language]]
 - [[ascent-rivals/system/game-design|game-design]]
 - [[ascent-rivals/system/lore|lore]]

@@ -1,7 +1,7 @@
 # Ascent Rivals Terminal Ops Design System
 
 Date: 2026-04-13
-Last reviewed: 2026-07-18
+Last reviewed: 2026-07-20
 Status: Draft
 
 ## Related
@@ -18,7 +18,7 @@ Status: Draft
 - [[ascent-rivals/initiatives/website-v2/pages/course-leaderboards]]
 - [[ascent-rivals/initiatives/website-v2/pages/teams-index]]
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile]]
-- [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]]
+- [[sponsor-administration-handoff]]
 - [[shell-concepts]]
 - [[ascent-rivals/archive/initiatives/website-v2/pencil-design-brief]]
 - [[ascent-rivals/sources/website-concepts/terminal-concept|terminal-concept]]
@@ -369,7 +369,7 @@ Asset guardrails:
 
 ## Shape and Border Language
 
-Status: refined through the approved desktop and mobile homepage calibration frames on 2026-07-18. It must still be tested on a data-heavy interior page.
+Status: refined through the approved desktop/mobile homepage and gauntlet-discovery calibration frames. It must still be reviewed on a data-heavy detail page.
 
 Approved motifs:
 
@@ -1055,8 +1055,8 @@ Each public entity page should support:
 
 ## Next Steps
 
-1. Use [[design-language-v0.1]] to create the gauntlet listing and calendar calibration.
-2. Extend the applied language through gauntlet detail, player profile, and course detail/leaderboard mocks.
+1. Review the active gauntlet-detail calibration and create its sparse/upcoming companion.
+2. Extend the applied language through player-profile and course-detail/leaderboard mocks.
 3. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.
 4. Validate team pages after the team model is stable enough.
 5. Promote the applied language to v0.2 when the representative interior archetypes are coherent at desktop and mobile widths.

@@ -23,7 +23,7 @@ Foundation supersession (2026-07-13): references to `token_gated` teams, team to
 - [[ascent-rivals/initiatives/website-v2/pages/course-leaderboards]]
 - [[ascent-rivals/initiatives/website-v2/pages/teams-index]]
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile]]
-- [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]]
+- [[sponsor-administration-handoff]]
 - [[ascent-rivals/archive/initiatives/website-v2/pencil-design-brief]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
 
@@ -596,7 +596,7 @@ Management guardrail:
 
 Sponsor administration handoff:
 
-- [[ascent-rivals/initiatives/website-v2/pages/sponsors-index]]
+- [[sponsor-administration-handoff]]
 
 Website V2 has no sponsor registry, detail, create, edit, delete, or sponsor-media administration pages. Those workflows move to the Eventun Extend App before cutover.
 

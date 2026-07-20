@@ -36,7 +36,7 @@ Do not cut public traffic over merely because the new shell or a subset of publi
 Implementation may begin with the repository, visual system, marketing content, and reviewed public contracts. Launch depends on all of the following:
 
 - the preceding Eventun team foundation has been implemented and exercised enough to review its actual Website-facing reads and permissions;
-- Eventun F14 serving work and the F15 historical backfill/cutover have completed for production pilot, course, match-history, gauntlet, and leaderboard data used by Website V2;
+- the reviewed Eventun serving and historical transition has completed in production for the pilot, course, match-history, gauntlet, and leaderboard data used by Website V2;
 - fact-backed team statistics and event-time membership attribution are available for the approved launch team surfaces;
 - the Website V2 development deployment completes the same Steam OpenID to AccelByte token exchange already operating in Ascentun, including refresh and logout acceptance checks;
 - AccelByte course visibility, Eventun public entity visibility, media upload, and permission contracts are verified in the matching development environment;

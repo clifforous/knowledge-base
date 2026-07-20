@@ -6,6 +6,7 @@
 
 ## Related
 
+- [Development cutover and runtime hardening](development-cutover-and-runtime-hardening.md)
 - [[ascent-rivals/system/eventun/data-model|Eventun data model]]
 - [[ascent-rivals/sources/analysis/eventun-foundation-api-simplification-review|Eventun foundation and API simplification review]]
 - [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review|Eventun PostgreSQL derivation review]]

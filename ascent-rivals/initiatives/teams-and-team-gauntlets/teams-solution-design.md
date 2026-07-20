@@ -1,14 +1,16 @@
 # Ascent Rivals Teams Program Design
 
-Status: Program design draft
+Status: Proposed; T00 reapproval pending after the shared-development cutover
 Date: 2026-07-10
-Last updated: 2026-07-14
+Last updated: 2026-07-20
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Game repository: Ascent Rivals Unreal Engine project
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
 ## Related
 
+- [Delivery plan and gates](delivery-plan.md)
+- [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [[team-experience-and-progression-solution-design]]
 - [[team-gauntlets-and-brackets-solution-design]]
 - [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review]]
@@ -43,7 +45,7 @@ Teams are intended to:
 
 Titles and social status do not determine skill contribution. A member described as a fan or supporter may still produce a qualifying performance. Formal stage access remains controlled separately through competition eligibility and priority.
 
-## Review Baseline
+## Original Review Baseline
 
 The design is grounded in:
 
@@ -52,6 +54,14 @@ The design is grounded in:
 - the current Ascent Rivals C++, configuration, generated Eventun SDK, and AccelByte SDK integrations;
 - current official AccelByte Chat, Statistics, Season Pass, Challenges, Achievements, Rewards, Groups, and Extend documentation;
 - a PostgreSQL review of Eventun schema, ingestion, progression workers, gauntlet queries, and materialized-view refreshes.
+
+Since that review, the identified-match, compact-fact, incremental-serving,
+qualification-cutoff, season, repair, and historical-conversion work completed local
+implementation and review through Eventun `37c0307`. One combined production-scale local
+cutover and populated API/performance smoke succeeded. The shared-development cutover remains
+pending and is intentionally waiting for the next game-client main integration. T00 must
+replace stale implementation assumptions with the post-cutover schema before approving team
+implementation.
 
 ## Decisions Revised During Review
 
@@ -77,7 +87,7 @@ The design is grounded in:
 - Gameplay-facing titles are separated from authorization capabilities.
 - Team creation, disbanding, ownership transfer, capability assignment, and team-wide cosmetic administration remain website operations.
 - Active membership gains historical validity intervals before historical progression or qualification attribution depends on it.
-- Match delivery remains at most once in the current client. Stable batch ids, event ids, producer sequence, source classification, artifact association, idempotent acceptance, narrow fact derivation, and fact-backed progression work are implemented in the coordinated Eventun/game-client state; implemented F14 serving projections still require F14R contract closure and F15A/F15B rehearsal/development cutover before this design is re-approved.
+- Match delivery remains at most once in the current client. Stable batch ids, event ids, producer sequence, source classification, artifact association, idempotent acceptance, narrow fact derivation, fact-backed progression, serving projections, and season-aware records are implemented and locally rehearsed; the coordinated shared-development cutover remains the gate before T00 reapproval.
 - Eventun records notification intent through an outbox and delivers through AccelByte Chat.
 - The game client gains an Eventun-backed team subsystem and a shared player-relation resolver.
 - Team and gauntlet read models are designed for indexed point reads, narrow contributions, incremental projections, and immutable cutoff snapshots rather than repeated scans of raw telemetry or hourly refreshes.
@@ -140,11 +150,11 @@ The pre-foundation reset removed the TapTools/Koios-shaped token catalog and tea
 
 The target is a database-first hybrid, not a database-only system:
 
-1. The implemented foundation adds identified complete-match batches, one source-tagged `game_event` relation, stable event ids and sequence, and physical source/event-type partitions. Legacy `server_event` and `client_event` reads remain only until the F15B development cutover after F15A rehearsal. Automatic sender retry remains a separate behavior change.
-2. Implemented synchronous derivation produces narrow match, heat, match-player, heat-player, progression-contribution, and F14 qualification-serving facts. Detailed lap/checkpoint telemetry remains in raw partitions; F14R closes the remaining authoring, rank, and frozen-runtime semantics before cutover rehearsal.
+1. The implemented foundation adds identified complete-match batches, one source-tagged `game_event` relation, stable event ids and sequence, and physical source/event-type partitions. Legacy `server_event` and `client_event` reads remain only until the pending shared-development cutover. Automatic sender retry remains a separate behavior change.
+2. Implemented synchronous derivation produces narrow match, heat, match-player, heat-player, progression-contribution, and qualification-serving facts plus revisioned individual cutoff evidence and season-aware record projections. Detailed lap/checkpoint telemetry remains in raw partitions.
 3. Authoritative state uses ordinary tables and constraints for membership intervals, XP ledgers, unlock grants, stage slots, bracket matches, and snapshots.
 4. Ordinary views and stable SQL functions calculate aggregates whose input is bounded by team, configured top N, stage field, or another explicit product limit.
-5. Incrementally maintained ordinary projection tables serve fresh record, career, progression, and gauntlet reads whose direct cost grows with retained history. Native materialized views are transitional or offline-only, not a player-facing target.
+5. Incrementally maintained ordinary projection tables serve fresh record, career, progression, and gauntlet reads whose direct cost grows with retained history. The former native player-facing materialized views are retired; future offline materialization would require a separate measured use case.
 6. Workers handle external delivery, reward fulfillment, notification delivery, expensive goal evaluation, and bulk projection repair/backfill.
 
 The sub-16 ms objective applies to measured hot database operations, not end-to-end calls through AccelByte or the public service. See [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review]].
@@ -153,29 +163,31 @@ The sub-16 ms objective applies to measured hot database operations, not end-to-
 
 ### Phase 0: Correctness Foundations
 
-Foundation implementation and review through F13 is accepted and committed on the Eventun `teams` branch:
+The local foundation and rehearsal now include:
 
-- authenticated client identity, mandatory auth, namespaced player ClientService access, and coarse Eventun Server/Admin permissions are implemented;
+- authenticated client identity, mandatory auth, namespaced player ClientService access, and coarse Eventun Server/Admin permissions;
 - explicit transaction ownership is used for read-decide-write commands, while pure write batches check `BatchResults.Close()`;
-- `a*` through `d*` remain the clean slate; canonical `d3_schedule_refresh_views.sql` safely no-ops without pg_cron and guarded operational setup reapplies it after provisioning;
-- the deployed former baseline delta has been removed, current pending production work accumulates in stable `migration/migration.sql`, and guarded verification uses `production-delta --confirm-disposable-production-baseline=<target-fingerprint>` against an authentic disposable copy of production;
-- independent `t0_seed_courses.sql` through `t3_seed_teams.sql` fixtures remain outside automatic clean initialization, and numbered production migration files are not used;
+- the canonical clean schema plus one manually applied pending delta, with independent development fixtures outside automatic clean initialization and no numbered production migration series;
 - dependency/toolchain and package-layout cleanup is complete through the scoped foundation passes;
 - Accountun and Cardanoun proof-of-concept adapters are isolated, while Eventun's TapTools, Koios, and token-gating runtime/schema/API slice is removed;
-- identified, idempotent complete-match ingestion, source/event-type partitions, artifacts, and synchronous narrow facts are implemented;
+- identified, idempotent complete-match ingestion, source/event-type partitions, artifacts, synchronous narrow facts, incremental serving projections, individual cutoff snapshots, and season-aware records;
 - ClientService authentication, the four ServerService gauntlet runtime methods, the ten shared reads, the two shared writes, full served/Admin Swagger, and split Unreal Client/GameServer/Models generation are implemented.
+- one accepted production-scale local historical-and-season cutover, a resettable migrated snapshot, populated API smoke, and representative retained-data query-plan evidence.
 
 Remaining Phase 0 work before re-approving the team slice:
 
-- close circuit-index, gauntlet authoring, rank, cutoff-evidence, and deployment-safety contracts in F14R after the implemented F14 projection work;
-- rehearse the historical backfill on authentic disposable data in F15A, then convert retained legacy telemetry and remove legacy event dependencies in the F15B development cutover;
-- complete H01 runtime resource and service-boundary hardening before team implementation or production release; T00 design review may proceed after F15B while H01 is implemented;
+- wait for the accepted game-client API changes to complete their next copy to main, then apply and validate the coordinated Eventun transition in shared development;
+- complete the runtime resource and service-boundary hardening before team implementation or production release; T00 design review may proceed after the development cutover while hardening finishes;
 - remove Ascentun's stale disabled token-gating types, dormant actions, and generated API contract during the coordinated contract refresh; its active forms already filter that mode out;
-- replace current-only membership deletion with membership validity intervals;
-- establish notification outbox delivery to AccelByte Chat;
-- remove the legacy AccelByte Groups team source from new client flows.
+- retain production as a separate unscheduled owner decision after a shared-development soak period.
 
-Complete F14R and F15B before re-approving this design, and complete H01 before implementing its team contracts. Production deployment remains a separate owner-scheduled release and is not a prerequisite for T00. Do not expand the reset into an ORM, migration runner, CI service, generic repository layer, wholesale package relocation, or unrelated product rewrite.
+Membership intervals, notification delivery, and removal of the legacy AccelByte Groups team
+source are team-foundation implementation work selected through T00; they are not prerequisites
+for performing the design refresh itself. See the [delivery plan](delivery-plan.md) and
+[foundation prerequisite plan](../eventun-foundation/development-cutover-and-runtime-hardening.md).
+Production deployment is not a prerequisite for T00. Do not expand the reset into an ORM,
+migration runner, CI service, generic repository layer, wholesale package relocation, or
+unrelated product rewrite.
 
 ### Phase 1: UI Baseline
 

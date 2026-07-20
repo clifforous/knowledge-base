@@ -161,7 +161,7 @@ This makes it a plausible shared shell for both public pages and logged-in overl
 
 ### Distinct from current app defaults
 
-The concept moves away from the current Next.js/shadcn feel and gives the new Nuxt/Reka UI site a stronger custom visual identity.
+The concept moves away from generic starter-kit styling and gives the greenfield Next.js/React site a stronger custom visual identity.
 
 ## What Needs Caution
 

@@ -2,6 +2,7 @@
 
 Date: 2026-04-13
 Status: Draft
+Last reviewed: 2026-07-20
 
 ## Related
 - [[../unified-design]]
@@ -10,7 +11,7 @@ Status: Draft
 - [[../tone-and-voice]]
 - [[../flows/gauntlet-authoring]]
 - [[gauntlets-index]]
-- [[sponsors-index]]
+- [[../sponsor-administration-handoff]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
@@ -542,6 +543,6 @@ Do not expose private player-specific eligibility data in metadata.
 
 ## Next Steps
 
-- Ask Pencil for one active gauntlet detail mock and one sparse/upcoming gauntlet detail mock.
-- Create a companion course leaderboard page spec.
+- Review the active-gauntlet desktop calibration already created in the live Pencil workfile.
+- Create one sparse/upcoming calibration after the active composition is accepted.
 - Decide how much stage/final bracket data Eventun must expose before bracket visualization becomes a V1 requirement.

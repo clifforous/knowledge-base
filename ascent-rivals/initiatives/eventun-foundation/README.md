@@ -1,17 +1,26 @@
 # Eventun Foundation Initiative
 
 Status: in-progress
-Status detail: Season behavior and the identified-ingestion foundation are incorporated;
-physical retention, archive, restore, and long-term client-confidence decisions remain open.
+Status detail: Local implementation, rehearsal, and populated smoke are complete. The
+coordinated shared-development cutover, runtime resource hardening, and physical lifecycle
+decisions remain open; production release is unscheduled.
 
 Last consolidated: 2026-07-19
 
-The telemetry lifecycle document deliberately contains a labeled implemented foundation and
-a provisional retention/archive section. Current ingest behavior is authoritative under
-`system/`; only the undecided lifecycle portion is active initiative scope.
+## Outcome And Boundary
+
+Finish the coordinated Eventun foundation transition without treating local implementation or
+rehearsal as shared-environment deployment. This initiative owns two active remainders:
+
+- the shared-development cutover plus runtime resource and service-boundary hardening; and
+- physical retention, archive, restore, and long-term client-confidence policy.
+
+Current ingest and season behavior is authoritative under `system/`. Production migration is a
+separate owner-scheduled action and is not implied by this initiative's local evidence.
 
 ## Documents
 
+- [Development cutover and runtime hardening](development-cutover-and-runtime-hardening.md)
 - [Telemetry lifecycle plan](eventun-telemetry-lifecycle-plan.md)
 
 ## Related Sources
@@ -23,4 +32,16 @@ a provisional retention/archive section. Current ingest behavior is authoritativ
 ## Authoritative Current System
 
 - [Identified match ingestion](../../system/eventun/identified-match-ingestion.md)
+- [Eventun API](../../system/eventun/api.md)
 - [Eventun data model](../../system/eventun/data-model.md)
+
+## Remaining Before Closure
+
+- Wait for the accepted game-client API changes to complete their next copy to main.
+- Apply and validate the coordinated Eventun database/service transition in shared development.
+- Close the runtime database, external-call, pool, HTTP, scheduler, configuration, and typed-error
+  boundaries before team implementation or production release.
+- After a development soak period, leave production release pending until the owner selects a
+  window and accepts any required rehearsal refresh.
+- Separately decide retention tiers, storage segmentation, archive format, and restore proof
+  before any destructive telemetry lifecycle change.

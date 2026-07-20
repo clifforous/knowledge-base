@@ -18,6 +18,7 @@ Last index consolidation: 2026-07-19
 - [Race roster rules](race-roster-rules.md)
 - [Eventun](eventun/overview.md)
   - [Progression, challenges, and rewards](eventun/progression.md)
+- [Team and gauntlet current state](team-gauntlet-current-state.md)
 - [Accountun](accountun.md)
 - [Website](website.md)
 - [AccelByte platform](accelbyte-platform.md)

@@ -196,7 +196,7 @@ Candidate visualizations after the required Eventun contracts exist:
 
 Sequencing dependency:
 
-Eventun F14 does not implement fact-backed team statistics, team leaderboards, or membership-at-performance-time attribution. Eventun T03 owns those reads after F15 and the T00 design checkpoint. Website V2 is sequenced after that team feature work and may assume the resulting data is available for launch planning. The exact team-statistics modules must still be reviewed against the implemented contracts; Website V2 must not approximate missing behavior by summing the current roster's lifetime pilot totals.
+The current Eventun foundation does not implement fact-backed team statistics, team leaderboards, or membership-at-performance-time attribution. The [teams delivery plan](../teams-and-team-gauntlets/delivery-plan.md) assigns those reads to T03 after the shared-development cutover and T00 design checkpoint. Website V2 is sequenced after that team feature work and may assume the resulting data is available for launch planning. The exact team-statistics modules must still be reviewed against the implemented contracts; Website V2 must not approximate missing behavior by summing the current roster's lifetime pilot totals.
 
 Product-priority checkpoint:
 
@@ -208,17 +208,17 @@ Product-priority checkpoint:
 
 | Data need | Current status | Website implication |
 |---|---|---|
-| Pilot career totals | Implemented in F14 worktree through `player_career_rollup` | Usable after F14 review and F15 production backfill/cutover |
-| Pilot-course career totals | Implemented in F14 worktree through `player_course_career_rollup` | Supports per-course profiles after F15 |
-| Current course records and ranks | Implemented in F14 worktree through `player_course_record` and leaderboard reads | Supports exact leaderboards and current placement after F15 |
-| Recent pilot match history | Moved to narrow facts in F14; response remains bounded | Supports the Recent Races table and raw result plot after F15; improvement trends require a later comparable backend value or richer rules context |
-| Gauntlet stats and standings | Moved to incremental contributions/projections in F14 | Supports refreshed gauntlet pages after F15 |
+| Pilot career totals | Implemented locally through `player_career_rollup` and accepted retained-data smoke | Usable in shared environments after their coordinated cutover; Website launch still depends on deployed production behavior |
+| Pilot-course career totals | Implemented locally through `player_course_career_rollup` | Supports per-course profiles after the coordinated cutover |
+| Current course records and ranks | Implemented locally through `player_course_record` and set-based leaderboard reads | Supports exact leaderboards and current placement after the coordinated cutover |
+| Recent pilot match history | Uses player-selective narrow facts with keyed match/artifact lookup; response remains bounded | Supports the Recent Races table and raw result plot after the coordinated cutover; improvement trends require a later comparable backend value or richer rules context |
+| Gauntlet stats and standings | Uses incremental contributions/projections and revisioned cutoff evidence | Supports refreshed gauntlet pages after the coordinated cutover |
 | Course metadata | AccelByte Cloud Save `Courses`, optionally delivered through a controlled Eventun cache | Use the approved server-side projection: configured production-ready state maps to `published`, an explicit AccelByte retirement marker maps a previously public course to `archived`, and every other or invalid state remains hidden |
 | Team metadata and current roster | Existing Eventun APIs | Supports directory, profile, roster, and management parity |
-| Historical team attribution and team statistics | Planned T03 work; not implemented at this review point | Website V2 follows this work and assumes the implemented reads are available by launch; finalize presentation after contract review |
+| Historical team attribution and team statistics | Planned [T03](../teams-and-team-gauntlets/delivery-plan.md#t03--add-fact-backed-team-views) work; not implemented at this review point | Website V2 follows this work and assumes the implemented reads are available by launch; finalize presentation after contract review |
 | Course checkpoint geometry | Generated in the game; no approved website contract recorded | Optional enhancement with factual fallback |
 
-F14 is implemented only in the current Eventun worktree and awaits review. F15 still owns authentic historical backfill, output validation, production cutover, cleanup, rollback, and release smoke checks. Website implementation may design against reviewed contracts, but launch acceptance must depend on the production cutover rather than worktree presence.
+The identified-match, projection, season, historical-rehearsal, and retained-data performance work is implemented and reviewed locally. The coordinated shared-development cutover remains pending, and production remains an independent owner-scheduled release. Website implementation may design against reviewed contracts, but launch acceptance must depend on deployed behavior rather than local worktree or rehearsal evidence.
 
 ## Launch Acceptance
 

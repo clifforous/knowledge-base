@@ -1,8 +1,8 @@
 # Ascent Rivals Gauntlets Index Page Spec
 
 Date: 2026-04-13
-Status: Approved discovery model and compact discovery contract; visual design open
-Last reviewed: 2026-07-19
+Status: Approved discovery model, compact discovery contract, and desktop/mobile visual calibration; implementation details open
+Last reviewed: 2026-07-20
 
 ## Related
 
@@ -13,7 +13,7 @@ Last reviewed: 2026-07-19
 - [[../tone-and-voice]]
 - [[../flows/gauntlet-authoring]]
 - [[gauntlet-detail]]
-- [[sponsors-index]]
+- [[../sponsor-administration-handoff]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
@@ -470,11 +470,10 @@ Mobile:
 
 ## Open Implementation Questions
 
-- Should the first Website API projection extend the existing gauntlet/calendar responses or add one purpose-built discovery endpoint?
 - What runtime/result fields should distinguish scheduled overlap, an active stage run, accepted final results, cancellation, and delay?
 - How should overlapping qualifier and stage occurrences choose their one primary directory occurrence beyond the approved soonest-ending rule?
 - Which media-purpose priority and crop metadata should the Website adopt after the media-consumer audit?
 
 ## Review Checkpoint
 
-The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past` scopes, all-gauntlets-public visibility, client-side collection interaction, occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived terminology guardrails, and constrained media composition are approved. Detailed styling, explicit runtime/result lifecycle, media-purpose priority, and whether a dedicated compact Website API projection is worthwhile remain open.
+The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past` scopes, all-gauntlets-public visibility, client-side collection interaction, occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived terminology guardrails, compact Eventun discovery projection, constrained media composition, and desktop/mobile calibration are approved. Explicit runtime/result lifecycle, representative uploaded-media treatment, media-purpose priority, and implementation verification remain open.

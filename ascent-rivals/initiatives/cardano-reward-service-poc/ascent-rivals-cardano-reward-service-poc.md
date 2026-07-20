@@ -73,7 +73,7 @@ Local knowledge-base sources:
 - `ascent-rivals/system/eventun/api.md`
 - `ascent-rivals/system/eventun/data-model.md`
 - `ascent-rivals/system/eventun/events.md`
-- `ascent-rivals/initiatives/website-v2/flows/wallet-linking.md`
+- `ascent-rivals/archive/initiatives/website-v2/wallet-linking.md`
 - `ascent-rivals/initiatives/midnight-tournament-accounting/ascent-rivals-midnight-tournament-accounting-design.md`
 
 External sources:
