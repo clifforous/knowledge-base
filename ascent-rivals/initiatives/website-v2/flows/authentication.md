@@ -2,7 +2,7 @@
 
 Date: 2026-04-14
 Status: Approved for implementation; Shared Cloud documentation ambiguity accepted
-Last reviewed: 2026-07-17
+Last reviewed: 2026-07-21
 
 ## Related
 - [[../unified-design]]
@@ -366,6 +366,21 @@ V1 should preserve the current user-facing refresh behavior while replacing the 
 - update and rotate authenticated HTTP-only session state after refresh
 - rotate or update CSRF state as needed
 - if refresh fails, mark session expired and require login
+
+### Deferred Ascentun refresh-failure hardening
+
+Team Core review confirmed a non-blocking gap in the current Ascentun reference: its client token
+refresher clears the cached session after every refresh failure. A transient Eventun or AccelByte
+failure can therefore make authenticated UI disappear even though the previous cookies remain and
+the current access token may not yet have expired.
+
+Website V2 is a future greenfield application, not an Ascentun revision. The owner accepts leaving
+this behavior unchanged in retained Ascentun and defers the correction to Website V2
+implementation. Website V2 must not inherit it: distinguish definitive credential rejection from
+transient dependency failure. Invalid or expired refresh credentials require login. A transient
+failure should preserve the last validated client session only until its existing access-token
+expiry, report the degraded state, and use bounded retry with backoff; it must not silently extend
+an expired session.
 
 Expired state behavior:
 

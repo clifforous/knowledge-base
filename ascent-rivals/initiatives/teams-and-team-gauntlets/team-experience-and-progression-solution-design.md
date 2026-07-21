@@ -1,13 +1,13 @@
 # Ascent Rivals Team Experience And Progression Solution Design
 
-Status: Approved; Eventun implementation artifact under review, coordinated deployment pending
+Status: Approved; Eventun committed, Ascentun coder-verified and awaiting review, deployment pending
 Date: 2026-07-10
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: local foundation implementation, rehearsal, and runtime hardening are complete and committed. T00 approved this design against that local baseline. An uncommitted Eventun Team Core schema, API, authorization, and pending-migration artifact based on `9213feb` has coder-reported isolated verification and is awaiting implementation review; Ascentun integration and coordinated shared-development deployment remain pending. Membership validity is part of that artifact, while correction tooling remains a required input before attribution-dependent statistics or qualification described in [[team-gauntlets-and-brackets-solution-design]].
+Foundation alignment: local foundation implementation, rehearsal, and runtime hardening are complete and committed. T00 approved this design against that local baseline. The Eventun Team Core schema, API, authorization, and pending-migration implementation passed local verification and implementation review and is committed as `c4260f3`. The uncommitted Ascentun working tree implementation based on `a0a40ad` passed coder verification and is awaiting implementation review; coordinated shared-development deployment remains pending. Membership validity is part of the committed local model, while correction tooling remains a required input before attribution-dependent statistics or qualification described in [[team-gauntlets-and-brackets-solution-design]].
 
 ## Related
 
@@ -60,14 +60,14 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 
 - The shared-development baseline still owns legacy team records, delete-on-leave roster rows,
   join requests, invitations, numeric designation, and a separate `team_player.rank`.
-- The uncommitted replacement artifact generates team identity, stores explicit owner and
-  active/disbanded lifecycle, retains immutable membership intervals, and separates mutable title,
-  delegated capability, and competition rank; it is not accepted current-system behavior while
-  implementation review remains open.
+- The accepted local replacement at Eventun `c4260f3` generates team identity, stores explicit
+  owner and active/disbanded lifecycle, retains immutable membership intervals, and separates
+  mutable title, delegated capability, and competition rank. It is not yet active in a shared
+  runtime environment.
 - The replacement pending-action model uses stable action UUIDs plus versioned generations and
   explicit terminal states. It is not deployed until Ascentun can move to the same breaking
   contract.
-- Team lists currently include complete rosters. That is acceptable for the expected five-to-six-member scale of this iteration.
+- Team lists return compact active-team summaries; one team detail returns its complete active roster.
 - Existing progression goals, counters, assignments, and completions are player-scoped.
 - Existing claimable and automatic reward bundles can deliver AccelByte items, currency, and Battle Pass XP with idempotent transaction tracking.
 - The existing Eventun Extend App UI already hosts progression and operational administration.
@@ -88,8 +88,13 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 ### Website
 
 - Ascentun currently provides the team lifecycle and administration reference.
+- Its Team Core breaking-replacement working tree is coder-verified and awaiting implementation
+  review. A fresh-database local smoke covers public Team reads, authentication boundaries,
+  Ascentun proxies, and the empty directory render, but does not establish player-authenticated
+  mutation, commit, deployment, or shared-runtime evidence.
 - The website is an interim operational surface. A visually extensive redesign is deferred to the future v2 website.
-- Minimal changes are preferred: preserve current client-side filtering and full-roster behavior until measured scale requires another contract.
+- Minimal changes are preferred: preserve client-side filtering over compact browse data and use
+  the complete roster only on team detail until measured scale requires another contract.
 
 ## Design Decisions
 
@@ -129,6 +134,13 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 24. Team Core deliberately defers membership-correction tooling. Before the first
     attribution-dependent statistics or qualification work, define an audited supersession/void
     model; every future correction must advance the competition-roster revision.
+25. A join that supersedes actions owned by other teams locks every discovered affected team row in
+    UUID order before any affected player, membership, or action row. After locking the player, it
+    re-reads the pending-action team set. If that set expanded while locks were acquired, the join
+    aborts with a retryable `Aborted` result before membership, action, or audit writes. Action
+    publication follows the same team-before-player order, so the player lock stabilizes the second
+    read. Cross-team audit writes remain inside that transaction and introduce no later team-lock
+    inversion.
 
 ## System Context
 
@@ -213,6 +225,10 @@ That later work will store selected `team_id` and `membership_interval_id` in at
 advance the team roster revision for corrections, and leave general match facts without team
 identity.
 
+Audit references use composite integrity, not existence-only foreign keys: referenced membership
+intervals must match the audited team and subject player, and referenced action generations must
+match the audited team, subject player, action UUID, and version.
+
 ### Titles And Capabilities
 
 Titles and permissions are separate concepts:
@@ -257,8 +273,10 @@ The caller should not reproduce that state machine merely to select an RPC name.
 The operation should:
 
 1. derive the actor from authentication;
-2. lock the team first, then affected player rows in UUID order, then membership and action rows in
-   stable identity/version order;
+2. discover every team whose pending action can be resolved by the transition, lock all affected
+   team rows in UUID order, then affected player rows in UUID order; after the player lock, re-read
+   the pending-action team set and return retryable `Aborted` without writes if an undiscovered team
+   appeared, otherwise continue to membership and action rows in stable identity/version order;
 3. evaluate exactly one transition;
 4. apply it transactionally;
 5. return a typed outcome;
@@ -307,6 +325,9 @@ If an `AddTeamMember` call would consume an invitation or join request but omits
 it returns `InvalidArgument` rather than locating a current action implicitly. Decline is available
 to the invited player, deny to the owner or a member with `MANAGE_MEMBERS`, and cancel to the
 requester for their own request or to the owner/`MANAGE_MEMBERS` actor for a team invitation.
+Typed `EXPIRED`, `SUPERSEDED`, and `ALREADY_HANDLED` retries are returned only after applying that
+same actor-and-action-kind authorization boundary; terminal state does not make action evidence
+readable or operable by an otherwise unauthorized caller.
 
 The breaking protobuf uses fully prefixed enum values because top-level enum values share package
 scope: membership mode, team status, presentation title, capability, action kind/state,
@@ -321,6 +342,15 @@ a mixed patch requires both. The owner implicitly satisfies both. A normalized n
 audit, but the caller must still be an active member. Team names are trimmed and 4–16 characters,
 tags are trimmed 2–4 ASCII alphanumeric characters normalized to uppercase, and colors are
 normalized uppercase `#RRGGBB` values.
+
+Authenticated AccelByte UUID subjects and externally supplied team/media/action/player UUIDs are
+parsed and converted to the same canonical hyphenated representation before authorization,
+comparison, or persistence. A nil authenticated UUID is rejected as `Unauthenticated`. A compact
+and hyphenated representation of the same media UUID is a semantic no-op. Every player-facing team
+projection, including `PlayerCareer`, uses the complete team mapper rather than reconstructing a
+partial shape. Member-update responses are read inside the mutation transaction before its locks
+are released, so a later remove or disband cannot turn a committed successful update into a
+reported `NotFound`.
 
 Team creation first ensures the authenticated creator has an ID-only `player` row, then locks that
 player before enforcing one active membership and creating the owner interval. This handles the
@@ -353,7 +383,9 @@ The game client needs:
 - public watch, region, time-zone, and recruiting metadata;
 - team progression summary only after progression is approved.
 
-For current scale, full-roster reads and client-side filtering are deliberate. Add payload instrumentation now so pagination can be introduced from evidence rather than from a hypothetical thousand-member team.
+For current scale, compact unpaginated browse reads, complete per-team detail rosters, and
+client-side filtering are deliberate. Add payload instrumentation so pagination can be introduced
+from evidence rather than from a hypothetical thousand-member team.
 
 `MyPendingTeamInvitations` is player-scoped across teams. Recruiter pending-request reads remain
 team-scoped and capability-protected. Stable pending ids and versions are returned on both paths.

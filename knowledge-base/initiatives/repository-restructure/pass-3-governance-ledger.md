@@ -106,6 +106,27 @@ incorporation from task entries, or grooming and therefore does not close those 
 Strict validation after the design split checked 127 Markdown files across two projects with
 zero errors and zero warnings.
 
+## Third Live-Use Correction
+
+Continuing Website V2 and teams work after the reorganization exposed an acceptance-signal gap.
+The owner commonly accepts a reviewed checkpoint by asking to continue or begin the next step.
+Existing long-running agent tasks advanced the work but did not consistently treat that ordinary
+progression language as a reason to update initiative gates or record a material decision. This
+left a few checkpoint summaries behind the detailed design even though the underlying work was
+correctly separated by initiative and deployment state.
+
+`ORGANIZATION.md` now defines scoped progression acceptance. Direction to proceed after a bounded
+result accepts that immediately preceding checkpoint unless qualified; it may authorize
+incorporation, a lifecycle update, or a material decision entry. It does not approve unrelated
+open scope or establish implementation, verification, source-control, or deployment state.
+Silence, age, topic changes, abandoned tasks, and agent-selected next actions remain
+non-acceptance.
+
+The compact operational rule is mirrored in `AGENTS.md` so existing and newly bootstrapped agents
+apply it during normal work. This correction improves direct incorporation, but the two active
+tasks mostly owned disjoint initiative documents and therefore still do not exercise the planned
+parallel task-log and serialized-incorporation case.
+
 ## Remaining Empirical Checkpoint
 
 Do not extract the reusable template or begin the `kb` implementation solely from this pass.

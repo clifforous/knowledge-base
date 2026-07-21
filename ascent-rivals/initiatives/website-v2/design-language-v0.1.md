@@ -35,8 +35,7 @@ Source calibration frames:
 - `Ascent V2 — Pilot Profile Career Calibration`
 - reviewed mobile companion to the pilot-profile career calibration
 - `Ascent V2 — Course Detail Leaderboard Calibration`
-- `Ascent V2 — Course Directory Calibration`, with removal of its page-local search and result
-  count pending in the live artifact
+- `Ascent V2 — Course Directory Calibration`
 
 This version is intentionally provisional. It has been validated on marketing, gauntlet discovery/detail, and pilot-profile compositions at desktop and mobile widths, plus course directory/detail at desktop width. The reviewed frames cover local search where a directory needs it, URL-backed view/scope controls, entity rows, a repeated-occurrence agenda, conditional detail sections, ordered stage circuits, desktop qualifier standings, mobile rank-list translation, bounded charts, client-side progressive reveal, and a dense course leaderboard. Course mobile behavior, forms, team surfaces, and several implementation states remain unvalidated.
 
@@ -517,8 +516,7 @@ history, and one exact course leaderboard with a top-five gap view. It does not 
 
 Revise this language through representative page mocks in this order:
 
-1. remove the redundant course-directory local controls and validate course directory/detail at
-   mobile width;
+1. validate course directory/detail at mobile width;
 2. team pages after the team model is stable enough.
 
 Promote the document to v0.2 only after the interior mocks establish reusable rules for dense data, controls, charts, and responsive entity layouts.

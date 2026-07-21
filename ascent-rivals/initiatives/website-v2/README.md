@@ -22,7 +22,7 @@ domain behavior in Eventun and AccelByte.
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
 | Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents | `not-applicable` | Close remaining contract gaps and slice-specific acceptance detail |
-| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile, reviewed through the 2026-07-20 course desktop checkpoint, plus the linked Markdown baselines | `not-applicable`; design artifact | Remove the redundant course-directory local controls, validate course mobile, then validate team surfaces |
+| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-20 course desktop checkpoint, plus the linked Markdown baselines | `not-applicable`; design artifact | Validate course mobile, then validate team surfaces |
 | Website V2 application | `not-started` | No implementation revision is recorded | `not-deployed` | Greenfield repository foundation and first approved route slice |
 | Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
 
@@ -78,9 +78,10 @@ snapshot and do not maintain two nominally live copies.
   public career lead, Podium Rate and Ascension Rate comparisons, published-course records,
   bounded recent races, and a three-entry recent gauntlet history. Candidate private career
   detail and recognition remain reversible own-profile additions rather than public defaults.
-- Course-detail desktop and leaderboard calibration are reviewed. The course directory's
-  two-column composition is reviewed, with removal of its redundant page-local search and
-  result count still pending in the live artifact. Course mobile validation remains next.
+- Course-directory and course-detail desktop calibrations are reviewed. The directory uses a
+  complete two-column collection without redundant page-local search, result count, archive
+  scope, or pagination; the detail validates the full-width record and leaderboard composition.
+  Course mobile validation remains next.
 - Team-page validation follows review of the implemented team contracts.
 
 ## Material Decisions
@@ -107,7 +108,7 @@ snapshot and do not maintain two nominally live copies.
 
 ## Remaining Before Closure
 
-- finish the course-directory cleanup, course mobile validation, and later team design validation;
+- finish course mobile validation and later team design validation;
 - promote the provisional design language only after dense tables, filters, charts, forms,
   partial-data states, and responsive entity layouts are coherent;
 - close the route/API contract gaps and review the implemented team-facing contracts;

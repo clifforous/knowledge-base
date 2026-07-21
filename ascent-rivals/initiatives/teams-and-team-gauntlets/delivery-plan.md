@@ -2,12 +2,16 @@
 
 Status: in-progress
 Status detail: T00 is approved against the committed local Eventun foundation. Team Core is the
-selected first implementation cutoff. An uncommitted Eventun implementation artifact based on
-`9213feb` exists with coder-reported isolated verification and is awaiting implementation review;
-the Ascentun half remains unfinished. Coordinated deployment remains gated by the
-shared-development cutover and combined runtime smoke.
+selected first implementation cutoff. The Eventun implementation based on `9213feb` passed local
+verification and implementation review and is committed as `c4260f3`; the Ascentun working tree
+implementation based on `a0a40ad` is coder-verified and awaiting implementation review.
+A bounded fresh-database local smoke passed for the public Team reads, authentication boundaries,
+Ascentun proxies, and empty directory render; player-authenticated mutation smoke remains pending.
+The G01 explicit-team runtime vertical has entered a read-only local pre-edit checkpoint; no G01
+implementation or runtime evidence exists yet. Coordinated deployment remains gated by
+implementation review, the shared-development cutover, and combined runtime smoke.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-21
 
 ## Outcome And Boundary
 
@@ -125,8 +129,8 @@ The accepted Team Core owner decisions are:
   has all capabilities and exclusively assigns capabilities, transfers ownership, or disbands;
 - use prefixed protobuf enums, signed 64-bit Unix-millisecond action/lifecycle timestamps, and a
   presence-aware team patch whose authorization is based only on fields that actually change;
-- preserve the existing 4–16 character name, uppercase 2–4 ASCII alphanumeric tag, and uppercase
-  `#RRGGBB` color constraints; and
+- trim names before enforcing 4–16 Unicode code points, preserve the uppercase 2–4 ASCII
+  alphanumeric tag and uppercase `#RRGGBB` color constraints; and
 - ensure an authenticated creator has an ID-only Eventun player row before it is locked for owner
   membership creation.
 
@@ -135,7 +139,8 @@ The Team Core migration and review boundary is deliberately narrow:
 - fail closed when any legacy foreign-key reference is unknown, even if the observed source table
   is empty; allow the known `gauntlet_stage_team` dependency only after proving it empty;
 - establish the required `btree_gist` capability and replacement constraints before any historical
-  reconstruction, then discard the approved pre-alpha rows rather than invent compatible state;
+  reconstruction by executing the exact marked replacement DDL in an isolated preflight schema,
+  then discard the approved pre-alpha rows rather than invent compatible state;
 - use focused canonical-schema, transition, concurrency, authorization, access-plan, and real-runner
   discard/preflight coverage; do not require another production-scale historical rehearsal unless
   the owner separately requests it; and
@@ -173,7 +178,9 @@ Depends on T01.
   invitation, accept/decline, request, cancellation, and typed transition outcomes selected by
   T00.
 - Keep one deterministic contextual add-member command. Derive the actor from authentication,
-  lock affected team/membership/pending rows, and commit state and audit atomically. Append
+  lock every discovered affected team in UUID order before players, then re-read the affected-team
+  set under the player lock and abort for retry if it expanded before touching memberships, pending
+  actions, or audit. Commit state and audit atomically. Append
   notification intent in the same transaction only after T07 selects delivery.
 - Enforce expiry, renewal, idempotent repeat behavior, and transactional consumption or
   cancellation of pending state across membership-mode, removal, and disband races; ownership
@@ -340,7 +347,8 @@ Depends on stage-run-scoped results and approved owner-result semantics.
 
 ## Remaining Before Closure
 
-- Complete the Ascentun Team Core implementation and generated-contract update.
+- Accept the coder-verified Ascentun Team Core implementation and exact generated-contract update
+  through implementation review.
 - Complete the shared-development Eventun cutover and combined runtime smoke before deploying or
   enabling the breaking Team Core unit.
 - Implement, verify, and incorporate the selected later gauntlet behavior into current-system

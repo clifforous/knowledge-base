@@ -18,13 +18,14 @@
 
 ## Review Snapshot
 
-The team-specific code review baseline remains 2026-07-15. Later accepted foundation knowledge is
-reconciled through Eventun `9213feb`, including historical conversion, retained-data smoke, and
-runtime hardening. Shared-development cutover remains pending, and Team Core is an unfinished
-initiative rather than current-system behavior:
+The team-specific cross-repository review baseline remains 2026-07-15. Later accepted Eventun
+foundation knowledge is reconciled through `9213feb`, and the reviewed Team Core backend is
+committed locally as `c4260f3`. Shared-development cutover remains pending, and the Ascentun half
+of Team Core is unfinished:
 
 - Eventun team behavior was originally inspected at `5aaaea2`; foundation, season,
-  historical-conversion, and runtime-hardening are reconciled through `9213feb`
+  historical-conversion, and runtime-hardening are reconciled through `9213feb`, and Team Core is
+  reconciled through `c4260f3`
 - Ascentun team behavior was inspected on `dev` at `a0a40ad`
 - Ascent Rivals game-client/server source, focused on gauntlet stage admission, session joins, team presentation, minimap behavior, party integration, and inbox behavior
 
@@ -36,7 +37,7 @@ the coordinated development cutover. This note is not the proposed product desig
 
 ### Team lifecycle
 
-Eventun owns team identity and roster state:
+The shared-development Eventun baseline still owns the legacy team identity and roster state:
 
 - `team` stores name, tag, membership mode, and colors.
 - `team_media` stores team media.
@@ -61,22 +62,22 @@ The active create/edit forms intentionally filter out `token_gated`, but the che
 The current active route/component graph calls the legacy create, update, membership, invitation, ownership-transfer, roster rank/designation, and disband writes. No tracked workflow or deployment metadata, authenticated deployment history, or runtime access evidence was available in the review, so checked-in reachability is fact while deployment and production use remain unproven. On 2026-07-15 the owner explicitly selected temporary-risk option 2: leave those writes unchanged until the team-authority work, with no feature flag, compatibility layer, temporary safety patch, or numeric-designation extension. A future authority integration may replace this workflow through a breaking Ascentun change.
 
 Ascentun's public team directory and detail loaders use a client-credentials token. Eventun
-`9213feb` does not include `Team` or `Teams` in its subjectless ClientService allowlist, so the
-checked-in website reads and committed Eventun authorization boundary do not match. The approved
-replacement authorization contract remains in the
-[team experience design](../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md)
-until its implementation review is accepted.
+`c4260f3` includes `Team` and `Teams` in the subjectless ClientService allowlist with Server
+`READ`, resolving the local contract mismatch. The Ascentun confidential IAM client needs that
+grant in each deployed environment before the coordinated cutover; the generated GameServer subset
+does not add these website reads.
 
 Current implication: team `rank` exists and is editable, but it is only ordinary roster metadata today. It is not yet materialized into gauntlet-stage candidate lists or enforced by Eventun as a team-stage admission order.
 
-An uncommitted Eventun artifact under implementation review replaces that baseline locally with
-explicit active/disbanded ownership, immutable nonoverlapping membership intervals, separate
-titles/capabilities/competition rank, exact versioned membership actions, retained audit, and a
-bounded roster revision. Its additive membership operations and resolve-only operations have the
-exact UUID/version boundary documented in the team initiative. Coder-reported isolated schema,
-migration, authorization, access-plan, and concurrency verification has passed; this evidence does
-not make the artifact committed, independently accepted, or deployed, and Ascentun still targets
-the legacy contract.
+Committed Eventun `c4260f3` replaces that baseline locally with explicit active/disbanded
+ownership, immutable nonoverlapping membership intervals, separate titles/capabilities/competition
+rank, exact versioned membership actions, retained audit, and a bounded roster revision. Its
+additive membership operations and resolve-only operations use the exact UUID/version boundary
+documented in the team initiative. Local schema, migration, authorization, access-plan, and
+concurrency verification and implementation review are accepted. The contract is not deployed,
+and the committed Ascentun baseline still targets the legacy API. An uncommitted Ascentun Team Core
+working tree targets the replacement contract and is awaiting implementation review; it is local
+evidence, not shared-development or production behavior.
 
 ### Game-client team and social surfaces
 
@@ -93,13 +94,13 @@ The proposed green teammate minimap marker is partially stubbed:
 - `DecoratePlayerIcon` currently paints the spectated racer blue and every other racer red
 - the current minimap path does not compare the local/spectated player's team index with the target player's team index, so the green color is unused
 
-The generated Eventun client specification exposes team list/detail/create/update, membership,
-pending-request, designation, and rank operations. `HGTeamMenu` and `HGNoTeamMenu` routes exist, but
-their reviewed C++ implementations are stubs, and no Eventun-backed Ascent Rivals team subsystem
-was found. Blueprint presentation still requires visual verification. The current Eventun team
-list API returns the full team list with full rosters. That contract is acceptable for the expected
-five-to-six-member teams in this iteration; a gamepad-first browser should precede optional text
-search, and payload size should be measured before later pagination work.
+The generated Eventun client specification exposes compact team list, nested detail roster,
+lifecycle, exact membership-action, presentation-title, capability, and competition-rank
+operations. `HGTeamMenu` and `HGNoTeamMenu` routes exist, but their reviewed C++ implementations are
+stubs, and no Eventun-backed Ascent Rivals team subsystem was found. Blueprint presentation still
+requires visual verification. The compact list and complete per-team detail remain unpaginated; a
+gamepad-first browser should precede optional text search, and payload size should be measured
+before later pagination work.
 
 The game client currently has two different team paths:
 

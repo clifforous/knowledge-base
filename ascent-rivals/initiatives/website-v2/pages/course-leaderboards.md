@@ -1,7 +1,7 @@
 # Ascent Rivals Course Leaderboards Page Spec
 
 Date: 2026-04-13
-Status: Approved desktop information architecture; one directory-artifact cleanup and course mobile validation remain open
+Status: Approved desktop calibration; course mobile validation remains open
 Last reviewed: 2026-07-20
 
 ## Related
@@ -602,7 +602,6 @@ These ideas are valuable but should not block V1:
 
 ## Next Steps
 
-- Remove the redundant page-local search and result count from the reviewed directory artifact.
 - Validate the directory and detail routes at mobile width without reintroducing an embedded
   selector.
 - Review implementation-facing loading, empty, error, stale, and partial-data states.

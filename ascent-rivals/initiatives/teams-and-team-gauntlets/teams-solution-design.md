@@ -2,7 +2,7 @@
 
 Status: T00 approved against the committed local Eventun foundation
 Date: 2026-07-10
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Game repository: Ascent Rivals Unreal Engine project
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
@@ -60,9 +60,10 @@ qualification-cutoff, season, repair, historical-conversion, retained-data query
 hardening work completed local implementation and review through Eventun `9213feb`. One combined
 production-scale local cutover and populated API/performance smoke succeeded. The
 shared-development cutover remains pending and is intentionally waiting for the next game-client
-main integration. T00 approves the design against this committed local baseline. Local Eventun
-implementation and isolated verification may proceed before that cutover; affected contracts and
-runtime assumptions receive a narrow reconfirmation before coordinated deployment.
+main integration. T00 approves the design against this committed local baseline. Eventun Team Core
+subsequently passed implementation review and was committed as `c4260f3`; Ascentun replacement and
+coordinated deployment remain pending. Affected contracts and runtime assumptions receive a narrow
+reconfirmation before coordinated deployment.
 
 ## Decisions Revised During Review
 
@@ -172,7 +173,10 @@ The local foundation and rehearsal now include:
 - dependency/toolchain and package-layout cleanup is complete through the scoped foundation passes;
 - Accountun and Cardanoun proof-of-concept adapters are isolated, while Eventun's TapTools, Koios, and token-gating runtime/schema/API slice is removed;
 - identified, idempotent complete-match ingestion, source/event-type partitions, artifacts, synchronous narrow facts, incremental serving projections, individual cutoff snapshots, and season-aware records;
-- ClientService authentication, the four ServerService gauntlet runtime methods, the ten shared reads, the two shared writes, full served/Admin Swagger, and split Unreal Client/GameServer/Models generation are implemented.
+- ClientService authentication, the four ServerService gauntlet runtime methods, twelve shared
+  reads, two shared writes, full served/Admin Swagger, and split Unreal Client/GameServer/Models
+  generation are implemented. The generated GameServer subset remains at the original ten
+  dedicated-server reads.
 - one accepted production-scale local historical-and-season cutover, a resettable migrated snapshot, populated API smoke, and representative retained-data query-plan evidence.
 
 Remaining Phase 0 work before deploying the approved team slice:

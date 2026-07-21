@@ -110,57 +110,38 @@ Current team model:
 
 Team `rank` is current roster metadata. It can support future team-member priority rules, but Eventun does not currently materialize ranked team-stage candidate lists.
 
-Current membership is not historical: leaving deletes `team_player`. Team contribution and qualification attribution therefore require membership validity intervals before they can reliably answer which team a player represented at trusted event time. The approved replacement and its uncommitted implementation artifact remain in the [teams and team gauntlets initiative](../../initiatives/teams-and-team-gauntlets/README.md) until implementation review is accepted.
+The shared-development baseline still uses nonhistorical `team_player` membership, where leaving
+deletes the row. It therefore cannot reliably attribute historical team contribution or
+qualification. The accepted local replacement is recorded below; shared development retains this
+legacy shape until the coordinated Eventun and Ascentun cutover.
 
-#### Uncommitted Team Replacement Under Review
+#### Committed Local Team Core Model
 
-The Eventun working-tree artifact based on `9213feb` has coder-reported isolated verification but
-is not accepted committed behavior or deployed state. Its replacement model is:
+Applicability: committed Eventun local-development behavior at `c4260f3`; it is not active in
+shared development or production. Implementation review was accepted before commit on 2026-07-20,
+while Ascentun integration and coordinated deployment remain unfinished.
 
-- `team` stores an Eventun-generated UUID, bounded name/tag/colors/media profile,
-  `open`/`invite`/`request` membership mode, active/disbanded lifecycle, explicit owner, and
-  monotonic competition-roster revision;
-- active names are case-insensitively unique at 4–16 trimmed characters; tags are
-  case-insensitively unique 2–4 uppercase ASCII alphanumeric characters; colors are uppercase
-  `#RRGGBB`; names and tags may be reused after disband because retained UUIDs own history;
-- a deferred owner foreign key requires every active owner to be current `team_member_state`, while
-  lifecycle checks require a disbanded team to have no owner and complete tombstone audit fields;
-- `team_membership_interval` stores immutable half-open `[joined_at, left_at)` validity. A partial
-  unique index permits one active team per player and a `btree_gist` exclusion constraint prevents
-  overlapping historical intervals across teams;
-- `team_member_state` stores current presentation title (`member`, `racer`, or `supporter`), an
-  optional duplicate-permitting nonnegative competition rank, and the active interval identity;
-- `team_member_capability` permits exactly `MANAGE_MEMBERS`, `EDIT_TEAM_PROFILE`, and
-  `MANAGE_COMPETITION_ROSTER`; owner identity remains explicit and neither title nor rank grants
-  authority;
-- `team_membership_action` gives invitations and requests stable UUIDs, while versioned generation
-  rows represent pending, accepted, declined, cancelled, superseded, and expired states with a
-  constrained resolution mapping and one effective pending action per team/player pair; and
-- `team_audit_event` records actor, subject, interval, exact action UUID/version, roster revision,
-  millisecond event time, and bounded structured detail.
+The replacement model uses an Eventun-generated team UUID, explicit owner and active/disbanded
+lifecycle, reusable name/tag only after disband, immutable half-open membership intervals, current
+member state, presentation title, optional competition rank, three explicit delegated
+capabilities, stable membership-action UUIDs with versioned generations, and durable audit events.
+One player may have only one active team and historical membership intervals may not overlap.
+Composite audit foreign keys require referenced membership and action evidence to belong to the
+audited team and subject player.
 
-Creation ensures the authenticated creator has an ID-only `player` row before player locking and
-owner-membership creation. Disband retains the team and history, closes active intervals, cancels
-pending actions, and advances the roster revision. An actual membership-mode change cancels all
-effective pending actions in the same deterministic lock/audit transaction. Ownership transfer
-preserves them because they represent team intent.
+Creation establishes the authenticated creator as owner and first member. Leaving or removal
+closes the active interval; disband retains team history, closes the roster, cancels pending
+actions, and advances the competition-roster revision. Joins, membership endings, competition-rank
+changes, and disband advance that revision; profile/media, presentation-title, capability, and
+pending-action changes do not. Historical membership correction remains deliberately absent and
+must be designed before attribution-dependent team statistics or qualification.
 
-The roster revision advances for active membership join/end, competition-rank changes, and
-disband. It does not advance for profile/media, presentation title, capabilities, or pending
-actions. Historical membership correction is deliberately absent: immutable intervals cannot yet
-represent exact old and new correction evidence. An audited supersession/void model and roster-
-revision advance must be implemented before attribution-dependent team statistics or qualification;
-general match/player facts continue to omit `team_id`.
-
-The artifact places replacement DDL in both the canonical schema and the existing pending
-foundation delta. The additive prefix confirms `btree_gist` availability and fails on every
-unknown foreign key targeting the legacy team schema even when its source table is empty; any
-actual `gauntlet_stage_team` reference also fails with exact evidence. The historical runner records
-the legacy team/membership/request/invitation/media/reference counts. Only after the existing
-historical acceptance marker does the destructive suffix discard the approved pre-alpha state and
-install the empty replacement. One focused real-runner rehearsal against an authentic disposable
-baseline remains required before coordinated deployment; another production-scale historical
-reconstruction is unnecessary unless that focused run exposes an interaction.
+The pending foundation delta discards approved pre-alpha team state only after its guarded
+historical acceptance marker. The historical runner proves the exact marked replacement DDL in an
+isolated schema before reconstruction. A focused authentic-baseline runner rehearsal remains a
+pre-deployment gate, not an implementation-acceptance gate. See the
+[team experience design](../../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md)
+for the complete contract.
 
 ### 3. Content and sponsorship domain
 Captures sponsor and media attachments used by competition and presentation surfaces. Eventun may store course references and derived course data for operational queries, but AccelByte Cloud Save `Courses` is the source of truth for official course configuration, including course code, default laps, and release feature state. Eventun's derived `course.active` value does not distinguish deliberately retired content from unreleased content and is not a public publication contract. The proposed Website-facing classification remains in the active Website V2 initiative until implemented.

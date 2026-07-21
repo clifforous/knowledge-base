@@ -1066,8 +1066,7 @@ Each public entity page should support:
 2. Treat the reviewed public player-profile/career-summary desktop and mobile frames as the
    current identity, career-rate, and bounded-history baseline.
 3. Treat the reviewed desktop course directory/detail and exact leaderboard as the current
-   course baseline; remove the redundant directory-local search/count before preserving the
-   artifact checkpoint.
+   course baseline.
 4. Validate the course directory/detail composition at mobile width without embedding a course
    selector on the detail route.
 5. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.

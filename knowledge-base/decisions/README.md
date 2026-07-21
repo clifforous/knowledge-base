@@ -203,3 +203,18 @@ proposals until adopted.
   future GitHub, CI, CDEvents, or Perforce-aware adapters without making any adapter mandatory.
 - **Affected knowledge:** [requirements](../initiatives/federated-kb/requirements.md) and
   [system design KBTD-010](../initiatives/federated-kb/system-design.md#kbtd-010--deployment-evidence-integration).
+
+### KB-2026-016 — Treat direction to the next step as bounded checkpoint acceptance
+
+- **Date:** 2026-07-20
+- **Status:** Applied to repository policy.
+- **Changed:** From recognizing only explicit approval or source-control completion as reliable
+  incorporation signals to also recognizing owner-directed progression after a bounded result as
+  acceptance of that immediately preceding checkpoint.
+- **Why:** Existing long-running agent tasks advanced correctly when the owner asked for the next
+  step but did not consistently update initiative gates or record the material decisions that had
+  just become the working baseline. Bounded progression acceptance captures that ordinary
+  conversational signal without treating silence, unrelated continuation, implementation, or
+  deployment as approved.
+- **Affected knowledge:** [organization policy](../../ORGANIZATION.md), [agent policy](../../AGENTS.md),
+  and the [Pass 3 governance ledger](../initiatives/repository-restructure/pass-3-governance-ledger.md).

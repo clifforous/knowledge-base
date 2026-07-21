@@ -2,12 +2,12 @@
 
 Status: Solution design draft
 Date: 2026-07-10
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, historical rehearsal, and runtime-hardening work is now implemented and committed locally. T00 approved the revised capability design against that baseline. An uncommitted Eventun Team Core artifact has coder-reported isolated verification and remains under implementation review; Ascentun integration is unfinished, shared deployment remains gated by the coordinated shared-development cutover and combined runtime smoke, and later team-gauntlet work remains separately gated by accepted Team Core identity and membership behavior.
+Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, historical rehearsal, and runtime-hardening work is now implemented and committed locally. T00 approved the revised capability design against that baseline. Eventun Team Core passed local verification and implementation review and is committed as `c4260f3`; Ascentun integration is unfinished, shared deployment remains gated by the coordinated shared-development cutover and combined runtime smoke, and later team-gauntlet work remains separately gated by deployed Team Core identity and membership behavior.
 
 ## Related
 

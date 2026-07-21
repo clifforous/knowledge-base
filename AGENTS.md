@@ -36,6 +36,11 @@ transcript store, or product-code repository.
 - When behavior, terminology, contracts, gameplay rules, or accepted design changes, update
   the affected knowledge in the same work or record a task-owned decision/delta entry for
   later incorporation.
+- After a bounded deliverable has been presented or reviewed, treat the owner's direction to
+  proceed, continue, or start the next step as scoped acceptance of that checkpoint unless the
+  owner qualifies it. Update material decisions and lifecycle gates accordingly, but do not
+  infer acceptance from silence or infer implementation, verification, source-control, or
+  deployment state from progression language alone.
 - Parallel worker tasks append only to their own task log. They do not directly rewrite a
   shared current-system document unless they own the serialized incorporation step.
 - Do not copy prompts, transcripts, routine task steps, review chatter, build output, or

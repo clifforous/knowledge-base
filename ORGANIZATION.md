@@ -482,6 +482,35 @@ Archive notice: Archived YYYY-MM-DD because <reason>. Use <replacement> for curr
 - Explicitly record `no durable knowledge` in the agent/task context when no repository update
   is warranted; do not create a file solely to record that fact.
 
+### Acceptance And Progression Signals
+
+Acceptance is scoped to the immediately preceding bounded deliverable or checkpoint. Explicit
+approval such as `approved`, `go with that`, or `looks good` is acceptance within that scope.
+After the owner has been presented with or reviewed a bounded result, an instruction such as
+`continue`, `proceed`, or `let's work on the next step` is progression acceptance: the current
+result is good enough to become the baseline for the named next phase unless the owner qualifies
+the instruction.
+
+Progression acceptance may authorize an agent that owns incorporation to:
+
+- update an initiative checkpoint or delivery gate;
+- incorporate accepted design or current-state changes for the stated applicability;
+- record a concise curated decision when direction changed materially; and
+- begin the next approved design or implementation phase.
+
+It does not by itself establish that:
+
+- every open question or later initiative slice is approved;
+- implementation exists or review and verification succeeded;
+- a Git commit, merge, Perforce shelf, or submit exists; or
+- any environment received a deployment.
+
+Do not infer acceptance from silence, age, a topic change, an abandoned task, or an agent choosing
+its own next action. If the bounded subject or consequence is materially ambiguous, preserve the
+entry as pending or ask the owner. At an accepted phase transition, check whether current-system
+knowledge, the initiative delivery snapshot, a material decision, or task-entry dispositions
+actually changed. Do not create a decision entry merely because routine work continued.
+
 ## Project-Specific Boundaries
 
 ### Ascent Rivals
