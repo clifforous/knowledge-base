@@ -247,7 +247,7 @@ Purpose:
 Anonymous:
 
 - always show the public membership mode;
-- show `Sign in with Steam` or `Login to Join` when an open or request-based action becomes available after authentication.
+- show `Sign in` or `Sign in to Join` when an open or request-based action becomes available after authentication.
 
 Logged-in player without team:
 

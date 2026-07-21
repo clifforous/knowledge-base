@@ -1,5 +1,12 @@
 # Identified Match Ingestion
 
+Status: current
+
+Applicability: committed local-development behavior. This document does not imply
+shared-development or production deployment.
+
+Last consolidated: 2026-07-20
+
 ## Related
 
 - [[overview]]
@@ -386,6 +393,14 @@ automatic reward fulfillment, and an optional dedicated-server post-ingest
 integration run only after commit and cannot change the acceptance outcome.
 Replay artifacts use their own idempotent operation and transaction rather
 than joining the match event envelope.
+
+The optional server-batch post-ingest integration is a bounded non-durable dispatcher, not part
+of accepted telemetry. It uses two application-owned workers, a 64-match queue, and a ten-second
+sink-call context. Overload or shutdown rejects new work without changing the already committed
+ingest result; shutdown drains within its bound, and rejected or failed work is logged and counted
+by `eventun_post_ingest_dispatch_total{outcome}`. Production composition accepts only the concrete
+bounded dispatcher, so an arbitrary external sink cannot be inserted directly into the request
+path.
 
 ## Compact fact derivation
 

@@ -53,14 +53,10 @@ Website visibility note (2026-07-15):
 - consumers must not interpret every inactive row as archived, because alpha, internal, and other unreleased courses can also be inactive;
 - a public archive therefore requires an explicit server-side classification of previously public retired courses, while unreleased states remain hidden.
 
-Approved Website V2 visibility contract (2026-07-16):
-
-- AccelByte Cloud Save `Courses` owns the source metadata used for public classification;
-- a course whose feature state matches the configured enabled/production-ready state is `published`, provided it is not also marked archived;
-- an explicit per-course archive marker in the AccelByte metadata identifies a deliberately retired, previously public course as `archived`; archive state must never be inferred from inactivity or a non-production feature state;
-- alpha, internal, disabled, unknown, incomplete, and otherwise unreleased configurations are `hidden`;
-- conflicting or malformed source metadata fails closed to `hidden` until corrected;
-- the exact AccelByte source-field name for the archive marker can be chosen with the record-schema change, but the Website-facing projection uses the stable values `published` and `archived` only.
+Website V2 proposes a public-safe projection and fail-closed visibility rules over this source
+record. That unfinished contract belongs to the
+[[ascent-rivals/initiatives/website-v2/pages/course-leaderboards|Website V2 course specification]],
+not to the current AccelByte record behavior described here.
 
 ### `ProgressionSettings`
 

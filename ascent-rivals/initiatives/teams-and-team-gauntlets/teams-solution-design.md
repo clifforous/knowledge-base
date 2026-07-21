@@ -1,6 +1,6 @@
 # Ascent Rivals Teams Program Design
 
-Status: Proposed; T00 reapproval pending after the shared-development cutover
+Status: T00 approved against the committed local Eventun foundation
 Date: 2026-07-10
 Last updated: 2026-07-20
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
@@ -56,12 +56,13 @@ The design is grounded in:
 - a PostgreSQL review of Eventun schema, ingestion, progression workers, gauntlet queries, and materialized-view refreshes.
 
 Since that review, the identified-match, compact-fact, incremental-serving,
-qualification-cutoff, season, repair, and historical-conversion work completed local
-implementation and review through Eventun `37c0307`. One combined production-scale local
-cutover and populated API/performance smoke succeeded. The shared-development cutover remains
-pending and is intentionally waiting for the next game-client main integration. T00 must
-replace stale implementation assumptions with the post-cutover schema before approving team
-implementation.
+qualification-cutoff, season, repair, historical-conversion, retained-data query, and runtime-
+hardening work completed local implementation and review through Eventun `9213feb`. One combined
+production-scale local cutover and populated API/performance smoke succeeded. The
+shared-development cutover remains pending and is intentionally waiting for the next game-client
+main integration. T00 approves the design against this committed local baseline. Local Eventun
+implementation and isolated verification may proceed before that cutover; affected contracts and
+runtime assumptions receive a narrow reconfirmation before coordinated deployment.
 
 ## Decisions Revised During Review
 
@@ -69,7 +70,7 @@ implementation.
 |---|---|---|
 | Document shape | One broad solution design | Keep this file as an index and maintain two focused designs |
 | Game-client administration | Create, disband, capabilities, and full roster administration in game | Keep create, disband, ownership, capability assignment, and most administration on the current website; the client focuses on viewing and member interactions |
-| Membership API | Replace `AddTeamMember` with many action-specific RPCs | Keep one deterministic operation; make its transition result explicit and transactional |
+| Membership API | Replace `AddTeamMember` with many action-specific RPCs | Keep additive transitions in one deterministic `AddTeamMember`; require exact action UUID/version for acceptance or approval, and reserve `ResolveTeamMembershipAction` for decline, deny, or cancel |
 | Pagination | Require pagination for all team lists and rosters now | Defer it until measured team size or payloads require it; current iteration assumes approximately five or six members per team |
 | Team progression | Commit immediately to Eventun progression tables and jobs | Define progression rules first, then select storage; AccelByte remains a candidate for player rewards but not the authoritative team entity |
 | Notifications | Add an Eventun inbox and merge it with AccelByte messages | Use Eventun as the event source and AccelByte Chat system inbox/transient notifications for delivery and read state where the payload prototype proves sufficient |
@@ -87,7 +88,7 @@ implementation.
 - Gameplay-facing titles are separated from authorization capabilities.
 - Team creation, disbanding, ownership transfer, capability assignment, and team-wide cosmetic administration remain website operations.
 - Active membership gains historical validity intervals before historical progression or qualification attribution depends on it.
-- Match delivery remains at most once in the current client. Stable batch ids, event ids, producer sequence, source classification, artifact association, idempotent acceptance, narrow fact derivation, fact-backed progression, serving projections, and season-aware records are implemented and locally rehearsed; the coordinated shared-development cutover remains the gate before T00 reapproval.
+- Match delivery remains at most once in the current client. Stable batch ids, event ids, producer sequence, source classification, artifact association, idempotent acceptance, narrow fact derivation, fact-backed progression, serving projections, and season-aware records are implemented and locally rehearsed. T00 reapproval used that committed local foundation; the coordinated shared-development cutover remains the gate before Team Core deployment, not before isolated local implementation.
 - Eventun records notification intent through an outbox and delivers through AccelByte Chat.
 - The game client gains an Eventun-backed team subsystem and a shared player-relation resolver.
 - Team and gauntlet read models are designed for indexed point reads, narrow contributions, incremental projections, and immutable cutoff snapshots rather than repeated scans of raw telemetry or hourly refreshes.
@@ -174,10 +175,10 @@ The local foundation and rehearsal now include:
 - ClientService authentication, the four ServerService gauntlet runtime methods, the ten shared reads, the two shared writes, full served/Admin Swagger, and split Unreal Client/GameServer/Models generation are implemented.
 - one accepted production-scale local historical-and-season cutover, a resettable migrated snapshot, populated API smoke, and representative retained-data query-plan evidence.
 
-Remaining Phase 0 work before re-approving the team slice:
+Remaining Phase 0 work before deploying the approved team slice:
 
 - wait for the accepted game-client API changes to complete their next copy to main, then apply and validate the coordinated Eventun transition in shared development;
-- complete the runtime resource and service-boundary hardening before team implementation or production release; T00 design review may proceed after the development cutover while hardening finishes;
+- treat the committed local runtime-hardening contract as the T00 baseline and reconfirm it during the coordinated shared-development cutover before Team Core deployment or production release;
 - remove Ascentun's stale disabled token-gating types, dormant actions, and generated API contract during the coordinated contract refresh; its active forms already filter that mode out;
 - retain production as a separate unscheduled owner decision after a shared-development soak period.
 
@@ -189,8 +190,10 @@ Production deployment is not a prerequisite for T00. Do not expand the reset int
 migration runner, CI service, generic repository layer, wholesale package relocation, or
 unrelated product rewrite.
 
-### Phase 1: UI Baseline
+### Phase 1: Game-Client UI Baseline
 
+- complete this phase before adding the T05 game-client routes; it does not gate the backend and
+  existing-website Team Core cutoff;
 - capture current game-client screens at target desktop resolutions;
 - map routes and route transitions from configuration, C++, Blueprints, and available asset tooling;
 - capture each route's widget/component tree and responsive slot properties in a separate Ascent Rivals project task with MCP access;
@@ -207,7 +210,7 @@ unrelated product rewrite.
 
 ### Phase 3: Membership, Notifications, And Cosmetics
 
-- strengthen `AddTeamMember` outcomes and atomic transitions;
+- consume the typed, atomic Eventun `AddTeamMember` and exact-action resolution contract;
 - support open joins, closed-team request and invitation flows, and leave; add team-to-party invitation only if the existing path requires no party-system changes;
 - deliver actionable team messages through AccelByte Chat;
 - add team cosmetic definitions, team administration, and member per-surface choices.
@@ -248,8 +251,10 @@ unrelated product rewrite.
 ## Current Review Order
 
 1. Review [[team-experience-and-progression-solution-design]] and answer its product, cosmetic, notification, and progression questions.
-2. Establish the Pencil.dev baseline and select the first team-experience slice.
-3. Review [[team-gauntlets-and-brackets-solution-design]] independently before gauntlet implementation begins.
-4. Turn approved sections into implementation plans with repository-specific migrations, APIs, UI tasks, and verification steps.
+2. Treat the approved Team Core backend/existing-website cutoff, data disposition, roster limit,
+   disband identity, capabilities, and public-read IAM as the first implementation contract.
+3. Establish the Pencil.dev baseline before the later T05 game-client slice.
+4. Review [[team-gauntlets-and-brackets-solution-design]] independently before gauntlet implementation begins.
+5. Turn approved sections into implementation plans with repository-specific migrations, APIs, UI tasks, and verification steps.
 
 Unresolved decisions are intentionally kept in the two focused designs rather than duplicated here.

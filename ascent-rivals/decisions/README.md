@@ -170,3 +170,97 @@ evidence and must not be presented as current truth before incorporation.
   [Website V2 delivery](../initiatives/website-v2/delivery-plan.md).
 - **Evidence:** The handoff defines the required Eventun contract, upload, preservation, and
   cutover acceptance boundaries.
+
+### AR-2026-011 — Website V2 uses a purpose-built race-control language
+
+- **Date:** 2026-07-20
+- **Status:** Approved design direction; implementation and final visual-system promotion remain
+  pending.
+- **Changed:** From faux scrap-metal terminal styling and varied sci-fi panel geometry to one
+  matte-graphite race-control field with restrained signal lighting, consistent corner rules,
+  sparse directional marks, and grit supplied primarily by world imagery and atmosphere.
+- **Why:** Simulated metal, random border fragments, and repeated cutouts made composed pages
+  noisy and gimmicky. The revised language preserves the in-world terminal character while
+  keeping repeated content readable and implementable in CSS and SVG.
+- **Affected knowledge:** [Design Language v0.1](../initiatives/website-v2/design-language-v0.1.md),
+  [Terminal Ops design system](../initiatives/website-v2/terminal-ops-design-system.md), and the
+  [Website V2 initiative checkpoint](../initiatives/website-v2/README.md#current-design-checkpoint).
+- **Evidence:** The owner-reviewed external Pencil checkpoints summarized by the affected
+  initiative documents.
+
+### AR-2026-012 — Public pilot profiles use a bounded career surface
+
+- **Date:** 2026-07-20
+- **Status:** Approved initial public-profile direction; authorized own-profile additions remain
+  undecided and unimplemented.
+- **Changed:** From a broad public career and recognition surface to public Matches, Podiums,
+  Podium Rate, Ascension Rate, course performance, bounded recent races, and the three gauntlets
+  with the pilot's latest activity. Broader totals, play time, economy, achievements, and medals
+  became reversible own-profile candidates.
+- **Why:** The bounded public surface provides useful competitive context without publishing
+  every available account or progression measure. Any later private detail requires an
+  authorized response rather than browser-side hiding.
+- **Affected knowledge:** [Player profile specification](../initiatives/website-v2/pages/player-profile.md),
+  [initial-release scope](../initiatives/website-v2/initial-release-scope.md), and the
+  [route/API matrix](../initiatives/website-v2/route-api-matrix.md).
+- **Evidence:** The reviewed player-profile desktop/mobile calibration and its incorporated
+  initiative checkpoint.
+
+### AR-2026-013 — Course discovery and course records use separate routes
+
+- **Date:** 2026-07-20
+- **Status:** Approved desktop information architecture; course mobile validation and
+  implementation remain pending.
+- **Changed:** From an embedded course selector, archive scope, local directory search, and
+  cross-course summary concepts to a simple published-course directory at `/courses` and one
+  focused record surface at `/courses/[code]`. Course changes use ordinary route navigation.
+- **Why:** A persistent selector crowded both desktop and mobile detail layouts, while the small
+  course catalog and persistent global search make another page-local search unnecessary.
+  Separating discovery from records keeps each route coherent and prevents accidental
+  cross-course comparison of unlike times.
+- **Affected knowledge:** [Course leaderboards specification](../initiatives/website-v2/pages/course-leaderboards.md),
+  [information architecture](../initiatives/website-v2/information-architecture.md), and the
+  [route/API matrix](../initiatives/website-v2/route-api-matrix.md).
+- **Evidence:** The reviewed course directory/detail desktop calibrations and the Website V2
+  initiative delivery checkpoint.
+
+### AR-2026-014 — Team Core replaces the pre-alpha team model
+
+- **Date:** 2026-07-20
+- **Status:** Approved Team Core contract; an uncommitted Eventun implementation artifact is under
+  review, Ascentun work is unfinished, and no shared deployment is authorized.
+- **Changed:** From disposable team rows, delete-on-leave membership, numeric designation,
+  nonhistorical requests/invitations, and caller-shaped identity to Eventun-generated durable team
+  identity, retained active/disbanded lifecycle, half-open membership intervals, explicit owner,
+  separate presentation title/capabilities/competition rank, a bounded configurable roster, exact
+  versioned pending-action identity, and breaking replacement of the pre-alpha contract and data.
+- **Why:** The old shape cannot preserve membership-at-event-time evidence, cleanly separate social
+  presentation from authority, or support future team qualification and roster snapshots. The
+  retained UUID and interval model supplies that foundation without preserving disposable alpha
+  compatibility.
+- **Affected knowledge:** [Teams initiative](../initiatives/teams-and-team-gauntlets/README.md),
+  [delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md), and
+  [team experience design](../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md).
+- **Evidence:** The owner accepted the T00 checkpoint, selected Team Core as the first delivery
+  cutoff, approved a default maximum active roster of 16, approved durable disbanded identity and
+  case-insensitive active-name/tag reuse, and accepted the three-capability boundary. Acceptance is
+  a design/status decision, not implementation or deployment evidence.
+
+### AR-2026-015 — Local Team Core implementation may precede shared-development cutover
+
+- **Date:** 2026-07-20
+- **Status:** Active sequencing decision; shared-development and production deployment remain
+  pending.
+- **Changed:** From treating the coordinated Eventun foundation cutover as a prerequisite for all
+  team implementation to allowing local Team Core implementation and isolated verification
+  against committed Eventun `9213feb`. The cutover and combined runtime smoke remain mandatory
+  before enabling the breaking Eventun and Ascentun contract in shared development.
+- **Why:** The committed local foundation is sufficient for productive implementation work, while
+  keeping deployment coupled avoids creating a shared service/client mismatch before the pending
+  game-client API changes reach mainline.
+- **Affected knowledge:** [Eventun cutover and hardening](../initiatives/eventun-foundation/development-cutover-and-runtime-hardening.md),
+  [teams initiative](../initiatives/teams-and-team-gauntlets/README.md), and the
+  [teams delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md).
+- **Evidence:** The owner explicitly chose to continue local development while deferring the shared
+  migration and later confirmed that Team Core implementation could start. This does not imply
+  deployment, production readiness, or acceptance of an unreviewed implementation artifact.

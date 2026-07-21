@@ -240,7 +240,7 @@ Placement:
 Design guidance:
 
 - if the user is already on a team, do not foreground create-team actions
-- if the user is anonymous, prefer `Sign in with Steam` over a disabled create button
+- if the user is anonymous, prefer `Sign in` over a disabled create button
 
 ## 5. Empty and Sparse States
 

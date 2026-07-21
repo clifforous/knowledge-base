@@ -1,5 +1,12 @@
 # Ascent Rivals - Eventun Gauntlet Stage Runtime Contract
 
+Status: current
+
+Applicability: committed local-development behavior. Shared-development and production deployment
+remain separate gates.
+
+Last consolidated: 2026-07-20
+
 ## Related
 - [[../overview]]
 - [[overview]]
@@ -40,9 +47,18 @@ Current Eventun behavior:
 - multi-match stages are supported through per-match acceptance and aggregate run completion
 - stage allowed-team lists are implemented as player team-membership eligibility filters
 - stage win/loss bracket fields are implemented as player summary admission filters
-- automatic retry and bracket advancement are not implemented yet
+- background automatic retry and bracket advancement are not implemented yet; caller retry of an
+  ambiguous allocation first reconciles the retained run identity
 - team standings, team stage results, and runtime entrant snapshots are not implemented yet
 - team hierarchy/designated racer priority metadata is not implemented yet
+
+AccelByte session creation has an explicit ambiguity boundary. A timeout, transport failure,
+provider-server failure, blank session id, or other incomplete create response leaves the original
+`StageRunId` in `allocating`. A later caller retry reconciles that exact identity before it may
+attempt another create. Only a definitive provider rejection marks the run failed. Malformed or
+incomplete reconciliation rows fail closed as `Unavailable` and prevent a second provider create;
+HTTP 400, 401, and 403 create rejections map to `InvalidArgument`, `Unauthenticated`, and
+`PermissionDenied` respectively.
 
 Eventun authoring rejects any stage circuit whose supplied `match_id` is not its exact array position. Every nonempty circuit therefore uses contiguous identities `0..N-1`; persistence enumerates the validated positions, and a claimed run retains those identities in its immutable rules snapshot.
 

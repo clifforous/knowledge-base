@@ -17,10 +17,10 @@ policy belongs under `system/` or the root policy and agent instructions.
 
 ## Initiatives
 
-- [Federated Personal and Canonical Knowledge Workflow](initiatives/federated-kb/federated-personal-and-canonical-knowledge-workflow.md)
-  - Status: proposed
-  - Defines the future personal, peer, and canonical knowledge model and the proposed
-    cross-agent kb integration.
+- [Federated Knowledge Base Initiative](initiatives/federated-kb/README.md)
+  - Status: design in progress; implementation deferred pending manual validation
+  - Separates normative requirements, contributor workflow and rationale, and the proposed
+    on-demand MCP system design.
 - [Repository Organization and Restructuring Plan](initiatives/repository-restructure/repository-organization-and-restructuring-plan.md)
   - Status: approved for phased migration
   - Defines the project-first target structure, document placement rules, initial mapping,

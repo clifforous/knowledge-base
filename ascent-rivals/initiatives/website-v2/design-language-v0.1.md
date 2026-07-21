@@ -12,10 +12,13 @@ Last reviewed: 2026-07-20
 - [[tone-and-voice]]
 - [[ascent-rivals/initiatives/website-v2/pages/homepage]]
 - [[ascent-rivals/system/design-language|game-client design language]]
+- [[ascent-rivals/decisions/README#ar-2026-011--website-v2-uses-a-purpose-built-race-control-language|race-control visual direction decision]]
 
 ## Purpose
 
-This document is the first applied visual-language baseline for Website V2. It translates the approved homepage and gauntlet-discovery desktop/mobile calibration frames into rules that can guide Pencil mocks and the Next.js/React implementation.
+This document is the first applied visual-language baseline for Website V2. It translates the
+approved homepage, gauntlet, and pilot-profile desktop/mobile calibrations plus the course
+desktop checkpoint into rules that can guide Pencil mocks and the Next.js/React implementation.
 
 Source calibration frames:
 
@@ -26,8 +29,16 @@ Source calibration frames:
 - `Ascent V2 — Gauntlets Schedule Calibration`
 - `Ascent V2 — Gauntlets Index Mobile Calibration`
 - `Ascent V2 — Gauntlets Schedule Mobile Calibration`
+- `Ascent V2 — Gauntlet Detail Active Calibration`
+- `Ascent V2 — Gauntlet Detail Sparse Upcoming Calibration`
+- `Ascent V2 — Gauntlet Detail Active Mobile Calibration`
+- `Ascent V2 — Pilot Profile Career Calibration`
+- reviewed mobile companion to the pilot-profile career calibration
+- `Ascent V2 — Course Detail Leaderboard Calibration`
+- `Ascent V2 — Course Directory Calibration`, with removal of its page-local search and result
+  count pending in the live artifact
 
-This version is intentionally provisional. It has been validated on marketing and gauntlet-discovery compositions at desktop and mobile widths, including local search, URL-backed view/scope controls, entity rows, and a repeated-occurrence agenda. Dense standings tables, charts, forms, and complete entity-detail pages remain unvalidated.
+This version is intentionally provisional. It has been validated on marketing, gauntlet discovery/detail, and pilot-profile compositions at desktop and mobile widths, plus course directory/detail at desktop width. The reviewed frames cover local search where a directory needs it, URL-backed view/scope controls, entity rows, a repeated-occurrence agenda, conditional detail sections, ordered stage circuits, desktop qualifier standings, mobile rank-list translation, bounded charts, client-side progressive reveal, and a dense course leaderboard. Course mobile behavior, forms, team surfaces, and several implementation states remain unvalidated.
 
 ## Design Thesis
 
@@ -146,6 +157,14 @@ Nine-pixel labels in the calibration are not a general production target. Do not
 - Do not use monospace for paragraphs.
 - Test names, timestamps, ranks, and identifiers for `0/O`, `1/I/l`, and truncation ambiguity.
 - Preserve heading hierarchy without relying on gold alone.
+
+### Numeric notation
+
+- Do not add leading zeros to ordinary user-facing values merely to make them look technical.
+- Use natural forms for ranks, placements, counts, stage and qualifier numbers, collection status, and progressive-reveal actions: `#4`, `3rd`, `Stage 2`, `Qualifier 2`, `6 of 24 shown`, and `Show 6 more`.
+- A zero-padded structural display index such as `01 / Overview` is allowed when it identifies a fixed editorial sequence. Treat it as optional notation and reduce or omit repeated indices on mobile.
+- Preserve required padding inside conventional formatted values such as `01:39.840`, calendar dates, and canonical codes or identifiers where a leading zero is meaningful.
+- Never change an authoritative identifier's formatting to satisfy the display convention.
 
 ## Spacing and Sizing
 
@@ -313,7 +332,7 @@ Desktop:
 - actual Ascent Rivals logo and wordmark;
 - visible primary destinations when space permits;
 - search and account actions remain directly available;
-- direct `Sign in with Steam` action while Steam is the only provider.
+- direct `Sign in` action that starts the only implemented provider flow without opening a provider picker.
 
 Mobile:
 
@@ -323,7 +342,7 @@ Mobile:
 - default icons are borderless and have no persistent boxed background;
 - search and menu are muted; login/account may use a restrained gold icon;
 - hover, focus, and pressed surfaces appear only as interaction states;
-- the login control has the accessible name `Sign in with Steam` and becomes the avatar/account control after authentication.
+- the login control has the accessible name `Sign in` and becomes the avatar/account control after authentication.
 
 ### Media and scan viewport
 
@@ -411,10 +430,38 @@ Reduce or remove:
 Applied patterns:
 
 - stack primary and secondary CTAs;
-- convert horizontal progression to one vertical rail;
+- convert long or narrative progression, such as the Ascension sequence, to one vertical rail;
+- allow a short bounded sequence, such as a four-node qualifier rail, to remain horizontal when it fits without scrolling or compressed labels;
 - use one-column destination cards with consistent shapes and gaps;
 - keep mobile body text at approximately `16–17px`;
 - maintain 44px touch targets without requiring visible borders.
+
+### Operational detail composition
+
+- Let one current qualifier, stage, or bracket surface carry the operational focus instead of nesting several equally strong cards.
+- Treat personal status as a removable inset or adjacent layer; its absence must not leave a structural hole.
+- Omit qualifier, stage, standings, sponsor, and navigation destinations when their factual content does not exist.
+- Use a compact labeled section-jump control on mobile rather than squeezing desktop anchors into the header.
+
+### Stage circuits
+
+- Present each stage as one coherent panel with its state, identity, entry summary, and ordered match circuit.
+- Show circuit matches as open rows within the stage surface rather than a grid of nested cards.
+- Let mobile stage panels stack and grow to their content; do not equalize heights across different circuit lengths.
+- When a stage has an authored title, pair a small stage number with the prominent title. When it does not, promote the stage number and remove the empty title region.
+
+### Standings translation
+
+- Use a scan-friendly table or open row system on desktop.
+- Translate standings to an open ranked list on mobile instead of preserving a wide table through horizontal scrolling.
+- Preserve rank, pilot identity, the leading competitive value, and signed-in-player emphasis before secondary columns.
+- Keep pagination and local view controls visually distinct from page navigation; initial collection controls remain client-side.
+
+### Branded media fallback
+
+- Use a quiet, logo-derived signal field when approved gameplay or event media is absent.
+- Label a fallback as a display or capture fallback where ambiguity is possible.
+- Do not fabricate course maps, planet art, race telemetry, or live media.
 
 ## Accessibility and Implementation
 
@@ -449,14 +496,20 @@ Applied patterns:
 
 ## Validation Boundary
 
-Version 0.1 confirms the marketing shell, responsive visual thesis, and gauntlet directory and
-Schedule composition. It does not yet finalize:
+Version 0.1 confirms the marketing shell, responsive visual thesis, gauntlet directory and
+Schedule composition, active and sparse gauntlet-detail behavior, the public pilot-profile
+desktop/mobile composition, and the desktop course directory/detail composition. It validates
+ordered stage circuits, conditional section omission, desktop qualifier standings, a mobile
+rank-list translation, client-side progressive reveal, bounded career-rate comparisons,
+responsive pilot course-record summaries, recent-race visualization, a three-entry gauntlet
+history, and one exact course leaderboard with a top-five gap view. It does not yet finalize:
 
-- leaderboard and table density;
+- course-directory and course-detail behavior at mobile width;
+- broader leaderboard and very dense table behavior beyond the reviewed course board;
 - complex filters, sorting, pagination, and grouped search-result presentation;
-- charts and career-summary visualization;
-- gauntlet-detail stage, qualifier, result, and bracket composition;
-- player and team identity modules;
+- broader chart behavior beyond the reviewed career-rate and recent-race examples;
+- gauntlet bracket graphs, stage-run detail, and completed-result composition;
+- team identity modules and authorized management states;
 - forms and permissioned workflows;
 - loading, empty, error, stale, and partial-data visuals;
 - final font loading and licensing decisions;
@@ -464,9 +517,8 @@ Schedule composition. It does not yet finalize:
 
 Revise this language through representative page mocks in this order:
 
-1. review the active gauntlet-detail calibration, then add its sparse/upcoming companion;
-2. player profile;
-3. course detail and leaderboard;
-4. team pages after the team model is stable enough.
+1. remove the redundant course-directory local controls and validate course directory/detail at
+   mobile width;
+2. team pages after the team model is stable enough.
 
 Promote the document to v0.2 only after the interior mocks establish reusable rules for dense data, controls, charts, and responsive entity layouts.

@@ -1,7 +1,8 @@
 # Ascent Rivals Website Information Architecture
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved route and navigation baseline; remaining page and contract details are provisional
+Last reviewed: 2026-07-20
 
 Foundation supersession (2026-07-13): references to `token_gated` teams, team token-gate notices, or token-gate management are historical and must not be implemented from this draft. Eventun removed the TapTools-shaped token catalog, gate relations, and APIs; existing gated teams transition to invite-only until a provider-neutral asset-source contract is separately designed.
 
@@ -175,7 +176,7 @@ Mobile:
 
 The top bar must never wrap, horizontally scroll, abbreviate labels into unclear terms, or reduce touch targets merely to retain another visible link.
 
-Anonymous authentication uses one direct `Sign in with Steam` control, not a provider picker. Compact layouts may present the Steam icon with `Sign In`, but the accessible name remains `Sign in with Steam` and activation starts the Steam flow immediately. Epic, Discord, or other providers remain future product/identity decisions rather than initial navigation placeholders.
+Anonymous authentication uses one direct `Sign in` control, not a provider picker. Compact layouts may present a generic login/account icon, but the accessible name remains `Sign in` and activation starts the Steam flow immediately. Epic, Discord, or other providers remain future product/identity decisions rather than initial navigation placeholders.
 
 ## Logged-In Player Context
 
@@ -477,16 +478,22 @@ Page-local sections:
 - Course Stats
 - Recent Races
 - Gauntlets, containing the `Gauntlet History` section
-- Achievements & Medals
 
-`Gauntlet History` includes active public participation before completed history, then sorts by the pilot's latest real activity. It adapts each entry to qualifier, accepted stage, or general participation facts; it does not expose invitations or other private participation state and does not label qualifier rank as a tournament finish.
+`Gauntlet History` contains exactly the three gauntlets with the pilot's latest real activity.
+Lifecycle state is a row attribute rather than a sorting group. Each entry adapts to qualifier,
+accepted-stage, or general-participation facts; it does not expose invitations or other private
+participation state and does not label qualifier rank as a tournament finish.
 
-`Achievements & Medals` shows completed public Eventun achievements/masteries and known gameplay-medal totals. It does not expose active or incomplete progress, challenges, raw progression counters, reward data, or inferred trophies. A later self-only progression destination requires a separate approval.
+The anonymous public career lead contains Matches, Podiums, Podium Rate, and Ascension Rate.
+Overall Total and Average Circuit Points, play time, credits/economy, detailed combat/objective totals,
+achievements, and medals are reversible own-profile candidates rather than public defaults.
+They require a separate authorized response if approved later and must not be sent publicly and
+hidden in the browser.
 
 Personalized own-profile overlays:
 
-- private or more detailed rank context where appropriate
 - team/account action links
+- candidate private career detail and recognition only after separate approval
 
 Public privacy guardrail:
 
@@ -505,26 +512,30 @@ Page spec:
 
 Page-local sections:
 
-- production-ready course directory and selector
-- explicit archived-course filter
-- selected course briefing
-- category filter
-- leaderboard table
+- `/courses` published-course directory
+- `/courses/[code]` course briefing
+- category controls
+- current record and bounded top-five gap context
+- exact leaderboard table
 - logged-in personal placement strip
-- cross-course overview
 - related context, later
 
 Route behavior:
 
-- `/courses` is the discovery and cross-course overview;
+- `/courses` is the small published-course discovery collection;
 - `/courses/[code]` is the canonical detail route;
+- the detail route has no embedded course selector; changing course uses ordinary route
+  navigation through the directory, global search, or another canonical entity link;
+- the directory has no page-local search, result count, archive scope, or cross-course record
+  comparison in the initial release;
 - the leaderboard category remains explicit shareable query state on the detail route.
 
 Course visibility guardrails:
 
 - AccelByte Cloud Save `Courses` is authoritative for course configuration and feature state;
 - the server classifies a production-ready course as `published` when its AccelByte feature state matches the configured enabled state and it is not marked archived;
-- the public directory shows `published` courses by default;
+- the public directory and global search show only `published` courses and do not repeat the
+  publication state in each entry;
 - a course is `archived` only through an explicit AccelByte metadata marker asserting that it was previously public and deliberately retired;
 - alpha, internal, and otherwise unreleased courses remain absent from public routes, search, metadata, and sitemaps;
 - unknown, incomplete, or conflicting metadata fails closed to hidden;
@@ -631,8 +642,8 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 | `/gauntlets` | unique current/upcoming gauntlets, Past scope, and repeated-occurrence Schedule agenda | same layout plus personalized participation context when available | `Create Gauntlet` for creator/admin |
 | `/gauntlets/[id]` | briefing, qualifiers, finals/brackets, standings, sponsors, and factual public result context; no Accountun-driven prize/reward data | same plus personal rank/qualification/eligibility context | ordinary non-prize edit/delete actions; administrator-only bracket and runtime-repair tooling remains in the Eventun Extend App UI |
 | `/players` | player directory and search/filter | same | same, possible admin-only moderation/actions later |
-| `/players/[id]` | public profile, course stats, course placements, Recent Races, structure-aware Gauntlet History, completed public achievements/masteries, and known gameplay-medal totals; no generic rank tier/history | own profile may show team/account actions; exact MMR and active progression remain omitted | admin-only actions later if needed |
-| `/courses` | production-ready course selector, explicit archived filter, course metadata, selected leaderboard, player profile links | same plus personal placement strip when available | no V1 admin actions unless course administration is added later |
+| `/players/[id]` | public identity/team, Matches, Podiums, Podium Rate, Ascension Rate, course stats and placements, Recent Races, and three-entry structure-aware Gauntlet History; no generic rank tier/history | own profile may show team/account actions and later approved private career detail; exact MMR and active progression remain omitted | admin-only actions later if needed |
+| `/courses` | compact published-course directory linking to canonical detail routes; no local search, count, archive scope, or cross-course record comparison | same public directory | no V1 admin actions unless course administration is added later |
 | `/courses/[code]` | public or explicitly archived course briefing, selected category records and leaderboard, pilot links; unreleased courses are not exposed | same plus personal placement when available | no initial admin actions unless course administration is later approved |
 | `/teams` | team directory, search/filter, membership-mode context | same plus create team when eligible and `My Team` context if useful | admin may see broader moderation affordances later |
 | `/teams/[id]` | public team briefing, roster, membership mode, and fact-backed team analytics when available | join/request/leave actions based on membership and current team state | manage roster, invites, requests, media, colors, membership mode, ownership/disband for owner/manager/admin |
@@ -645,7 +656,7 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 
 Search should group results by entity type.
 
-Initial delivery uses the persistent top-bar `SearchCommand` as an accessible dialog or mobile sheet rather than adding a separate `/search` destination. The catalog is lazy-loaded on first search interaction, searched locally, and cached in browser query state with bounded staleness and mutation invalidation. Each group can route to its normal directory with `q` preserved for the complete local result set.
+Initial delivery uses the persistent top-bar `SearchCommand` as an accessible dialog or mobile sheet rather than adding a separate `/search` destination. The catalog is lazy-loaded on first search interaction, searched locally, and cached in browser query state with bounded staleness and mutation invalidation. Groups whose directory retains local search can route there with `q` preserved. Course results link directly to `/courses/[code]`; the small course directory does not duplicate the global search interaction.
 
 Initial groups:
 

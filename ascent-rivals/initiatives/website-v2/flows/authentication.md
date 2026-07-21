@@ -34,7 +34,7 @@ Wallet linking and wallet-derived account state are outside the initial Website 
 
 V1 authentication is Steam-only.
 
-Use a direct `Sign in with Steam` action. Do not show a provider picker when Steam is the only implemented provider.
+Use a direct `Sign in` action. Do not show a provider picker when Steam is the only implemented provider. Activating the generic action starts the Steam flow immediately.
 
 Steam remains the account authority for initial website login.
 
@@ -127,7 +127,7 @@ Website V2 should implement the desired behavior below rather than copying those
 
 ## Desired V1 Flow Summary
 
-1. Anonymous user clicks `Sign in with Steam`.
+1. Anonymous user clicks `Sign in`.
 2. Site records the user's current safe return path.
 3. Site redirects the user to Steam OpenID.
 4. User enters Steam credentials on Steam.
@@ -143,7 +143,7 @@ Website V2 should implement the desired behavior below rather than copying those
 
 Primary entry point:
 
-- global top-bar `Sign in with Steam`
+- global top-bar `Sign in`
 
 Secondary entry points:
 
@@ -168,14 +168,14 @@ When not logged in:
 
 Direct Steam action:
 
-- wide layouts should use the explicit label `Sign in with Steam`;
-- compact layouts may use the Steam icon with `Sign In` when necessary, while retaining the accessible name `Sign in with Steam`;
+- wide layouts should use the visible label `Sign in`;
+- compact layouts may use a generic login/account icon while retaining the accessible name `Sign in`;
 - activating the control starts the Steam flow directly rather than opening an intermediate menu;
 - add a provider picker only after another provider and its identity/linking contract are approved and implemented.
 
 Recommended copy:
 
-- `Sign in with Steam`
+- `Sign in`
 - `Steam sign-in required`
 - `Connect Steam to continue`
 
@@ -201,7 +201,7 @@ Recommended implementation shape:
 Examples:
 
 - user starts at `/gauntlets/starforge-02`
-- user clicks `Sign in with Steam`
+- user clicks `Sign in`
 - callback returns to `/gauntlets/starforge-02`
 
 - user starts at `/teams/abc`
@@ -430,7 +430,7 @@ Avoid:
 ## Accessibility Requirements
 
 - sign-in action must be reachable by keyboard
-- compact sign-in treatment must retain the accessible name `Sign in with Steam`
+- compact sign-in treatment must retain the accessible name `Sign in`
 - avatar menu must have an accessible label such as `Account menu`
 - sign-out must be a real button/menu item, not only an icon
 - loading and error states must be announced or visible as text
@@ -461,7 +461,7 @@ Do not log:
 
 - anonymous users can start Steam login from the top bar
 - the direct sign-in control starts Steam authentication without an intermediate provider picker
-- compact sign-in treatment retains the accessible name `Sign in with Steam`
+- compact sign-in treatment retains the accessible name `Sign in`
 - login from a public page returns to that page after Steam callback
 - login from a protected route returns to that route after successful login when the user is authorized
 - unsafe return paths fall back to `/`

@@ -23,6 +23,10 @@ Marketing changes use the existing designer-to-code workflow: an approved mock, 
 assets are implemented directly in the repository and shipped with the application. There is
 no current CMS requirement.
 
+The MSI Grand Prix hero uses the approved MSI tournament crest with a separate “Sponsored by
+MSI” lockup immediately above it. Both are repository-owned static assets derived from the
+approved Idemax mock rather than hotlinked media.
+
 ### Ascentun
 
 Ascentun is the current player-facing and operations-facing web application. It is hosted on

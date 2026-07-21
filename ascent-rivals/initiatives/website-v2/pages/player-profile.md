@@ -1,12 +1,13 @@
 # Ascent Rivals Player Profile Page Spec
 
 Date: 2026-04-13
-Status: Approved career and recent-races model; visual design and contract implementation open
+Status: Approved public-profile design baseline; contract implementation and own-profile extensions open
 Career-summary priority confirmed: 2026-07-15
 Recent-races review confirmed: 2026-07-16
 Gauntlet-history review confirmed: 2026-07-16
-Recognition review confirmed: 2026-07-16
+Public/private profile boundary confirmed: 2026-07-20
 Global-rank deferral confirmed: 2026-07-16
+Public-profile desktop/mobile calibration confirmed: 2026-07-20
 
 ## Related
 - [[../unified-design]]
@@ -15,6 +16,7 @@ Global-rank deferral confirmed: 2026-07-16
 - [[../tone-and-voice]]
 - [[../README|Website V2 initiative index]]
 - [[player-directory]]
+- [[ascent-rivals/decisions/README#ar-2026-012--public-pilot-profiles-use-a-bounded-career-surface|public profile boundary decision]]
 - [[course-leaderboards]]
 - [[team-profile]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
@@ -277,8 +279,10 @@ Product boundary:
 
 - Eventun owns official gameplay-medal totals and progression state exposed through these reads;
 - AccelByte-only badges, trophies, or platform recognition remain separate unless explicitly migrated;
-- medals and completed public achievements/masteries are valid supporting recognition, but they do not replace the career summary as the profile lead;
-- active challenges, incomplete goal progress, reward contents, claims, and fulfillment are not public-profile features.
+- medals and completed achievements/masteries are candidate own-profile recognition rather
+  than anonymous public-profile content;
+- active challenges, incomplete goal progress, reward contents, claims, and fulfillment are
+  not profile features in the current calibration.
 
 Current contract caution:
 
@@ -298,11 +302,15 @@ Confirmed first-view priority:
 2. career summary as the lead statistics module
 3. course stats and course placements
 4. recent race results and exact recent-race history
-5. gauntlet history and optional strengths when the data supports them cleanly
+5. three-entry gauntlet history and optional strengths when the data supports them cleanly
 
 The profile must remain complete and useful when the pilot has no recent gauntlet participation. Recent competition results support the career story; they do not replace it as the page lead.
 
-Page-local navigation uses readable anchors for the long profile document, with labels such as `Overview`, `Courses`, `Recent Races`, `Gauntlets`, and `Medals` when those sections are supported. Conditional strength callouts do not require their own destination. Keep a supported section and show its honest no-data state when the pilot merely lacks results; omit a destination only when the section is structurally unavailable. Compact layouts replace the anchor row with a labeled section jump menu.
+Page-local navigation uses the readable public anchors `Overview`, `Courses`, `Recent Races`,
+and `Gauntlets`. Conditional strength callouts do not require their own destination. Keep a
+supported section and show its honest no-data state when the pilot merely lacks results; omit
+a destination only when the section is structurally unavailable. Compact layouts replace the
+anchor row with a labeled section jump menu.
 
 ## 1. Player Header / Briefing
 
@@ -360,7 +368,7 @@ Terminal Ops component:
 
 Purpose:
 
-- show high-level public career totals
+- show a bounded high-level public competition summary
 
 Recommended V1 stats:
 
@@ -369,26 +377,33 @@ Headline measures:
 - matches played;
 - podium finishes;
 - podium rate, derived as podium finishes divided by matches played;
-- average circuit points.
+- Ascension Rate, derived as successful eligible Ascension-mode heats divided by eligible
+  Ascension-mode heats.
 
-Grouped detail:
+An Ascension-mode heat succeeds when the pilot either has an explicit `Ascended` outcome or
+takes a podium place represented by `Placed`. Count each eligible heat at most once. Eventun
+owns this classification and aggregate; the Website does not reverse-infer the value from DNF
+presentation labels.
 
-- `Results`: total circuit points and supporting result totals;
-- `Objectives`: total and average obelisks;
-- `Combat`: total and average kills, deaths, and crashes;
-- `Activity`: matches played and total play time;
-- `Economy`: total and average credits.
+Public calibration boundary:
+
+- overall total and average Circuit Points, play time, credits/economy, detailed combat/objective
+  totals, achievements, and medals are not sent in the anonymous public response;
+- those fields remain reversible own-profile candidates rather than approved public content;
+- an approved future own-profile response must be authorized and must not enter the shared
+  public cache.
 
 Display guidance:
 
 - show the four headline measures as exact, immediately scannable values;
-- use grouped detail rather than one flat grid of every value;
-- show podium rate with its exact numerator and denominator, not only a percentage;
-- an optional compact podium-versus-non-podium segmented bar may reinforce that relationship;
+- show both rates with their exact numerator and denominator, not only a percentage;
+- optional compact Podium Rate and Ascension Rate rails may reinforce those relationships;
+- use `Rate` consistently in the headline and rail labels rather than switching to `Share` or
+  `Success` for the same measure;
 - do not require a chart when the exact headline values communicate the summary more clearly;
 - avoid decorative gauges, radar charts, and sparklines synthesized from aggregate totals;
-- keep deaths and crashes in the secondary Combat group rather than foregrounding them in the headline summary;
-- use an em dash or explicit unavailable state when matches played is zero; do not report a false zero-percent podium rate.
+- use an em dash or explicit unavailable state when a denominator is zero; do not report a
+  false zero-percent rate.
 
 Terminal Ops component:
 
@@ -423,6 +438,12 @@ Interaction:
 - filter published courses by default and expose archived courses only through explicit historical context when needed
 - select one explicit player-facing leaderboard category for cross-course comparison
 
+Category boundary:
+
+- Time Trial Finish and Time Trial Lap are record-focused contexts where the player's exact personal time, leaderboard placement, current record, and gap to that record are primary;
+- competitive Race Finish and Race Lap still retain exact time and placement, but the profile should not imply that time records are the sole or dominant measure of multiplayer performance;
+- label every comparison and highlight with its category so a Time Trial record is not mistaken for a competitive-race result.
+
 Cross-course visualization:
 
 - keep a sortable exact table as the canonical representation;
@@ -448,12 +469,14 @@ Purpose:
 
 V1 possible modules:
 
-- Best Course by best finish time
-- Best Course by best lap time
+- strongest Time Trial Finish record, with course, leaderboard placement, exact personal time, and record gap;
+- strongest Time Trial Lap record, with course, leaderboard placement, exact personal time, and record gap.
 
 V1 derivation rules:
 
-- derive from career and per-course aggregate stats
+- derive from the player-specific leaderboard result and the corresponding current course record;
+- select the strongest result by the best ordinal placement, using normalized gap to the record as supporting context or a tie-breaker;
+- never select a cross-course strength merely because its raw lap or finish time is shortest, because course lengths and layouts differ;
 - do not imply loadout-specific claims unless leaderboard loadout values or future detailed data supports them
 - avoid overclaiming causality
 - do not use total kills, total play time, total races, or similar always-increasing counters as strengths
@@ -533,6 +556,9 @@ Scope:
 Initial decision:
 
 - show raw circuit points for each usable Ascent Mode match across the latest bounded race history;
+- title the visualization `Circuit Points per Race` and state in plain language that each bar is the circuit points earned in one recent Ascent Mode multiplayer race;
+- make the sequence direction explicit, such as `oldest to newest`, and use a short date or course label instead of abstract `M01` identifiers when space permits;
+- state beside the chart that it covers Ascent Mode matches while the exact table below contains every supported race mode;
 - treat matches as a discrete ordered sequence rather than implying continuous sampling;
 - label the chart as recent results, not improvement, momentum, form, or a normalized performance trend;
 - retain the public race-mode label on every underlying history item so Classic and Deathmatch results are not mislabeled;
@@ -619,11 +645,13 @@ Initial release:
 
 - use `Gauntlets` as the page-local navigation label and `Gauntlet History` as the section heading;
 - include active and completed public gauntlets only when the player has real public participation evidence;
-- place active entries with public results first, labeled `In Progress`, then order remaining entries by the player's latest actual participation time rather than the gauntlet's broad first-to-final time range;
+- show exactly the three gauntlets with the player's latest actual participation time;
+- treat `In Progress`, completed, and participation-only as row attributes rather than separate
+  sorting groups;
 - link every entry to `/gauntlets/[id]` and show the gauntlet title plus ticker or concise date context where useful;
 - show current overall qualifier rank, qualification points, and qualifiers counted/played when qualifiers apply;
 - show an accepted stage placement and circuit points when a completed stage result exists;
-- otherwise use a factual participation fallback such as races played, podiums, and average circuit points;
+- otherwise use a factual participation fallback such as races played and podiums;
 - use a compact responsive list whose result fields adapt to the gauntlet structure rather than forcing every entry into one rigid tournament-results table;
 - do not add an aggregate gauntlet chart in the initial release because qualifier-only, staged, playtest, and other gauntlet structures are not one comparable series.
 
@@ -641,7 +669,8 @@ Website API requirement:
 - return presentation metadata, lifecycle state, latest real player-activity time, qualifier summary when applicable, accepted stage placements when applicable, and the small aggregate participation fallback in one collection;
 - derive participation and ordering from canonical qualifier contributions, gauntlet match contributions, or accepted stage placements rather than configuration dates or invitation/status rows;
 - preserve current-versus-completed and missing-versus-zero distinctions in the contract;
-- keep the initial collection compact and unpaginated, with client-side display controls if the history eventually needs progressive reveal.
+- return at most three entries for the public profile and do not add pagination or progressive
+  reveal.
 
 V2:
 
@@ -650,33 +679,35 @@ V2:
 - historical event highlights
 - qualification progression over time
 
-## 8. Achievements & Medals
+## 8. Candidate Own-Profile Detail and Recognition
 
 Purpose:
 
-- support durable recognition beyond raw leaderboard rank without turning the public profile into a progression or reward-management surface
+- preserve possible richer self context without exposing it as the anonymous public default
 
-Initial release:
+Current calibration:
 
-- show completed Eventun public achievements and masteries first;
-- show gameplay-medal totals as secondary recognition using authored display names, exact counts, and parent/augment relationships where applicable;
-- use a text-first compact list or grid that remains complete without bespoke icon art;
-- use approved presentation assets when Eventun supplies them, but do not make recognition dependent on an art pipeline;
-- show an honest empty state when the pilot has no completed public goals or tracked medals.
+- omit overall Total and Average Circuit Points, play time, credits/economy, detailed combat/objective
+  totals, achievements, and medals when another visitor views the profile;
+- keep the own-profile and public compositions substantially similar if additional private
+  detail is approved later;
+- treat the boundary as reversible pending implemented-contract and product-value review.
 
-Initial exclusions:
+Always excluded from this surface:
 
 - do not show `Trophies` until Eventun explicitly models a gauntlet win or trophy; a stage placement does not create a trophy;
 - do not show active challenges, incomplete goals, public progress bars, reward previews, reward claims, fulfillment state, or Accountun prize/reward data;
 - do not expose raw progression counters, dimensions, requirement expressions, source session/match ids, unpublished/private/hidden goals, or unknown medal codes;
 - do not relabel aggregate career facts as medals or achievements.
 
-Website API requirement:
+Future Website API requirement if own-profile detail is approved:
 
-- add a compact public player-recognition read rather than exposing `PlayerMedals` and `PlayerProgression` directly to the browser;
-- return completed public achievements/masteries with authored title, category, mastery state, completion time, and approved presentation metadata;
+- add a purpose-built authorized detail response rather than exposing broad career,
+  `PlayerMedals`, or `PlayerProgression` responses directly to the browser;
+- return eligible completed achievements/masteries with authored title, category, mastery state,
+  completion time, and approved presentation metadata;
 - return only known displayable gameplay medals with authored display name, exact count, and parent/augment relationship;
-- exclude active/incomplete progression, raw counters and dimensions, source identifiers, and every reward field;
+- exclude unrendered raw counters and dimensions, source identifiers, and every reward field;
 - include validated historical-coverage metadata whenever the totals do not represent the player's full career.
 
 V2:
@@ -721,7 +752,7 @@ V2:
 |---|---|
 | Anonymous | can view public profile, public stats, course stats, leaderboards, and public recent races |
 | Logged-in other player | same as anonymous plus account/avatar top bar and comparison affordances if available |
-| Logged-in own profile | public profile plus team/account action overlays; public recognition remains the same as for other viewers |
+| Logged-in own profile | public profile plus request-time team/account actions and any later approved private-detail overlay |
 | Admin | same as logged-in, plus admin-only moderation/actions only if product decides they are needed |
 
 ## Empty / Loading / Error States
@@ -732,7 +763,6 @@ Required states:
 - no course stats
 - no leaderboard placements
 - no recent races
-- no public achievements or tracked gameplay medals
 - no team
 - failed career fetch
 - failed leaderboard fetch
@@ -808,23 +838,34 @@ These ideas are valuable but should not block V1 if unsupported:
 
 1. V1 should include a bounded `Recent Races` overview of multiplayer/server matches, but not a match-detail page. Time trials, Career Cup, and other single-player play are excluded; retained best lap and best finish records remain on course/career surfaces.
 2. V1 should include course leaderboard placements using player-specific leaderboard data where available.
-3. Eventun owns official gameplay medal totals and progression reads. These facts may support the profile but must not be faked or inferred from incomplete career aggregates; AccelByte-only recognition remains a separate source.
-4. V1 strength modules should be limited to best finish and best lap unless richer normalized data becomes available.
+3. Eventun owns official gameplay medal totals and progression reads. They are candidate
+   own-profile detail rather than anonymous public content and must not be faked or inferred
+   from incomplete career aggregates; AccelByte-only recognition remains a separate source.
+4. V1 strength modules should be limited to explicitly labeled Time Trial Finish and Time Trial Lap record contexts. Select them by leaderboard placement with normalized record gap as supporting context, never by comparing raw times across different courses.
 5. Avoid negative or joke-framed stats for now.
 6. The default layout prioritizes identity and a career summary first, then course stats and Recent Races. Recent gauntlet participation must not determine whether the profile feels complete.
 7. Own-profile team and account actions should appear on the public profile page for the logged-in user.
-8. The career lead uses Matches, Podiums, Podium Rate, and Average Circuit Points as headline values. Full career totals remain available in Results, Objectives, Combat, Activity, and Economy groups.
-9. Career-summary visualization is optional. Podium share is the only approved initial aggregate visualization because it has a clear matches-played denominator; charts must not be fabricated from aggregate totals that contain no time series.
+8. The public career lead uses Matches, Podiums, Podium Rate, and Ascension Rate. Ascension
+   Rate counts explicit `Ascended` or podium `Placed` outcomes once per eligible Ascension-mode
+   heat. Both rates show exact numerator and denominator counts.
+9. Career-summary visualization is optional. Compact Podium Rate and Ascension Rate rails are
+   approved because both have explicit denominators; use `Rate` consistently in their labels.
 10. The initial recent-races chart shows raw per-match circuit points for the dominant Ascent Mode cohort as discrete results, supports an optional local course filter, and has no rolling/improvement trend. The exact table contains all supported race modes in the bounded collection.
 11. Cross-course pilot performance uses an exact sortable table plus an optional normalized gap-to-record view for one explicit leaderboard category. Raw times from different courses are never placed on one shared scale.
 12. The initial recent-races bound is the newest 100 public-course matches. Eventun now provides explicit regular/off-season catalog entries plus nullable Match History season identity; exact Website season navigation remains a Website product decision.
 13. Public recent-race data excludes hidden course matches and unused implementation identifiers before reaching the browser.
 14. Match-stat presence must be preserved through the Website contract. Protobuf optionality is preferred when generation proves it survives; otherwise use explicit availability metadata. Zero-as-missing is forbidden where zero or false is a valid result.
-15. The public profile uses a `Gauntlet History` section. Active participation with public results appears before completed history; completed entries are ordered by actual player activity. Qualifier rank, stage placement, and generic participation remain distinct, and invitations or status-only state are never exposed as public history.
-16. The initial recognition section is `Achievements & Medals`: completed public Eventun achievements/masteries first and known gameplay-medal totals second. It has no trophies, public incomplete progress, active challenges, or reward UI. A purpose-built public response strips raw counters, dimensions, source identifiers, and reward data and reports historical coverage when totals are incomplete.
+15. The public profile uses a `Gauntlet History` section containing exactly the three gauntlets
+    with the player's latest actual activity. Lifecycle state is a row attribute, not a sorting
+    group. Qualifier rank, stage placement, and generic participation remain distinct, and
+    invitations or status-only state are never exposed as public history.
+16. Overall Total and Average Circuit Points, play time, credits/economy, detailed combat/objective
+    totals, achievements, and medals are omitted from the anonymous public calibration. They
+    remain reversible own-profile candidates that require a separate authorized response if
+    approved later.
 17. The initial Website has no generic global rank tier or `Rank History`. Exact course leaderboard positions and gauntlet standings remain visible in their scoped contexts, while exact AccelByte MMR is omitted even for the current user. A future Eventun-owned named-division layer may use stateful promotion thresholds or delayed promotion, but requires a separate design before any Website field or component is added.
 
 ## Next Steps
 
-- Ask the design AI/Pencil for a player profile mock using this spec and Terminal Ops.
-- Create companion specs for course leaderboard and gauntlet detail.
+- Treat the reviewed public desktop/mobile profile calibration as the current visual baseline.
+- Continue with the course detail and leaderboard calibration.

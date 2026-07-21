@@ -13,8 +13,8 @@ truth until accepted behavior is incorporated into `../system/`.
 - [Gauntlet runtime](gauntlet-runtime/README.md) — client/runtime follow-through and future
   tournament modes; implemented orchestration is current system.
 - [Eventun foundation](eventun-foundation/README.md) — pending coordinated development
-  cutover, runtime resource hardening, and telemetry retention/archive policy after the
-  implemented and locally rehearsed ingest/season foundation.
+  cutover and telemetry retention/archive policy after the implemented, locally rehearsed, and
+  runtime-hardened foundation.
 - [MMR v2](mmr-v2/README.md) — draft replacement design awaiting implementation review.
 - [Cardano reward service proof of concept](cardano-reward-service-poc/README.md) — proof of
   concept implementation in progress.

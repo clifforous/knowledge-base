@@ -7,7 +7,7 @@ Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, and historical rehearsal work is now implemented locally. T00 remains gated by the coordinated shared-development cutover and must revalidate this design against the implemented schema; implementation remains gated by runtime hardening.
+Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, historical rehearsal, and runtime-hardening work is now implemented and committed locally. T00 approved the revised capability design against that baseline. An uncommitted Eventun Team Core artifact has coder-reported isolated verification and remains under implementation review; Ascentun integration is unfinished, shared deployment remains gated by the coordinated shared-development cutover and combined runtime smoke, and later team-gauntlet work remains separately gated by accepted Team Core identity and membership behavior.
 
 ## Related
 
@@ -178,7 +178,7 @@ Invite-only and sponsored/community selections use the same explicit owner sourc
 
 | Capability | Individual qualification | Team top-N qualification |
 |---|---|---|
-| Input performance | Accepted player match contributions under the configured source and canonical policy | The same accepted player contributions, attributed to membership at trusted performance time |
+| Input performance | Accepted player match contributions under the configured source and canonical policy | The same accepted player contributions, attributed to the membership interval active at canonical MatchStart (`match_fact.started_at`) |
 | Per-player score | Existing qualifier best-sequence and top-K model | Same per-player model; team size does not create additional per-player accumulation |
 | Owner aggregation | None; the player score is the owner score | Rank eligible member scores, select configurable top N, and apply the configured team aggregate |
 | Cutoff evidence | Player rank, score, tie values, and selected qualifier/match evidence | Team rank, score, tie values, selected member identities/scores, membership attribution, and each member's selected evidence |
@@ -186,16 +186,16 @@ Invite-only and sponsored/community selections use the same explicit owner sourc
 | Runtime expansion | Normally one player-owned slot occupied only by that player | Fixed `slots_per_owner`; eligible members compete for those slots under the roster policy |
 | Stage result | The accepted slot result is the owner result | One slot may map directly; multiple slots require an explicit reproducible owner-result aggregation |
 
-Top-N team scoring includes `N = 1`; that is “best member represents the team,” not individual-owner qualification. Average-of-N, minimum contribution thresholds, or another aggregate may be added as explicit metric definitions, but must not be inferred from `team_score_top_n` alone.
+Top-N team scoring includes `N = 1`; that is “best member represents the team,” not individual-owner qualification. `top_n` means at most N contributors. A separate `minimum_contributors`, initially defaulting to one, decides whether a smaller team remains eligible. Average-of-N, minimum performance thresholds, or another aggregate may be added as explicit metric definitions, but must not be inferred from `top_n` alone.
 
 ### Representative Use-Case Coverage
 
 | Use case | Configuration | Coverage assessment |
 |---|---|---|
-| Individual qualifier final | Top 16 players by individual qualification score; one slot each | **Covered by design:** the implemented individual cutoff supplies immutable selection evidence; G01 expands it into the unified field and slots. |
-| Individual invitational | Sixteen explicitly invited players; one slot each | **Covered by design:** explicit player allocation does not require a standings query. |
-| Team qualifier final | Top eight teams by the sum of their top three member scores; one racer per team; manager rank controls admission | **Covered by design after membership intervals:** team cutoff snapshots contributors, then team owners expand to one slot each. |
-| Team invitational | Eight explicitly invited teams; one racer per team; first-come admission | **Covered by design:** only the owner selection source differs from team qualification. |
+| Individual qualifier final | Top 16 players by individual qualification score; one slot each | **Covered by design:** the implemented individual cutoff supplies immutable selection evidence; the later field-allocation extension expands it into player-owned slots. |
+| Individual invitational | Sixteen explicitly invited players; one slot each | **Covered by design:** the later explicit-player allocation does not require a standings query. |
+| Team qualifier final | Top eight teams by the sum of their top three member scores; one racer per team; manager rank controls admission | **Covered by design after membership intervals:** G02 snapshots contributors and feeds selected team owners into the proven field/slot runtime; G03 adds priority replacement. |
+| Team invitational | Eight explicitly invited teams; one racer per team; first-come admission | **First playable vertical:** G01 materializes explicit team owners, one slot each, first-come occupancy, roster lock, and team result. |
 | Multi-racer team final | Top eight teams by top-three qualification score; two racers per team; sum of placement points determines the team result | **Conditionally covered:** slot and roster models fit, but the placement-points owner-result policy must be approved before enabling multiple racers. |
 | Mixed qualification and sponsor field | Twelve individually qualified players plus two explicitly sponsored teams with one racer each | **Covered when all owners use the same racer-result order:** separate rules publish one mixed-owner field. More than one racer per team would require a cross-owner aggregation policy. |
 | Player single-elimination bracket | Qualified or invited players seed a bracket; winners advance | **Covered by the G05 model:** opening selection, player results, stage-run-scoped routing, byes, and repair have defined homes. |
@@ -214,7 +214,7 @@ This matrix is a coverage tool, not a promise to enable every representable comb
 |---|---|
 | `allocation_rule_id` | Stable authoring identity |
 | `gauntlet_id` and `stage` | Target stage |
-| `target_field_key` | Default stage field or a specific bracket match/shard when one logical stage has multiple runs |
+| target stage | Opening field uses typed gauntlet/stage identity; later bracket sources reference typed bracket-match relations rather than a free-form key |
 | `source_type` | Individual qualification, team qualification, explicit player, explicit team, bracket advancement, or unaffiliated fill |
 | `metric_definition_id` | Qualification metric where applicable |
 | `owner_count` | Number of player or team owners selected |
@@ -241,7 +241,9 @@ Wildcard should not be a `source_type`. It may be the `display_label` or the eve
 
 ### Owner Uniqueness And Rule Precedence
 
-The first implementation permits one entitlement row for each `(field_snapshot_id, owner_type, owner_id)`. Allocation rules resolve in `selection_order`:
+The first implementation permits one entitlement row for each field snapshot and typed player or
+team owner. Nullable `player_id` and `team_id` foreign keys enforce exactly one owner kind.
+Allocation rules resolve in `selection_order`:
 
 1. the first rule selecting an owner claims that owner's entitlement and display provenance;
 2. a later rule skips the duplicate and continues to its next candidate until its configured `owner_count` is filled or exhausted;
@@ -267,16 +269,23 @@ This prevents one player from accumulating unlimited score merely through volume
 
 For a team qualification rule:
 
-1. attribute each accepted player fact to the membership interval active at trusted event time;
+1. attribute the complete accepted match contribution to the membership interval active at
+   canonical MatchStart (`match_fact.started_at`); heat, kill, or player-summary timestamps do not
+   split one match across teams;
 2. group the attributed qualifier-match contributions by team and member;
 3. calculate that member's team-attributed score using the same sequence-window and top-K rules used by individual qualification, but only from contributions attributed to that team;
 4. rank members within each team;
 5. take the configurable top N member scores;
 6. aggregate those scores into the team score;
 7. retain the contributing-member breakdown;
-8. rank teams using deterministic tie-breakers.
+8. rank teams by aggregate score, a deterministic lexicographic comparison of the ordered
+   contributing-member evidence, earliest final achievement boundary, then team UUID.
 
-Top N is configuration, not a hard-coded product constant. A membership change can split one player's qualifier history across teams; it must not assign the player's collapsed whole-gauntlet score to either the current team or the team active at cutoff.
+Top N is configuration, not a hard-coded product constant. A team with fewer than N scored
+members remains eligible only when it satisfies the separately configured
+`minimum_contributors`, initially one. The team itself must remain active at cutoff. A membership
+change can split one player's qualifier history across teams; it must not assign the player's
+collapsed whole-gauntlet score to either the current team or the team active at cutoff.
 
 ### Database Execution
 
@@ -292,6 +301,10 @@ Recommended layers:
 - an immutable cutoff snapshot containing selected owners, rank, score, tie-break values, and contributing members;
 - a snapshot version and configuration hash for reproducibility.
 
+General match and player facts remain team-neutral. Team-attributed qualification contributions
+store the resolved `team_id` and exact `membership_interval_id`; the sealed cutoff copies or
+references the exact selected membership evidence.
+
 Ordinary views or stable functions remain appropriate for team top-N calculations over an already bounded player-score projection. The player/qualifier score and retained best sequence should update incrementally after each accepted match so standings do not inherit the current hourly delay. Native materialized views are transitional only and must not determine the final field.
 
 Client-reported performance remains necessary for time-trial or local qualification modes, but it can be altered by a hostile client. A qualifier must not silently combine client-reported and dedicated-server performance as though they have equal authority. The permitted source policy is a qualifier/competition decision and should be retained in the cutoff snapshot. Lightweight client-event validation is deferred; full dedicated-server replay is not the assumed solution.
@@ -301,7 +314,8 @@ Client-reported performance remains necessary for time-trial or local qualificat
 At cutoff:
 
 1. acquire a resolver lock for the gauntlet and stage;
-2. record the exact source projection revision, projector/algorithm version, configuration version, and any membership-attribution fingerprint required by the selected rules;
+2. record the exact source projection revision, projector/algorithm version, configuration
+   version, and selected membership-interval evidence required by the rules;
 3. calculate all allocation rules from current incremental qualification projections and their narrow source contributions;
 4. persist owner snapshots and contributor breakdowns;
 5. persist each owner's slot count and slot policy as immutable field entitlements;
@@ -318,24 +332,44 @@ The implemented individual qualification snapshot is immutable selection evidenc
 |---|---|---|
 | Incremental performance projection | Maintain player qualifier contributions, best sequences, overall scores, and the gauntlet projection revision | Implemented foundation; team scoring reuses the narrow contributions and evidence, not a current-team join over the collapsed player score |
 | Source-specific selection snapshot | Freeze selected player owners or selected team owners and their exact scoring evidence | The current foundation supplies individual qualification; G02 adds team qualification and contributor evidence |
-| Published field snapshot | Resolve all allocation rules into one ordered, versioned owner field | G01 references qualification snapshots, explicit assignments, and later bracket sources |
-| Concrete stage-run slots | At stage-run claim, expand each published owner into the configured racer-seat count | G01/G03; slots reference the field owner and retain source provenance |
-| Locked roster and owner results | Persist actual occupants, slot results, owner aggregation, and downstream advancement | G03 through G05 |
+| Published field snapshot | Resolve selected allocation rules into one ordered, versioned owner field | G01 proves explicit team assignment; G02 adds team qualification and G04 adds player, mixed, and fallback sources |
+| Concrete stage-run slots | At stage-run claim, expand each published owner into the configured racer-seat count | G01 onward; slots reference the field owner and retain source provenance |
+| Locked roster and owner results | Persist actual occupants, slot results, owner aggregation, and downstream advancement | G01 proves the one-racer team path; G03 through G05 extend policies and progression |
 
-The conceptual field relations are `gauntlet_field_snapshot` and `gauntlet_field_owner`; final names should follow the implemented schema conventions. A field snapshot identifies its logical target, not merely `(gauntlet_id, stage)`: the opening/default field uses the stage target, while each bracket match uses its bracket-match or shard target. A stage run binds exactly one matching field snapshot. Each field owner records its owner type/id, allocation rule, selection order, source snapshot or bracket position, and display label. Slots reference field owners rather than binding runtime admission directly to a player-only qualification row.
+The conceptual field relations are `gauntlet_field_snapshot` and `gauntlet_field_owner`; final names should follow the implemented schema conventions. G01 initially publishes only the opening stage-target field. Later bracket matches reference typed bracket relations rather than a free-form target key. A stage run binds exactly one matching field snapshot. Each field-owner row has nullable `player_id` and `team_id` foreign keys with an exactly-one-non-null check, plus allocation rule, selection order, source snapshot or bracket position, and display label. Slots reference field owners rather than binding runtime admission directly to a player-only qualification row.
 
-Because compatibility with the pre-alpha runtime shape is not required, G01 should replace the current direct `qualification_snapshot_id` admission dependency with the unified field/slot binding. It should retain the individual snapshot reference as provenance for owners selected by individual qualification.
+G01 introduces the field/slot binding for explicit team stages without widening the existing
+player-only qualification snapshot. When an individual qualification stage is later moved into the
+field model, replace its direct `qualification_snapshot_id` admission dependency rather than
+retaining two entitlement paths; keep the individual snapshot reference only as provenance for the
+selected player owners.
+
+A formal field-bound run has exactly one entitlement path: published owners and concrete slots.
+Existing allowed-team/player rows are either legacy non-field invite-stage behavior or authoring
+inputs resolved into explicit field owners. They do not remain an additional live filter after a
+field is bound. `slots_per_owner` replaces `players_per_team` for field-backed stages. The current
+stage win/loss filters retire when the real bracket graph becomes authoritative.
 
 G02 must not calculate team standings by joining `gauntlet_player_score_projection` to current membership. Event-time membership can split one player's matches across several teams, changing sequence windows and top-K results. G02 should maintain targeted team-attributed member qualifier/overall projections from the implemented narrow match contributions, with the same score algorithm and deterministic evidence order. The bounded top-N team aggregate then operates over those member-score rows.
 
-Team qualification adds a second consistency domain that individual qualification does not need: membership-at-performance-time. A team cutoff preview must therefore bind all of:
+Team qualification extends the existing gauntlet consistency domain with membership-at-MatchStart evidence. A team cutoff preview must therefore bind all of:
 
 - the exact gauntlet projection revision and scoring/configuration hash;
-- a membership-attribution revision or an exact fingerprint of every membership interval used;
+- the exact identity and semantic fingerprint of every membership interval used;
 - the team metric definition, including top N and deterministic tie-breaks;
 - the complete selected-team, contributing-member, and selected-match evidence.
 
-A historical membership correction that changes attribution must stale a team preview through the same lock/revision discipline as a performance repair. An ordinary current-roster change after field publication does not transfer or recalculate team ownership; it affects runtime eligibility only according to the field's roster policy and roster version. Roster lock freezes the actual occupants.
+Team Core intentionally does not implement historical membership correction. Before G02 creates
+the first attribution-dependent statistics or qualification state, add an audited interval
+supersession/void model capable of retaining exact old and new evidence. A correction then
+determines the union of old and prospective affected gauntlets, follows the shared ordered
+team/player/gauntlet locking discipline, advances the team's competition-roster revision, and
+recomputes affected team contributions and scores while advancing each semantically changed
+gauntlet projection revision exactly once. This remains the same repair/revision protocol as
+performance facts rather than a second global membership-freshness system. An ordinary
+current-roster change after field publication does not transfer or recalculate team ownership; it
+affects runtime eligibility only according to the field's roster policy and competition-roster
+revision. Roster lock freezes the actual occupants.
 
 Multi-source field publication is atomic. It validates every source preview, resolves fallback and duplicate-owner policy, persists the final owner entitlements, and publishes one field version. A repair or replacement of an upstream selection snapshot may make an unbound field stale, in which case stage-run claim fails until an explicit replacement field is published. It cannot silently mutate the published field or a bound stage run.
 
@@ -352,13 +386,18 @@ Each stage-run racer slot should contain:
 | `slot_index` | Stable display and session ordering |
 | `field_owner_id` | Immutable published owner entitlement from which this run slot was instantiated |
 | `allocation_rule_id` | Why the slot exists |
-| `owner_type` and `owner_id` | Player or team entitlement |
+| `player_id` or `team_id` | Typed player or team entitlement with exactly one foreign key set |
 | `display_label` | Community, sponsor, wildcard, seed, or other label |
 | `occupancy_policy` | First-come or replace-by-priority |
 | `eligibility_policy` | Current member, explicit roster, threshold, or another approved rule |
 | `lock_state` | Open, locked, completed, void |
 
 Before lock, live occupant state is owned by the dedicated server. At lock, Eventun persists one occupant per slot and the roster version.
+
+Field publication proves that total concrete racer slots fit the stage competitor capacity and
+that any unresolved deficit is either explicitly allowed to remain vacant or blocks publication.
+AccelByte connection capacity is racer-slot capacity plus a separately bounded replacement buffer;
+it is not another source of racer slots.
 
 ### Multiple Slots Per Team
 
@@ -395,6 +434,11 @@ The response should contain:
 - stage and session identity needed for validation.
 
 Eventun determines entitlement and priority from frozen slot state plus current approved roster data. It does not reserve a provisional live seat for every join attempt.
+
+The monotonic competition-roster revision advances for active membership join/end,
+competition-rank or explicit-roster changes, and disband. Future correction tooling must also
+advance it. It does not advance for titles, cosmetics, capabilities, or pending membership actions.
+A stale roster lock causes the server to re-resolve every proposed occupant before retrying.
 
 ### Occupancy Algorithm
 
@@ -469,13 +513,20 @@ Before lock, a disconnected occupant releases the provisional slot. After lock, 
 - substitution from a registered alternate list;
 - operator-approved repair.
 
-The initial recommendation is no automatic post-lock substitution. Persist disconnect and no-show facts for operator review.
+The initial recommendation is no automatic post-lock substitution. Before lock, the current
+game-server reserved-reconnect shortcut must not preserve a team slot: disconnect releases it and
+returning players are evaluated under the current occupancy policy. After lock, the same locked
+occupant may reconnect through the ordinary match reconnect policy, but no different player may
+inherit that slot. Persist disconnect and no-show facts for operator review.
 
 ## Results
 
 ### Stage-Run Scope
 
-All accepted placements and result uniqueness must include `stage_run_id`. The current stage-level primary key must be replaced before multiple bracket matches share a logical stage.
+All accepted placements and result uniqueness must include `stage_run_id`. Before multiple bracket
+matches share a logical stage, replace not only the current stage-level placement primary key but
+also stage-wide completed-run guards, already-completed admission checks, and primary-shard-only
+join-status lookup with stage-run or bracket-match identity.
 
 Recommended result layers:
 
@@ -526,6 +577,11 @@ External session creation and player notification remain worker responsibilities
 | `gauntlet_bracket_advancement` | Auditable resolved routing from an upstream result |
 
 Each bracket match receives a distinct non-primary `stage_run.shard_key`. A bye resolves a downstream position without creating or running an empty match.
+
+Each bracket match also owns explicit readiness and scheduling state. The first bracket slice may
+require an operator to release session allocation after both positions resolve, but it must record
+a match-specific start or readiness window, check-in deadline where used, and manual hold rather
+than reusing one logical stage start time for every round.
 
 ### Position Sources
 
@@ -648,30 +704,38 @@ Target measured hot database reads are p95 below 5 ms for runtime admission and 
 - queue lease, retry, and dead-letter behavior;
 - stage-run-scoped placement key.
 
-### Slice G1: Allocation And Team Qualification
+### Slice G1: Explicit-Team Runtime Vertical
 
-- allocation rule schema;
-- player and top-N team scoring;
-- cutoff preview and immutable snapshots;
-- concrete player-owned and team-owned slots;
-- minimal Ascentun authoring.
+- explicitly assigned team owners through one opening stage field;
+- one team-owned racer slot per owner;
+- current-member eligibility and `FIRST_COME` provisional occupancy;
+- disconnect release before lock, same-player reconnect after lock, and no substitution;
+- authoritative roster lock and direct single-slot team result; and
+- minimal Ascentun authoring and dedicated-server/client admission explanation.
 
-### Slice G2: Runtime Admission
+### Slice G2: Team Qualification
 
-- indexed point-read admission;
-- priority and eligibility policies;
-- dedicated-server provisional occupancy and replacement;
-- actual roster lock and recovery;
-- game-client admission explanations.
+- player and top-N team scoring from MatchStart-attributed contributions;
+- cutoff preview and immutable contributor evidence;
+- qualified team owners feeding the proven field and slot runtime; and
+- deterministic tie-break and minimum-contributor policy.
 
-### Slice G3: Mixed And Explicit Allocations
+### Slice G3: Priority And Roster Policies
 
-- explicit player and team owners;
+- manager competition rank and other approved eligibility policies;
+- strictly-higher-priority pre-lock replacement and recovery;
+- indexed admission and stale-roster revision handling; and
+- explicit roster registration only if selected after the rank-and-arrival flow is proven.
+
+### Slice G4: Mixed And Expanded Allocations
+
+- explicit player and team owners in one field;
 - community, sponsor, and wildcard display labels;
 - fallback or unaffiliated fills;
-- operator repair.
+- operator repair; and
+- multiple team slots only with an approved owner-result aggregation.
 
-### Slice G4: Brackets
+### Slice G5: Brackets
 
 - explicit graph and stage-run shards;
 - owner results;
@@ -734,9 +798,9 @@ Automated game-client tests are not required for this iteration. Backend and ded
 | ID | Decision needed | Working recommendation |
 |---|---|---|
 | G1 | Does `owner_count` mean qualified teams/players while `slots_per_owner` means racers each may send? | Yes; keep these as separate authoring values |
-| G2 | Which team qualification metric ships first? | Reuse the current member qualification-point calculation, then sum configurable top N members |
+| G2 | Which team qualification metric ships first? | Reuse the current member qualification-point calculation, sum at most configurable top N members, require separately configured minimum contributors, initially one |
 | G3 | Is Community CP another team qualification metric or an operator-curated value? | Treat it as a metric if Eventun has authoritative facts; otherwise use explicit team assignment with a community label |
-| G4 | What are the deterministic tie-breakers for player and team qualification? | Score, best single result, next-best result, earliest achievement time, then stable id |
+| G4 | What are the deterministic tie-breakers for player and team qualification? | Preserve the implemented player order; for teams use aggregate score, lexicographically ordered contributing-member evidence, earliest final achievement boundary, then team UUID |
 | G5 | When may a late-event correction replace a published field? | Only before a stage run is claimed and bound to the field; later correction requires audited void/rebind or repair |
 | G6 | Can one stage mix player owners and team owners? | Allow the data model, but enable it only when the scoring policy makes direct competition coherent |
 | G7 | May an explicit player from a qualified team occupy a personal slot in addition to the team's slots? | Yes; the personal entitlement and team capacity are independent unless the event config forbids it |
@@ -749,11 +813,11 @@ Automated game-client tests are not required for this iteration. Backend and ded
 | G9 | Is active team membership at join time sufficient, or must the member have belonged to the team at qualification cutoff? | Require current membership; optionally add cutoff membership or registration as an event policy |
 | G10 | Does null `competition_rank` make a member ineligible for finals? | Yes under manager-rank policy, matching the intended fan/supporter behavior |
 | G11 | Which priority policy is the default for team-owned slots? | Manager-controlled competition rank for formal team finals; first-come remains configurable |
-| G12 | How are equal manager ranks handled? | Incumbent keeps the provisional seat; otherwise use arrival sequence |
+| G12 | How are equal manager ranks handled? | Allow duplicate non-null competition ranks; the incumbent keeps the provisional seat, otherwise use arrival sequence |
 | G13 | When exactly does roster lock occur? | Immediately before the first scored heat after the dedicated server successfully persists the roster |
 | G14 | What happens to a displaced player in the session? | Remove them from the racer seat with a clear reason; do not assume a spectator conversion |
 | G15 | May a disconnected provisional occupant reclaim the seat ahead of another eligible member? | No special claim unless their configured priority still wins when they return |
-| G16 | Is any post-lock substitution allowed? | No in the first slice; add registered alternates only through a later explicit policy |
+| G16 | Is any post-lock substitution allowed? | No in the first slice; the same locked occupant may reconnect, but a different member may not inherit the slot |
 | G17 | Should managers register racers before the event or rely on rank and arrival? | Start with rank and arrival; design slot assignment so explicit registration can be added |
 | G18 | Can a manager change competition rank after the field is published? | Yes until a configurable roster deadline; admission reads must include a version so stale decisions are rejected |
 
@@ -780,3 +844,4 @@ Automated game-client tests are not required for this iteration. Backend and ded
 | G30 | Which service owns creating downstream AccelByte sessions? | Eventun records advancement and queues idempotent session-allocation work; an external worker performs the call |
 | G31 | How long should provisional admission and resolved field snapshots be retained? | Retain accepted competition facts durably; apply a shorter operational retention to verbose admission audit |
 | G32 | How much AccelByte session capacity is reserved for pre-lock replacement candidates? | Start with the smallest buffer that permits one serialized replacement, then increase only if multiplayer tests show concurrent joins require it |
+| G33 | How are downstream bracket matches scheduled? | Store match-specific readiness/scheduling and manual-hold state; initially let operators release session allocation after both positions resolve rather than deriving every round from one stage start time |

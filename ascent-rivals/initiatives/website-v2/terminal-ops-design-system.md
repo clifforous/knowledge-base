@@ -281,6 +281,13 @@ Required specimen test:
 - mobile navigation and compact labels
 - ambiguous character strings such as `0/O`, `1/I/l`, player handles, timestamps, and identifiers
 
+Numeric notation:
+
+- reserve zero-padded numbers for optional fixed section indices and formats where padding carries conventional or authoritative meaning;
+- render ordinary product values naturally, including `#4`, `Stage 2`, `Qualifier 2`, `6 of 24 shown`, and `Show 6 more`;
+- do not pad ranks, placements, counts, pagination, or progressive-reveal quantities as terminal decoration;
+- retain conventional time formatting and the exact form of canonical codes and identifiers.
+
 ## Layout System
 
 ## Page Architecture
@@ -629,7 +636,7 @@ Brand, search, and login/account remain directly accessible independently of des
 
 The login/avatar area opens a dropdown menu.
 
-Anonymous state uses a direct `Sign in with Steam` control. Do not use a one-option provider menu. Wide layouts use the full label; compact layouts use a generic login/account icon while preserving `Sign in with Steam` as the accessible name and tooltip. Do not create or approximate a Steam logo; use approved Valve artwork if Steam branding is displayed.
+Anonymous state uses a direct `Sign in` control. Do not use a one-option provider menu. Wide layouts use the text label; compact layouts use a generic login/account icon while preserving `Sign in` as the accessible name and tooltip. Activation starts the Steam flow directly while Steam is the only implemented provider. Do not create or approximate a Steam logo; use approved Valve artwork if Steam branding is displayed elsewhere.
 
 Approved initial items:
 
@@ -1055,8 +1062,14 @@ Each public entity page should support:
 
 ## Next Steps
 
-1. Review the active gauntlet-detail calibration and create its sparse/upcoming companion.
-2. Extend the applied language through player-profile and course-detail/leaderboard mocks.
-3. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.
-4. Validate team pages after the team model is stable enough.
-5. Promote the applied language to v0.2 when the representative interior archetypes are coherent at desktop and mobile widths.
+1. Treat the reviewed active, sparse/upcoming, and mobile gauntlet-detail frames as the current interior-page baseline.
+2. Treat the reviewed public player-profile/career-summary desktop and mobile frames as the
+   current identity, career-rate, and bounded-history baseline.
+3. Treat the reviewed desktop course directory/detail and exact leaderboard as the current
+   course baseline; remove the redundant directory-local search/count before preserving the
+   artifact checkpoint.
+4. Validate the course directory/detail composition at mobile width without embedding a course
+   selector on the detail route.
+5. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.
+6. Validate team pages after the team model is stable enough.
+7. Promote the applied language to v0.2 when the representative interior archetypes are coherent at desktop and mobile widths.

@@ -3,5 +3,6 @@
 - [Repository restructuring](repository-restructure/README.md) — structural migration,
   consolidation, and governance implementation complete; empirical workflow validation
   remains before archival.
-- [Federated personal and canonical kb workflow](federated-kb/README.md) — proposed and
-  deliberately deferred until the reorganized repository has been exercised.
+- [Federated personal and canonical kb workflow](federated-kb/README.md) — requirements,
+  workflow, and system design are active; implementation remains deferred until the manual
+  repository checkpoint closes.

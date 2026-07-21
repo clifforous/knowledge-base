@@ -1,8 +1,9 @@
 # Ascent Rivals Gauntlet Detail Page Spec
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved public layout baseline; bracket/result detail and implementation remain open
 Last reviewed: 2026-07-20
+Design checkpoint: Active combined, sparse/upcoming, and active mobile calibrations reviewed
 
 ## Related
 - [[../unified-design]]
@@ -160,6 +161,41 @@ Sources:
 
 - `GET /v1/gauntlet/{gauntletId}/standings`
 - `GET /v1/gauntlet/{gauntletId}/standings/player/{playerId}`
+
+### Stage configuration
+
+Currently available on each gauntlet stage:
+
+- numeric stage id and scheduled match time;
+- entry requirement, required prior stage wins/losses, and group constraints;
+- stage-level race mode;
+- minimum and maximum competitors plus lobby bounds;
+- ordered circuit matches;
+- player/team allocation and allowed-team configuration;
+- overflow, admission-priority, and roster-lock policy values.
+
+Each circuit match currently contains a numeric match id, `course_code`, and optional lap and
+heat counts. Resolve `course_code` against the published AccelByte course catalogue for public
+display and retain the code as a fallback when no public display name is available.
+
+Current source:
+
+- `GET /v1/gauntlet/{gauntletId}`
+
+Presentation and model dependencies:
+
+- Eventun does not currently expose an authored stage title. A title is a planned model
+  addition; until it exists, the numeric `Stage NN` label is the primary heading and the UI
+  must not reserve an empty title region.
+- Eventun currently exposes race mode on stages, not as a gauntlet-level default. Show a
+  gauntlet-level mode only if that separate optional field is deliberately added; otherwise
+  omit it rather than infer it from stages or qualifiers.
+- A qualifier currently contains only its id, start time, and duration. It does not author a
+  qualifier-specific race mode or participation type, so public qualifier modules omit those
+  fields.
+- Lobby bounds, overflow policy, admission priority, roster-lock rules, and raw allowed-team
+  configuration are operator details unless a later public requirement gives them a clear
+  player-facing meaning.
 
 ### Qualifier standings
 
@@ -334,13 +370,14 @@ Purpose:
 Content:
 
 - stage/final list
+- optional authored stage title when the planned API field exists
 - match time
 - race mode
 - entry requirement
 - min/max competitors
 - team/group constraints where available
-- circuit courses
-- laps and heats only as match runtime settings inside stages
+- ordered circuit matches with a published course name or course-code fallback
+- laps and heats only as optional match runtime settings inside stages
 
 Terminology:
 
@@ -352,7 +389,10 @@ Terminology:
 
 V1 visual model:
 
-- stage cards are acceptable
+- use one consistent stage-panel grammar and label each stage's factual state separately;
+- show the complete ordered circuit as open match rows within the stage panel rather than as nested cards;
+- when a title exists, use a small `Stage NN` label and the title as the heading; otherwise promote `Stage NN` and collapse the unused title space;
+- stack stage panels at natural height on mobile so different circuit lengths do not create artificial empty space;
 - bracket visualization is optional unless the stage model includes enough bracket data
 
 ## 5. Standings
@@ -514,8 +554,8 @@ Desktop:
 
 - briefing/status header
 - local section navigation
-- standings table with pagination
-- stages and qualifiers as structured panels
+- standings table or open rows with client-side pagination
+- qualifiers as structured open rows and stages as consistent circuit panels
 
 Tablet:
 
@@ -526,8 +566,12 @@ Mobile:
 
 - stack modules
 - keep login/avatar visible in top bar
-- use compact cards for qualifier and stage details
-- allow standings tables to horizontal-scroll or transform into rank cards
+- use a labeled 44px section-jump control for the sections that exist
+- consolidate the current qualifier into one operational module and use compact open rows for other qualifier windows
+- stack variable-height stage panels and keep each ordered circuit legible
+- transform qualifier standings into an open rank list rather than horizontal-scroll the desktop table; show a bounded first page and client-side pagination
+- treat the signed-in personal-status inset as optional without leaving a gap
+- retain a short four-node qualifier sequence horizontally when it fits at 390px; stack or simplify it at narrower widths rather than forcing overflow
 - keep destructive/admin actions behind menus
 
 ## SEO and Sharing
@@ -543,6 +587,6 @@ Do not expose private player-specific eligibility data in metadata.
 
 ## Next Steps
 
-- Review the active-gauntlet desktop calibration already created in the live Pencil workfile.
-- Create one sparse/upcoming calibration after the active composition is accepted.
+- Use the reviewed active desktop, sparse/upcoming desktop, and active mobile frames as the gauntlet-detail implementation baseline.
+- Add the planned stage-title field and decide whether an optional gauntlet/default race-mode field belongs in Eventun before relying on either value in implementation.
 - Decide how much stage/final bracket data Eventun must expose before bracket visualization becomes a V1 requirement.

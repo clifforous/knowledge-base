@@ -22,7 +22,7 @@ domain behavior in Eventun and AccelByte.
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
 | Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents | `not-applicable` | Close remaining contract gaps and slice-specific acceptance detail |
-| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile plus reviewed Markdown checkpoints | `not-applicable`; design artifact | Review active gauntlet detail, then validate pilot, course, and team surfaces |
+| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile, reviewed through the 2026-07-20 course desktop checkpoint, plus the linked Markdown baselines | `not-applicable`; design artifact | Remove the redundant course-directory local controls, validate course mobile, then validate team surfaces |
 | Website V2 application | `not-started` | No implementation revision is recorded | `not-deployed` | Greenfield repository foundation and first approved route slice |
 | Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
 
@@ -56,10 +56,10 @@ domain behavior in Eventun and AccelByte.
 
 The live Pencil artifact is owner-managed by Cliff outside this repository because Pencil does
 not work reliably against the WSL filesystem. No shareable durable artifact identity is
-currently recorded, and the last artifact-review date is not recorded. The repository checkpoint
-was reconciled on 2026-07-20 and is represented by Design Language v0.1 and the current
-checkpoint below. Import one reviewed preservation copy only at an explicit design checkpoint;
-label it as a snapshot and do not maintain two nominally live copies.
+currently recorded. The artifact was last reviewed on 2026-07-20 through the course desktop
+checkpoint; Design Language v0.1 and the checkpoint below capture the accepted direction.
+Import one reviewed preservation copy only at an explicit design checkpoint; label it as a
+snapshot and do not maintain two nominally live copies.
 
 ## Detailed Specifications
 
@@ -71,10 +71,32 @@ label it as a snapshot and do not maintain two nominally live copies.
 - Homepage desktop and mobile calibration are reviewed and define Design Language v0.1.
 - Gauntlet directory and Schedule desktop/mobile calibration are reviewed applications of
   that language.
-- The active gauntlet-detail desktop calibration exists in the live Pencil workfile and
-  awaits review; a sparse/upcoming composition remains to be created.
-- Player-profile and course-detail/leaderboard validation remain next. Team-page validation
-  follows review of the implemented team contracts.
+- Active combined, sparse/upcoming, and active mobile gauntlet-detail calibrations are
+  reviewed. They validate conditional section omission, stage circuits, desktop qualifier
+  standings, and an open mobile rank-list translation.
+- Public player-profile desktop/mobile calibration is reviewed. It validates a bounded
+  public career lead, Podium Rate and Ascension Rate comparisons, published-course records,
+  bounded recent races, and a three-entry recent gauntlet history. Candidate private career
+  detail and recognition remain reversible own-profile additions rather than public defaults.
+- Course-detail desktop and leaderboard calibration are reviewed. The course directory's
+  two-column composition is reviewed, with removal of its redundant page-local search and
+  result count still pending in the live artifact. Course mobile validation remains next.
+- Team-page validation follows review of the implemented team contracts.
+
+## Material Decisions
+
+- [AR-2026-008](../../decisions/README.md#ar-2026-008--website-v2-is-one-greenfield-nextjsreact-replacement)
+  selects the greenfield Next.js/React replacement.
+- [AR-2026-009](../../decisions/README.md#ar-2026-009--website-v2-excludes-wallet-and-accountun-reward-workflows)
+  defines the wallet and Accountun exclusion.
+- [AR-2026-010](../../decisions/README.md#ar-2026-010--sponsor-administration-moves-to-the-eventun-extend-app)
+  assigns sponsor administration to the Eventun Extend App.
+- [AR-2026-011](../../decisions/README.md#ar-2026-011--website-v2-uses-a-purpose-built-race-control-language)
+  records the revised visual direction.
+- [AR-2026-012](../../decisions/README.md#ar-2026-012--public-pilot-profiles-use-a-bounded-career-surface)
+  records the public-profile privacy and scope boundary.
+- [AR-2026-013](../../decisions/README.md#ar-2026-013--course-discovery-and-course-records-use-separate-routes)
+  records the course directory/detail separation.
 
 ## Authoritative Current System
 
@@ -85,7 +107,7 @@ label it as a snapshot and do not maintain two nominally live copies.
 
 ## Remaining Before Closure
 
-- finish representative gauntlet-detail, pilot, course, and later team design validation;
+- finish the course-directory cleanup, course mobile validation, and later team design validation;
 - promote the provisional design language only after dense tables, filters, charts, forms,
   partial-data states, and responsive entity layouts are coherent;
 - close the route/API contract gaps and review the implemented team-facing contracts;

@@ -2,7 +2,7 @@
 
 Date: 2026-07-15
 Status: Approved scope baseline
-Last reviewed: 2026-07-17
+Last reviewed: 2026-07-20
 
 ## Related
 
@@ -56,7 +56,7 @@ The current implementation is the behavioral reference, not the target informati
 |---|---|---|
 | Discovery | Home search across gauntlets, teams, pilots, and admin-visible sponsors | Preserve grouped public search for gauntlets, teams, pilots, and courses; move sponsor discovery to the Eventun Extend App and keep only a form-scoped selector in gauntlet authoring |
 | Pilot directory | Fuzzy search, team search context, sort, lazy loading, summary stats | Preserve and redesign |
-| Pilot profile | Identity, team, career totals, per-course career totals | Preserve and add records, recent history, and clearer analysis |
+| Pilot profile | Identity, team, career totals, per-course career totals | Preserve public identity, team, scoped competitive outcomes, and per-course records; add recent races and three-entry gauntlet history; treat broad cumulative totals and recognition as reversible own-profile candidates rather than anonymous-public parity |
 | Course records | Eventun course and leaderboard APIs exist, but Ascentun has no dedicated public course route | Add `/courses` discovery and canonical `/courses/[code]` detail routes as required launch functionality |
 | Team directory/profile | Search, identity, roster, membership mode, join/request, leave | Preserve and redesign |
 | Team creation/management | Create; edit metadata, colors, membership, and media; invite; accept/deny requests; rank/designation changes; remove; transfer ownership; disband | Required launch parity, updated to the implemented team-feature contracts |
@@ -115,15 +115,22 @@ Approved gauntlet-discovery application:
 
 Required baseline:
 
-- lead with pilot identity and a grouped career summary so the profile remains useful without recent gauntlet participation;
-- use Matches, Podiums, Podium Rate, and Average Circuit Points as the headline career measures;
-- retain full totals in Results, Objectives, Combat, Activity, and Economy groups rather than one undifferentiated stat grid;
-- make visualization optional in the headline summary; a podium-share segmented bar is valid when paired with exact podium and match counts;
+- lead with pilot identity and a bounded career summary so the profile remains useful without recent gauntlet participation;
+- use Matches, Podiums, Podium Rate, and Ascension Rate as the public headline career measures;
+- define Ascension Rate over eligible Ascension-mode heats, with a success when the player
+  either ascends or takes a podium place, counted at most once per heat;
+- show exact numerators and denominators for both rates; use `Rate` consistently in headline
+  and comparison labels;
+- keep overall total and average Circuit Points, play time, credits/economy, detailed combat/objective
+  totals, achievements, and medals out of the anonymous public response by default; they remain
+  reversible own-profile candidates rather than approved public fields;
+- make visualization optional in the headline summary; compact Podium Rate and Ascension Rate
+  rails are valid when paired with their exact counts;
 - exact per-course record and career table;
 - exact recent-races table covering at most the newest 100 public-course multiplayer matches;
-- compact `Gauntlet History` with active public participation first and completed entries ordered by the pilot's latest actual activity;
+- compact `Gauntlet History` limited to the three gauntlets with the pilot's latest actual
+  activity, regardless of lifecycle state;
 - structure-aware gauntlet facts that keep qualifier rank, accepted stage placement, and general participation distinct;
-- text-first `Achievements & Medals` with completed public Eventun achievements/masteries before known gameplay-medal totals;
 - current course/category ranks where a player record exists.
 
 Candidate launch visualizations supported by bounded data:
@@ -148,13 +155,17 @@ Gauntlet-history contract requirement:
 - include only canonical public participation evidence, not invitations, eligibility, admission state, or a status row by itself;
 - return gauntlet presentation metadata, active/completed state, latest player-activity time, applicable qualifier facts, accepted stage placements, and a small aggregate fallback;
 - use `Final` only when the gauntlet contract explicitly marks a deciding final.
+- return at most the three most recent entries for the public profile and do not add public
+  pagination or progressive reveal.
 
-Recognition contract requirement:
+Own-profile detail boundary:
 
-- compose one public Website response with completed public goal titles/categories/mastery state/completion times and known medal display names/counts/augment relationships;
-- exclude trophies until explicitly modeled, and exclude active or incomplete progress, raw counters/dimensions, source identifiers, and all reward presentation or actions;
-- include accurate historical-coverage metadata when medal totals have not been validated across the full career history;
-- keep the component complete without bespoke achievement or medal artwork while allowing approved authored assets later.
+- do not send candidate private career detail or recognition in the shared public response and
+  then hide it in the browser;
+- if approved later, compose an authorized own-profile response or overlay that is never placed
+  in the shared public cache;
+- keep the public/private calibration reversible until the implemented contracts and product
+  value of the additional fields are reviewed.
 
 ### Course
 

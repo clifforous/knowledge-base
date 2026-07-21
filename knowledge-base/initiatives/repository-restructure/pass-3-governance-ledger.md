@@ -4,6 +4,8 @@ Status: Governance implementation complete; empirical workflow validation pendin
 
 Date: 2026-07-19
 
+Last updated: 2026-07-20
+
 ## Purpose
 
 Record the governance artifacts adopted after structural migration and content consolidation,
@@ -73,6 +75,35 @@ by themselves complete the remaining task-log and cross-environment workflow cas
 
 The Eventun foundation, teams, and Website V2 indexes received initial delivery snapshots.
 Strict validation after these corrections checked 125 Markdown files across two projects with
+zero errors and zero warnings.
+
+## Second Live-Use Corrections
+
+Refining the federated `kb` initiative on 2026-07-20 exposed a document-boundary problem: one
+large design mixed normative requirements, contributor workflow and rationale, executable
+architecture, rollout, validation, and open implementation choices. It was difficult to answer
+whether the initiative had requirements or a design, and later edits could easily make one
+section contradict another.
+
+The initiative now keeps three linked documents in one initiative directory:
+
+- `requirements.md` owns numbered normative constraints and acceptance;
+- the workflow design owns contributor behavior, knowledge lifecycle, canon, and rationale; and
+- `system-design.md` owns the executable/process architecture and technical verification.
+
+This confirms that project-first lifecycle placement does not require a repository-wide folder
+for every document type. Requirements and designs remain together under the change they govern,
+while the initiative index provides reading order, role boundaries, status, and delivery state.
+Each document also declares what it owns so a later agent can update one source of truth rather
+than copy the same rule across all three.
+
+The same work reconciled a smaller policy mismatch: `no durable knowledge` remains task-local
+operational state and does not create a Markdown artifact or empty Git commit. This direct design
+task updated initiative documents and a curated material decision without creating a task log.
+It provides useful ordinary-work evidence, but it does not exercise parallel capture,
+incorporation from task entries, or grooming and therefore does not close those remaining cases.
+
+Strict validation after the design split checked 127 Markdown files across two projects with
 zero errors and zero warnings.
 
 ## Remaining Empirical Checkpoint

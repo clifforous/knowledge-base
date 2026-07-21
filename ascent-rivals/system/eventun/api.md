@@ -1,5 +1,13 @@
 # Ascent Rivals - Eventun API
 
+Status: current
+
+Applicability: committed local-development behavior unless a section explicitly identifies a
+deployed AccelByte contract. This document does not imply shared-development or production
+deployment.
+
+Last consolidated: 2026-07-20
+
 ## Related
 - [[../overview]]
 - [[overview]]
@@ -68,17 +76,15 @@ ClientService first validates token authenticity, expiry, revocation, and config
 ## Integration Boundary
 Eventun orchestrates competition flow and delegates accounting transition execution to [[../accountun]].
 
-## Website Public Course Visibility Contract
+## Current Public Course API Gap
 
-Website V2 requires a server-side public course projection derived from AccelByte Cloud Save `Courses` or a controlled cache of that source record. The current course response's derived `active` boolean and unfiltered inactive rows are not sufficient for public Website use.
+The current course response derives an `active` boolean and returns inactive rows as well as
+active rows. It does not expose the complete AccelByte feature state or distinguish deliberately
+retired courses from alpha, internal, or otherwise unreleased courses. It therefore is not a
+public-visibility contract and is not safe for Website V2 to consume unchanged.
 
-Required classification:
-
-- `published`: the course feature state matches the configured enabled/production-ready state and the course is not marked archived;
-- `archived`: explicit AccelByte course metadata marks a previously public course as deliberately retired;
-- `hidden`: alpha, internal, disabled, unknown, incomplete, conflicting, or otherwise unreleased source metadata.
-
-The Website-facing list/detail contract exposes only `published` and `archived`. Published is the default list scope; archived requires an explicit filter. Hidden is an internal fail-closed result: hidden courses are omitted from list/search/sitemap inputs and their public detail lookups return the same not-found result as an unknown course. The public API must not serialize hidden course identity or raw unreleased feature-state data. This can be implemented by revising the existing course read or by adding a purpose-built Website read; Website clients must not reproduce the classification locally.
+The unfinished server-side projection and fail-closed visibility behavior remain in the
+[[ascent-rivals/initiatives/website-v2/pages/course-leaderboards|Website V2 course specification]].
 
 ## Observability Transport
 
@@ -91,15 +97,90 @@ The Website-facing list/detail contract exposes only `published` and `archived`.
 - Deliberate non-`Unknown`, non-`Internal` gRPC statuses retain their code and public details. Bare or wrapped Go context cancellation and deadline errors retain `Canceled` or `DeadlineExceeded` with canonical `context canceled` or `context deadline exceeded` text, so wrapper diagnostics cannot cross the transport boundary.
 - Raw errors and gRPC `Unknown` or `Internal` failures are logged internally with the original diagnostic and returned as `Internal` with the stable client message `internal server error`. This contract applies to both unary and stream RPCs.
 
+## Runtime Resource And Failure Boundaries
+
+- Ordinary RPC database work uses `pgxpool.Pool` with query-, batch-, or transaction-scoped
+  acquisition. Database-free endpoints acquire no connection, and Eventun releases PostgreSQL
+  capacity before player, Steam, course, replay, gauntlet-session, reward, or optional Accountun
+  dependency calls.
+- The single-instance pool defaults to eight maximum and one minimum connection, a five-second
+  connect and startup-ping bound, fifteen-minute idle lifetime, one-hour maximum lifetime plus
+  ten-minute jitter, and one-minute health checks. Existing Prometheus output exposes
+  low-cardinality pool gauges and counters.
+- Generated ordinary and catalog calls have thirty-second bounds, reward grants forty-five
+  seconds, Steam fifteen seconds, and the supported Accountun settlement operation five minutes.
+  An otherwise unbounded unary RPC receives a six-minute-thirty-second service deadline; a
+  shorter caller deadline remains authoritative.
+- Gateway HTTP bounds are five seconds for headers, two minutes for reads, seven minutes for
+  writes, and two minutes idle. Metrics HTTP bounds are five seconds for headers, ten seconds for
+  reads and writes, and one minute idle.
+- Scheduled jobs use singleton rescheduling and bounded run contexts; progression retains its
+  lease and lock-token fencing. The validated AccelByte namespace is constructor-injected and
+  immutable per application instance.
+- Only `pgx.ErrNoRows` represents database absence. Touched handlers preserve cancellation,
+  deadlines, and deliberate gRPC statuses, while scan, iteration, infrastructure, and provider
+  failures retain stable sanitized transport mappings.
+- Shutdown stops new work, gives serving and reward finalization separate ten-second phases inside
+  one twenty-second bound, and keeps the database pool open through reward finalization. A timeout
+  does not close the pool underneath unfinished finalization.
+
+## Uncommitted Team Replacement Under Review
+
+An Eventun working-tree artifact based on `9213feb` replaces the pre-alpha team contract and has
+coder-reported isolated verification. This section records that artifact for review; it is not part
+of the committed baseline above and is not deployed to shared development or production.
+
+The artifact removes legacy delete/abdicate, numeric designation, rank, and split pending-request
+RPCs. It provides `Team`, `Teams`, `CreateTeam`, presence-aware `UpdateTeam`,
+`TransferTeamOwnership`, `DisbandTeam`, `AddTeamMember`, `LeaveTeam`, `RemoveTeamMember`,
+`ResolveTeamMembershipAction`, three title/capability/competition-rank updates,
+`MyPendingTeamInvitations`, and `TeamPendingJoinRequests`; `PlayerMe` remains the authenticated
+current-team read. The generated artifact contains 73 ClientService operations, 67 AdminService
+operations, and 4 ServerService operations. Its merged Swagger has 144 operations across 125 paths
+and 331 definitions. Unreal Client has 73 operations/173 definitions, Models has 77
+operations/181 definitions, and GameServer remains limited to 16 operations/181 definitions.
+
+All team classifications use fully prefixed protobuf enums because top-level enum values share
+package scope: membership mode, team lifecycle status, presentation title, capability, action
+kind/state, resolution, and membership outcome follow names such as
+`TEAM_MEMBERSHIP_MODE_OPEN`, `TEAM_STATUS_ACTIVE`, `TEAM_CAPABILITY_MANAGE_MEMBERS`, and
+`TEAM_MEMBERSHIP_OUTCOME_JOINED`. Externally returned action and lifecycle timestamps are signed
+64-bit Unix milliseconds.
+
+`CreateTeam` accepts no caller-selected team or owner UUID. Eventun generates the team identity,
+derives the owner from the authenticated subject, and ensures an ID-only player row before locking
+the creator. Names are trimmed to 4–16 characters, tags are normalized to 2–4 uppercase ASCII
+alphanumeric characters, and colors are normalized uppercase `#RRGGBB`. `UpdateTeam` is an HTTP
+`PATCH` and protobuf presence-aware patch: profile/media authorization applies only to fields that
+actually change, while member-management authorization applies only to an actual membership-mode
+change. A mode change cancels effective pending actions; ownership transfer preserves them.
+
+`AddTeamMember` owns open join, join-request creation, invitation creation, exact UUID/version
+invitation acceptance, and exact UUID/version request approval. `ResolveTeamMembershipAction`
+owns only decline, deny, or cancel and also requires the exact action UUID/version. Neither method
+infers a current action by team/player pair. Action state plus typed outcomes cover successful
+join/create/accept/approve/decline/deny/cancel, capacity, expiry, supersession, and already-handled
+delivery. Deliberate domain failures use stable gRPC statuses; cancellation/deadline mappings are
+preserved and database diagnostics remain private.
+
+The artifact adds only `Team` and `Teams` to the subjectless ClientService allowlist with Eventun
+Server `READ`; every team mutation remains subject-bearing and uses Eventun domain authorization
+without a custom player permission. These two Ascentun reads are not added to GameServer. The
+Ascentun confidential IAM client therefore needs Server `READ` in each deployed environment, with
+no dedicated-server or Studio Admin grant change. `TEAM_MAX_ACTIVE_MEMBERS` defaults to 16 and is
+validated through normal configuration before constructor injection into membership transactions.
+
 ## API Compatibility
 - Eventun consumers use generated HTTP gateway APIs rather than direct protobuf/gRPC transport.
 - Removed protobuf fields do not need `reserved` declarations unless Eventun later exposes direct protobuf/gRPC clients.
 - Treat protobuf definitions as the source for generated gateway shapes, not as a long-lived wire contract for external direct protobuf callers.
-- Current code registers 70 ClientService RPCs, 67 AdminService RPCs, and 4 ServerService RPCs, producing 141 merged HTTP operations across 121 paths and 310 definitions. The ten dedicated-server reads and two shared writes are existing Client operations with alternate effective Server policies, not additional RPC declarations. The three qualification-cutoff operations and four season mutations are Admin-only; season listing is public through ClientService.
+- Current committed code registers 70 ClientService RPCs, 67 AdminService RPCs, and 4 ServerService RPCs, producing 141 merged HTTP operations across 121 paths and 310 definitions. The ten dedicated-server reads and two shared writes are existing Client operations with alternate effective Server policies, not additional RPC declarations. The three qualification-cutoff operations and four season mutations are Admin-only; season listing is public through ClientService.
 - The retired token catalog, manual token registration/sync, team gate-token methods, and their generated gateway operations have been removed. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
 - Mandatory unary and stream auth interceptors require a non-empty JWT `client_id` and place claims, access token, client id, and player subject when present in request context. ClientService authenticates without a blanket Eventun permission; its ten shared reads apply Server `READ` and its two shared writes apply Server `CREATE` only for subjectless callers, while the other Client methods require a player subject. ServerService and AdminService validate their annotated Eventun permissions. Stream handlers receive the enriched context through the wrapped `grpc.ServerStream`, and event ingestion rejects a missing client identity instead of persisting a zero UUID.
 - Eventun uses only the coarse Server and Admin custom resources above; it does not define Client, endpoint-, or domain-specific IAM permissions. Client authorization below the transport boundary remains in Eventun's domain rules.
-- Every `apiAction` variant acquires a database connection before handler execution, including handlers that perform external calls or do not use PostgreSQL.
+- API actions acquire a database connection only for the query, batch, or explicit transaction
+  that needs it; handler execution and external dependency latency do not own a whole-RPC
+  connection.
 - Eventun continues serving the complete merged Swagger v2 document for the Extend contract and Admin UI. The four dedicated-server gauntlet runtime methods live only on ServerService. The ten dedicated-server reads and two shared writes remain single ClientService operations usable by their documented player and authorized subjectless service principals.
 - Unreal Client is a byte-for-byte copy of the 70-operation Client specification across 61 paths with 152 definitions. Models is the deterministic full Client+Server union at 74 operations across 65 paths and 160 definitions; conflicting duplicate paths, definitions, or top-level metadata fail generation. GameServer reuses that union's metadata and definitions but selects only the ten reviewed Client reads, the two shared Client writes, and all four Server operations, producing 16 paths, 16 operations, and 160 definitions. No Admin or merged specification is an Unreal input.
 - `ListSeasons` defaults to all past/current/upcoming regular seasons. `include_off_seasons = true` includes both kinds, ordered by `starts_at` then UUID. Admin create, full-replacement update, conditional title-only update, and delete route catalog mutation through the schedule-locking database functions. A semantic full replacement racing title-only mutation intentionally uses last-writer-wins for title; a failed title-only condition maps to NotFound if the row disappeared and Aborted if its semantics changed. Match History exposes only optional `season_id`, while clients resolve current title and kind through `ListSeasons`. The Extend editor accepts and round-trips explicitly labelled UTC timestamps.
@@ -128,7 +209,7 @@ The Website-facing list/detail contract exposes only `published` and `archived`.
 - Stage admission can return player team context (`team_id`, `team_name`, `team_tag`) when the player is on a team.
 - `PlayerMe` returns the authenticated player's current Eventun team plus pending team invites and join requests. It is the appropriate initial source for a game-client team snapshot.
 - `Teams` currently returns every team with its full roster and has no pagination, query, or lightweight summary response. That shape is retained for the expected current scale, with payload instrumentation used to decide when later search or pagination is justified.
-- `AddTeamMember` deterministically interprets actor, target, the supported `open`, `invite`, and `request` membership modes, pending invitation, and join-request context for open join, request, invite, invite acceptance, and request approval. The next contract should keep one operation but return a typed transition outcome and apply audit/notification intent atomically.
+- `AddTeamMember` deterministically interprets actor, target, the supported `open`, `invite`, and `request` membership modes, pending invitation, and join-request context for open join, request, invite, invite acceptance, and request approval. The approved replacement contract is maintained in the [team experience design](../../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md) until its implementation review is accepted.
 - Existing team mutation APIs return no updated team/player snapshot. A client integration must explicitly refresh or invalidate `PlayerMe`, team detail, and team-list caches after a mutation.
 - Sponsor list/detail, CRUD, and sponsor-owned media administration are assigned to the Eventun Extend App before Website V2 cutover. The Admin surface needs reviewed list/detail reads and an administrator-authorized signed media-upload boundary. Existing sponsor create/update/delete handlers must become atomic, the stale delete reference to nonexistent `gauntlet_media.sponsor_id` must be removed, dependency behavior must be explicit, and sponsors with no media must return an empty collection before the controls are exposed.
 - The current public leaderboard API returns global top N rows, and the player leaderboard API returns one player's ranks. Neither API accepts a team filter or returns complete roster-filtered leaderboard data.

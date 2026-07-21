@@ -7,7 +7,7 @@ Applicability: local-development
 Scope: Eventun and the Ascent Rivals game client. This document does not imply production
 deployment.
 
-Last consolidated: 2026-07-19
+Last consolidated: 2026-07-20
 
 ## Purpose
 
@@ -32,6 +32,10 @@ mechanics remain in [identified match ingestion](identified-match-ingestion.md) 
   merely from a goal being marked as a challenge.
 - Publishing validates requirements, rewards, pool membership, and assignment eligibility
   and creates the complete snapshot atomically.
+- Publication reads one deterministic repeatable-read validation snapshot, releases the database
+  connection for bounded external catalog validation, then locks and directly compares the
+  validation inputs before publishing. A concurrent validation-relevant edit returns `Aborted`
+  and requires a fresh attempt.
 - Goal title and description are localized presentation data. Requirement rules, metric
   codes, dimensions, and reward identities are not localized.
 
@@ -65,6 +69,14 @@ mechanics remain in [identified match ingestion](identified-match-ingestion.md) 
   intentionally rewardless goals create no bundle.
 - Eventun records completion durably before external reward delivery and tracks fulfillment
   attempts independently.
+- Manual, retry, and automatic fulfillment use short prepare and finalize transactions around the
+  bounded external grant. Once prepare commits, finalization uses its own ten-second context so
+  caller cancellation cannot discard the provider outcome. Ambiguous outcomes, attempt history,
+  stable idempotency-key reuse, operator reconciliation, and stale-process recovery remain
+  durable.
+- Automatic processors rely on the atomic prepare state to prevent duplicate grants. Application
+  shutdown stops reward admission, cancels the provider phase, and drains bounded finalization
+  while the database pool remains available.
 - Current external fulfillment can grant configured player items, ARC/currency, and Battle
   Pass XP through AccelByte.
 - Eventun owns validation and fulfillment policy. Operator UIs should use Eventun's normalized

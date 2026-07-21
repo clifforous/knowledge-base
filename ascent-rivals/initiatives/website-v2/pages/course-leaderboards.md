@@ -1,7 +1,8 @@
 # Ascent Rivals Course Leaderboards Page Spec
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved desktop information architecture; one directory-artifact cleanup and course mobile validation remain open
+Last reviewed: 2026-07-20
 
 ## Related
 - [[../unified-design]]
@@ -12,6 +13,7 @@ Status: Draft
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
+- [[ascent-rivals/decisions/README#ar-2026-013--course-discovery-and-course-records-use-separate-routes|course route decision]]
 
 ## Purpose
 
@@ -32,12 +34,15 @@ Working route:
 - `/courses`
 - `/courses/[code]`
 
-Initial route direction:
+Approved route direction:
 
-- use `/courses` for course discovery, search, and cross-course summaries;
-- use `/courses/[code]` for the selected course briefing, category leaderboard, record context, and personal placement;
+- use `/courses` for a compact directory of currently published courses;
+- use `/courses/[code]` for one course briefing, category leaderboard, record context, and personal placement;
 - treat the course code as the stable URL identifier and the display name as mutable presentation data;
-- link directly to course detail from pilot profiles, gauntlets, search results, and cross-course summaries;
+- link directly to course detail from the directory, pilot profiles, gauntlets, and global search results;
+- do not embed a persistent course selector on the detail route;
+- do not add page-local course search, result counts, archive scopes, or cross-course record summaries at the current catalog size;
+- use ordinary route navigation, browser history, and optional framework prefetching rather than an in-place course swap or bespoke transition;
 - preserve the selected leaderboard category in query state so the exact view is shareable.
 
 Query shape:
@@ -61,7 +66,7 @@ Secondary:
 
 ## Page Goals
 
-- make course selection fast
+- make course discovery and detail navigation clear
 - make leaderboard category selection clear
 - foreground best lap and best finish records
 - show personal placement for logged-in users where available
@@ -122,10 +127,12 @@ Terminology note:
 
 Approved public behavior:
 
-- show production-ready courses by default on `/courses` and in public search;
-- provide an `Archived` filter for courses that were previously public and are deliberately retired;
-- keep explicitly archived course detail pages and historical records accessible through direct links;
-- label archived courses clearly and omit current-competition calls to action when they are no longer usable.
+- show only production-ready courses on `/courses` and in public global search;
+- do not show publication-state labels or an archived-course filter in the initial directory;
+- keep explicitly archived course detail pages and historical records accessible through direct
+  links only if the eventual public projection deliberately supports that state;
+- treat archived-course browsing as a later requirement rather than inventing it for a catalog
+  that is not expected to retire courses frequently.
 
 Visibility guardrails:
 
@@ -141,8 +148,9 @@ Visibility guardrails:
 Website-facing API requirement:
 
 - derive visibility on the server from AccelByte source metadata or a controlled cache of that metadata;
-- expose only the stable public values `published` and `archived`;
-- return published courses by default and archived courses only through an explicit archive query/filter;
+- expose only the stable public values `published` and, when deliberately supported for
+  historical deep links, `archived`;
+- return only published courses in directory and global-search collections;
 - return not found for hidden/unreleased course detail requests;
 - feed directories, global search, page metadata, canonical links, and sitemaps from the same public-safe projection;
 - do not use the current unfiltered `GET /v1/course` response directly unless it is revised to enforce this boundary; a purpose-built Website read is acceptable.
@@ -223,16 +231,11 @@ Default category:
 
 - `Race Finish`
 
-Default course:
-
-- first published course with leaderboard data, or
-- a featured/currently relevant course if product/config later supports it
-
 Design guardrail:
 
 - do not show all eight categories as eight full tables at once
 - use accessible tabs or segmented controls with ordinary player-facing labels; command-like text may be secondary decoration but not the only label
-- keep the selected course and selected category obvious at all times
+- keep the current route's course and selected category obvious at all times
 - preserve the selected category in the shareable URL query state
 - if `Race Finish` has no entries, show its honest empty state and make the other categories easy to select; do not silently substitute a different category
 - keep Eventun source selection and validation policy internal; public copy should describe race and time-trial contexts, not server/client implementation or relative trust
@@ -269,13 +272,21 @@ Future direction:
 
 ## V1 Page Structure
 
-Default first-view priority:
+The directory and detail are separate compositions.
 
-1. course selector and selected course identity
-2. active category leaderboard
-3. logged-in personal placement
-4. course metadata and related context
-5. cross-course overview
+Directory priority:
+
+1. command header and route context;
+2. complete published-course collection;
+3. compact footer.
+
+Detail priority:
+
+1. course identity and factual briefing;
+2. selected category controls;
+3. current record and top-five gap context;
+4. logged-in personal placement when available;
+5. exact leaderboard table.
 
 ## Visualization Direction
 
@@ -300,66 +311,52 @@ Deferred until new Eventun contracts exist:
 - historical record-progression timelines;
 - checkpoint or sector performance comparisons.
 
-## 1. Leaderboard Command Header
+## 1. Course Directory
 
 Purpose:
 
-- establish the page as a course record console
+- let a visitor scan the current published-course catalog and open one canonical detail route.
+
+Approved desktop composition:
+
+- one restrained `/courses` command header;
+- a two-column collection of uniform, lightly seamed course entries;
+- course name, planet or location when available, difficulty, and default laps;
+- one approved image or image-neutral signal fallback that does not invent a course map,
+  checkpoint trace, planet illustration, gameplay capture, or live telemetry;
+- a whole-entry link to `/courses/[code]` with the approved directional-chevron affordance.
+
+Directory guardrails:
+
+- render only published courses;
+- do not repeat `Published` on every entry;
+- do not show record times, ranks, leaderboard categories, or cross-course comparison metrics;
+- do not add a page-local search, result count, archived scope, sort control, pagination, or
+  selected-course state at the current catalog size;
+- use the persistent global search for direct course discovery;
+- use one entry silhouette and one internal layout across the collection.
+
+The no-course and failed-directory states remain required implementation states. The reviewed
+default calibration does not retain a hidden search-specific empty state.
+
+## 2. Course Record Command Header
+
+Purpose:
+
+- establish `/courses/[code]` as one canonical course record surface.
 
 Content:
 
-- title such as `Course Leaderboards`
-- selected course
-- selected category
-- search/filter affordance
-- top-N limit if user-facing
-- timestamp or sync label if useful
-
-Tone examples:
-
-- `Course records online`
-- `Select course signal`
-- `Timing board synced`
+- breadcrumb linking `Courses` back to `/courses`;
+- `Course Records` title and current course name;
+- concise explanation that the route shows record times and pilot placement by race or
+  time-trial category;
+- no selected-category repetition, selector, or search control in the header.
 
 Terminal Ops components:
 
 - `HeroBriefing`
 - `PathBar`
-- `StatusTelemetryBar`
-- `CommandSearch`
-
-## 2. Course Selector
-
-Purpose:
-
-- make switching courses fast and visual
-
-Content per course:
-
-- course image when a current approved capture exists
-- generated checkpoint-route trace when geometry is available through an approved website export or data contract
-- display name
-- planet
-- difficulty
-- public lifecycle label when the course is explicitly archived
-- default laps/heats metadata
-- best visible record summary if leaderboard data is available
-
-Interaction:
-
-- select course
-- filter/search by course name or planet
-- show production-ready courses by default
-- expose explicitly archived, previously public courses through an `Archived` filter
-
-Design guidance:
-
-- desktop can use a side rail, horizontal card strip, or compact grid
-- mobile should use a select/list pattern with visible selected course identity
-- do not require bespoke course-map illustration or planet art
-- never surface alpha, internal, or otherwise unreleased courses as archived content
-- fall back to a terminal identity panel and factual metadata when course media and checkpoint geometry are unavailable
-- do not let course art dominate the leaderboard table
 
 ## 3. Selected Course Briefing
 
@@ -374,8 +371,10 @@ Content:
 - description
 - difficulty
 - media
-- laps/heats metadata
-- selected category record summary
+- default laps
+
+Do not show default heats in the public course briefing. Heat count belongs to the configured
+race or gauntlet context rather than this stable course identity summary.
 
 Optional later:
 
@@ -404,17 +403,20 @@ Recommended initial categories:
 Design guidance:
 
 - use concise labels in the UI
-- group Race and Time Trial categories visually so the context remains clear
+- present `Race` and `Time Trial` as the primary context, then `Finish` and `Lap` as the measure;
+- expose `Open`, `3K Class`, and `10K Class` only when `Time Trial` is selected;
+- do not render the eight semantic combinations as eight equal top-level tabs
 - use player-facing context copy such as `Best times set in races` and `Best times set in time trial` only when helper text is needed
 - explain `3K Class` as `Loadout value: 3,000 or less` and `10K Class` as `Loadout value: 10,000 or less`
 - do not expose server/client authority, event submission, validation, or anti-cheat implementation details in public copy
 - preserve selected category in URL query
 
-## 5. Leaderboard Table
+## 5. Record Context and Leaderboard Table
 
 Purpose:
 
-- show the top performers for the selected course/category
+- show the current record, the bounded top-five gap-to-record comparison, and the exact top
+  performers for the selected course/category.
 
 Columns:
 
@@ -446,6 +448,13 @@ Terminal Ops components:
 - `PilotIdentityCell`
 - `TelemetryValue`
 
+Progressive reveal:
+
+- start with 10 rows from one already-fetched bounded collection of 50;
+- `Show 10 more` appends the next ten locally, updates the natural-number shown count, and hides
+  when complete;
+- preserve scroll position and do not add server pagination for this initial bounded board.
+
 ## 6. Personal Placement Strip
 
 Only when the user is logged in and player placement data is available.
@@ -474,28 +483,7 @@ Guardrail:
 
 - do not expose private ELO or rating here
 
-## 7. Cross-Course Overview
-
-Purpose:
-
-- help users discover which published or explicitly archived courses have public records
-
-V1 content:
-
-- course cards with best finish and best lap summary where available
-- current or archived public lifecycle state
-- route/query link to selected course/category
-
-Placement:
-
-- below the selected leaderboard, or
-- used as the default state before a course is selected
-
-Design guidance:
-
-- useful for returning players, but secondary to the selected leaderboard once a course/category is active
-
-## 8. Related Context
+## 7. Related Context
 
 Optional V1/later content:
 
@@ -514,7 +502,7 @@ V1 caution:
 
 | State | Behavior |
 |---|---|
-| Anonymous | can view courses, selected leaderboard, course metadata, and player profile links |
+| Anonymous | can view the course directory and any public course detail, selected leaderboard, course metadata, and player profile links |
 | Logged-in player | same plus personal placement strip when player leaderboard data is available |
 | Admin | same as logged-in; no special admin actions required for V1 unless course administration is added later |
 
@@ -524,7 +512,6 @@ Required states:
 
 - no courses
 - no production-ready courses
-- no explicitly archived courses when the archive filter is selected
 - no leaderboard entries for selected course/category
 - logged-in player has no time for selected course/category
 - failed course fetch
@@ -548,28 +535,29 @@ Guardrail:
 Desktop:
 
 - selected course briefing and leaderboard table should be visible without excessive scrolling
-- course selector can be a side rail, compact grid, or horizontal strip
+- course directory uses the reviewed two-column collection
 - category filter can be tabs or segmented controls
 
 Tablet:
 
-- collapse course selector into a scrollable strip or dropdown
+- reduce the directory to one or two columns according to available width
 - preserve rank, player, and time columns
 
 Mobile:
 
 - stack modules
 - keep login/avatar visible in top bar
-- use a course select/dropdown or compact cards
+- stack directory entries without adding a course dropdown to the detail page
 - table can horizontal-scroll or convert to rank cards
 - preserve rank, player, time, and category
+- validate the exact directory and detail composition in the next Pencil checkpoint
 
 ## SEO and Sharing
 
 The course index should support:
 
-- title: `Course Leaderboards - Ascent Rivals`
-- description focused on course records, lap times, and finish times
+- title: `Courses - Ascent Rivals`
+- description focused on available courses and their record pages
 - canonical `/courses` URL
 
 Each course detail should support:
@@ -614,6 +602,7 @@ These ideas are valuable but should not block V1:
 
 ## Next Steps
 
-- Ask Pencil for one course leaderboard mock using this spec and Terminal Ops.
-- Use the mock to decide whether course selection should be a rail, strip, grid, or dropdown-first pattern.
-- Create companion spec for sponsors.
+- Remove the redundant page-local search and result count from the reviewed directory artifact.
+- Validate the directory and detail routes at mobile width without reintroducing an embedded
+  selector.
+- Review implementation-facing loading, empty, error, stale, and partial-data states.

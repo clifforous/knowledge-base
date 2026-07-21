@@ -1,13 +1,13 @@
 # Ascent Rivals Team Experience And Progression Solution Design
 
-Status: Solution design draft
+Status: Approved; Eventun implementation artifact under review, coordinated deployment pending
 Date: 2026-07-10
 Last updated: 2026-07-20
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: local foundation implementation and rehearsal are complete. T00 remains gated by the coordinated shared-development cutover, and implementation remains gated by runtime hardening. Membership validity and correction semantics below are required inputs to the team qualification capability described in [[team-gauntlets-and-brackets-solution-design]].
+Foundation alignment: local foundation implementation, rehearsal, and runtime hardening are complete and committed. T00 approved this design against that local baseline. An uncommitted Eventun Team Core schema, API, authorization, and pending-migration artifact based on `9213feb` has coder-reported isolated verification and is awaiting implementation review; Ascentun integration and coordinated shared-development deployment remain pending. Membership validity is part of that artifact, while correction tooling remains a required input before attribution-dependent statistics or qualification described in [[team-gauntlets-and-brackets-solution-design]].
 
 ## Related
 
@@ -58,9 +58,15 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 
 ### Eventun
 
-- Eventun owns team records, active roster rows, join requests, invitations, numeric designation, and a separate `team_player.rank`.
-- [`addTeamMember`](https://github.com/ikigai-github/eventun/blob/34b42861f2a698be50b0d7de134881544d072658/internal/eventun/team_api.go#L142-L262) already interprets the actor, target, membership mode, invitation state, and join-request state deterministically.
-- Leaving currently deletes the `team_player` row, so historical team attribution cannot be reconstructed reliably.
+- The shared-development baseline still owns legacy team records, delete-on-leave roster rows,
+  join requests, invitations, numeric designation, and a separate `team_player.rank`.
+- The uncommitted replacement artifact generates team identity, stores explicit owner and
+  active/disbanded lifecycle, retains immutable membership intervals, and separates mutable title,
+  delegated capability, and competition rank; it is not accepted current-system behavior while
+  implementation review remains open.
+- The replacement pending-action model uses stable action UUIDs plus versioned generations and
+  explicit terminal states. It is not deployed until Ascentun can move to the same breaking
+  contract.
 - Team lists currently include complete rosters. That is acceptable for the expected five-to-six-member scale of this iteration.
 - Existing progression goals, counters, assignments, and completions are player-scoped.
 - Existing claimable and automatic reward bundles can deliver AccelByte items, currency, and Battle Pass XP with idempotent transaction tracking.
@@ -91,7 +97,10 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 2. The AccelByte Groups racing-team path is removed from new game-client team flows; it is not synchronized.
 3. Team creation, disbanding, ownership transfer, capability assignment, and team-wide cosmetic administration remain website operations.
 4. The game client supports browse/view, open join, closed-team request and invitation flows, leave, permitted team invitations, and member cosmetic preferences. Gamepad-first browsing ships before optional text search.
-5. `AddTeamMember` remains one operation. Its contextual behavior is made explicit through typed outcomes, atomic transitions, and audit.
+5. `AddTeamMember` owns open join, join-request creation, invitation creation, exact-action invite
+   acceptance, and exact-action request approval. `ResolveTeamMembershipAction` owns only decline,
+   deny, and cancel. Every operation that consumes or resolves an existing action requires its
+   exact UUID and version; omission never selects a current action implicitly.
 6. Team reads remain unpaginated for this iteration. Pagination is introduced only after measured roster or payload size justifies it.
 7. Team titles are presentation metadata. Capabilities authorize actions.
 8. AccelByte Chat is the preferred player inbox and notification delivery system. Eventun owns notification intent and retry state, not a second read-state inbox.
@@ -105,6 +114,21 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 16. An owner may disband the team instead of transferring ownership. Ordinary owner leave remains distinct from disband.
 17. A player may have only one active team.
 18. Actionable team messages persist until their underlying invitation/request expires or the player completes the action. Informational changes use transient notifications unless a later policy identifies a durable-history need.
+19. Team Core discards the invalid pre-alpha team, membership, pending-action, and media state after
+    guarded target preflight; it does not invent owners or historical membership intervals.
+20. The active-roster limit uses Eventun `TEAM_MAX_ACTIVE_MEMBERS`, defaulting to 16. It is not a
+    hard schema constant or per-team setting in Team Core.
+21. Names and tags are case-insensitively unique among active teams and may be reused after
+    disband; durable UUID identity disambiguates history.
+22. Team Core delegates exactly `MANAGE_MEMBERS`, `EDIT_TEAM_PROFILE`, and
+    `MANAGE_COMPETITION_ROSTER`. The owner implicitly has all capabilities and exclusively assigns
+    them, transfers ownership, or disbands.
+23. An actual membership-mode change cancels every effective pending action after locking affected
+    players and actions in the normal deterministic order. An ownership transfer preserves pending
+    actions because they represent team intent rather than personal owner state.
+24. Team Core deliberately defers membership-correction tooling. Before the first
+    attribution-dependent statistics or qualification work, define an audited supersession/void
+    model; every future correction must advance the competition-roster revision.
 
 ## System Context
 
@@ -138,18 +162,25 @@ The team record remains the durable social identity and should hold or reference
 | Field | Purpose |
 |---|---|
 | `team_id` | Eventun-generated stable identifier |
-| `name` and `short_name` | Display identity |
+| `name` and `tag` | Display identity |
 | `owner_player_id` | Explicit owner; do not infer ownership only from title order |
 | `membership_mode` | Open, request, or invite-only; token-gated membership is removed and unsupported |
-| `region_code` | Optional recruiting and scheduling metadata |
-| `time_zone` | Optional IANA time-zone identifier |
-| `recruiting_status` | Open, selective, or closed presentation state |
-| `watch_url` and `community_url` | Validated Twitch, Discord, or approved destination |
-| `title` and `description` | Public team presentation |
+| `status` and `disbanded_at` | Active or terminally disbanded lifecycle without deleting historical identity |
+| Existing team media | Selected existing team-profile media only |
 
-Every active team has exactly one explicit owner. Ownership transfer locks the team and relevant active memberships, changes the owner atomically, and cannot leave zero or multiple owners. Disband is a separate owner-only terminal transition; ordinary owner leave does not implicitly disband or choose a replacement.
+Every active team has exactly one explicit owner. Ownership transfer locks the team and relevant active memberships, changes the owner atomically, and cannot leave zero or multiple owners. Existing pending actions survive transfer because they represent team intent. Disband is a separate owner-only terminal transition; ordinary owner leave does not implicitly disband or choose a replacement. Disband closes every active membership interval, cancels pending membership actions, excludes the team from normal active browsing, and retains the team row and stable id for attribution and competition history. Hard deletion is not an ordinary lifecycle operation.
 
-Region, time zone, recruiting state, links, and uploaded team media are edited on the website.
+Name and tag uniqueness is case-insensitive among active teams. A disbanded team's name and tag may
+be reused; historical membership and competition evidence remains attached to the retained UUID,
+not inferred from display identity.
+
+`membership_mode` is the authoritative membership-admission policy. When it actually changes, the
+same transaction locks and cancels every effective pending invitation and request, records the
+transition in audit, and applies the new mode. A request that leaves the mode unchanged does not
+cancel pending work. Recruiting metadata remains deferred from Team Core.
+
+Team Core retains website editing for the selected existing profile fields and media. Region, time
+zone, recruiting state, links, new cosmetics, and broader description metadata remain later work.
 
 ### Membership History
 
@@ -157,16 +188,30 @@ The current delete-on-leave model must become validity-based before progression 
 
 | Field | Purpose |
 |---|---|
-| `membership_interval_id` | Stable identity retained through correction and referenced or copied by attribution evidence |
+| `membership_interval_id` | Stable identity retained for future attribution evidence |
 | `team_id` and `player_id` | Membership identity |
 | `joined_at` | Inclusive membership start |
 | `left_at` | Null while active; exclusive end after departure |
-| `title_code` | Gameplay-facing title at the current or versioned interval |
-| `competition_rank` | Optional stage-admission priority, not an authorization input |
 | `created_by` and `ended_by` | Audit actors |
-| `reason` | Join, invite, removal, leave, transfer, or administrative correction |
+| `reason` | Team creation, open join, accepted invitation, approved request, removal, leave, or disband |
 
-For this pre-alpha iteration, the existing row may be migrated into an interval table or replaced by an active-membership table plus immutable history. The chosen shape must enforce at most one active team membership per player and nonoverlapping validity intervals. Historical correction must retain an audit trail and advance an attribution revision, or produce an equivalent exact interval fingerprint, so a team qualification preview cannot publish against silently changed membership evidence.
+Membership validity is immutable evidence and must not be split merely because a title,
+capability, or competition rank changes. Keep those mutable current values in separate membership
+state with exact audit rows. A team competition-roster revision advances for active membership
+join/end, competition-rank changes, explicit eligibility changes when added, and disband; cosmetic,
+title-only, capability, and pending-request changes do not advance it. A future correction must
+also advance it.
+
+Team Core replaces the old membership shape and discards the invalid pre-alpha team state after a
+guarded target preflight. It does not synthesize owners, join times, or historical membership.
+Ascentun sessions that cache discarded team identity are invalidated or versioned at the cutover.
+The replacement shape enforces at most one active team membership per player and nonoverlapping
+half-open validity intervals. Team Core does not implement historical correction: immutable
+interval rows cannot yet express exact old and new corrected evidence. An audited
+supersession/void model must be selected before team-attributed statistics or qualification ships.
+That later work will store selected `team_id` and `membership_interval_id` in attribution evidence,
+advance the team roster revision for corrections, and leave general match facts without team
+identity.
 
 ### Titles And Capabilities
 
@@ -178,6 +223,17 @@ Titles and permissions are separate concepts:
 - a recruiter does not need to be the owner or team leader;
 - the game client may expose invite actions only when Eventun reports the effective capability;
 - assignment of titles and capabilities remains on the website in this iteration.
+
+The approved Team Core capability vocabulary is deliberately small:
+
+- `MANAGE_MEMBERS` for invitation, request disposition, and removal of ordinary members;
+- `EDIT_TEAM_PROFILE` for public metadata and media already managed by Ascentun; and
+- `MANAGE_COMPETITION_ROSTER` for competition rank and later explicit roster state.
+
+The owner implicitly has every team capability and exclusively controls capability assignment,
+ownership transfer, and disband. Titles grant no capability, and competition rank grants no
+administrative authority. This vocabulary is approved for Team Core. Add a cosmetic-specific
+capability only when cosmetic administration is implemented.
 
 The current numeric designation path should be replaced directly after the new model is ready. Do not retain numeric designation as a hidden authorization fallback.
 
@@ -201,14 +257,27 @@ The caller should not reproduce that state machine merely to select an RPC name.
 The operation should:
 
 1. derive the actor from authentication;
-2. lock the relevant team, active membership, invitation, and request rows;
+2. lock the team first, then affected player rows in UUID order, then membership and action rows in
+   stable identity/version order;
 3. evaluate exactly one transition;
 4. apply it transactionally;
 5. return a typed outcome;
-6. append audit and notification intent in the same transaction;
+6. append audit in the same transaction and, only after notification delivery is selected, append
+   notification intent to the outbox in that transaction;
 7. treat invitations and join requests as valid only before their expiry boundary;
 8. renew or replace expired pending state when the actor repeats a valid action rather than preserving the stale row;
-9. consume or cancel pending state atomically with membership, membership-mode, leave, removal, ownership-transfer, and disband transitions.
+9. consume or cancel pending state atomically with membership, membership-mode, leave, removal,
+   and disband transitions; preserve it across ownership transfer;
+10. address accept, approve, decline, and cancel to an exact stable pending-action id and version,
+    so an old notification cannot operate on a later request for the same team and player;
+11. recheck the active-roster limit inside the membership transaction; pending invitations do not
+    reserve capacity; and
+12. cancel or supersede the player's pending actions for other teams when they join one team.
+
+The namespace-level active-roster limit uses Eventun `TEAM_MAX_ACTIVE_MEMBERS`, defaults to 16,
+and is not embedded in a database constraint. The locked membership transaction enforces the
+configured value. Lowering it below an existing roster does not eject members; it blocks additions
+until the roster is below the limit.
 
 Recommended outcome values:
 
@@ -220,8 +289,42 @@ Recommended outcome values:
 | `INVITE_ACCEPTED` | Target accepted an existing invitation |
 | `JOIN_REQUEST_APPROVED` | Authorized member accepted an existing request |
 | `ALREADY_MEMBER` | Idempotent no-op for an existing membership |
+| `TEAM_FULL` | The active-roster limit was reached before the membership transition committed |
+| `EXPIRED` | The addressed pending action expired |
+| `SUPERSEDED` | A newer pending-action generation replaced the addressed action |
+| `ALREADY_HANDLED` | The exact pending action already reached a terminal state |
+| `INVITATION_DECLINED` | The invited player declined the exact invitation |
+| `JOIN_REQUEST_DENIED` | An authorized member denied the exact join request |
+| `ACTION_CANCELLED` | The authorized origin side cancelled the exact action |
 
 Invalid or ambiguous transitions return a typed error. Decline, cancel, remove, and leave may remain separate mutations because they do not mean “add this person,” but they should share the same transition and audit layer.
+
+`AddTeamMember` performs the five additive transitions above. Existing-action acceptance or
+approval requires `TeamMembershipActionReference { action_id, version }`.
+`ResolveTeamMembershipAction` accepts only typed decline, deny, or cancel resolutions and always
+requires the same exact action UUID and version. Neither RPC infers an action by team/player pair.
+If an `AddTeamMember` call would consume an invitation or join request but omits that reference,
+it returns `InvalidArgument` rather than locating a current action implicitly. Decline is available
+to the invited player, deny to the owner or a member with `MANAGE_MEMBERS`, and cancel to the
+requester for their own request or to the owner/`MANAGE_MEMBERS` actor for a team invitation.
+
+The breaking protobuf uses fully prefixed enum values because top-level enum values share package
+scope: membership mode, team status, presentation title, capability, action kind/state,
+resolution, and membership outcome all follow names such as
+`TEAM_MEMBERSHIP_MODE_OPEN` and `TEAM_MEMBERSHIP_OUTCOME_JOINED`. Externally returned lifecycle
+and action timestamps are signed 64-bit Unix milliseconds. `UpdateTeam` is a presence-aware patch;
+optional scalar presence distinguishes omission from replacement, and the media wrapper
+distinguishes omission from explicit clearing. At least one field must be supplied. The transaction
+locks the team, normalizes and compares the requested values, and authorizes only actual semantic
+changes: profile/media requires `EDIT_TEAM_PROFILE`, membership mode requires `MANAGE_MEMBERS`, and
+a mixed patch requires both. The owner implicitly satisfies both. A normalized no-op emits no
+audit, but the caller must still be an active member. Team names are trimmed and 4–16 characters,
+tags are trimmed 2–4 ASCII alphanumeric characters normalized to uppercase, and colors are
+normalized uppercase `#RRGGBB` values.
+
+Team creation first ensures the authenticated creator has an ID-only `player` row, then locks that
+player before enforcing one active membership and creating the owner interval. This handles the
+valid interval between authentication and scheduled profile synchronization.
 
 ### Transition Examples
 
@@ -251,6 +354,23 @@ The game client needs:
 - team progression summary only after progression is approved.
 
 For current scale, full-roster reads and client-side filtering are deliberate. Add payload instrumentation now so pagination can be introduced from evidence rather than from a hypothetical thousand-member team.
+
+`MyPendingTeamInvitations` is player-scoped across teams. Recruiter pending-request reads remain
+team-scoped and capability-protected. Stable pending ids and versions are returned on both paths.
+If request and invite modes are omitted from an implementation cutoff, these reads and writes are
+omitted together rather than exposing actions without discovery.
+
+### Authentication And IAM
+
+- Authenticated players need no custom Eventun permission for team mutations; Eventun derives the
+  actor and evaluates team ownership or delegated capabilities.
+- Ascentun's public directory and team-detail server loaders use a subjectless client-credentials
+  token. Eventun permits only `Team` and `Teams` for that caller with Eventun Server `READ`, and
+  the Ascentun confidential IAM client needs that grant in each deployed environment.
+- Team writes from Ascentun forward the authenticated player's bearer token rather than using the
+  confidential client as a team administrator.
+- Dedicated-server IAM grants do not change for Team Core. AccelByte Chat Inbox permission is not
+  added until notification delivery is implemented.
 
 ### Team-Filtered Leaderboard
 
@@ -543,14 +663,21 @@ The knowledge-base task defines the required output. The extraction itself shoul
 
 ### Slice A: Canonical Team State
 
-- Eventun-backed client subsystem;
-- remove new-flow dependency on AccelByte Groups;
-- current team, team detail, and roster reads;
-- player relation resolver and session snapshot use;
-- membership history migration.
+- deliver with the core website-facing membership transitions as one breaking Eventun and
+  Ascentun deployment unit;
+- replace team identity, owner, membership, pending-action, title, capability, rank, and audit
+  state without a legacy compatibility branch;
+- provide browse, team detail, current team, roster, and exact pending-state reads;
+- update the existing Ascentun administration and membership flows and remove stale token-gating
+  and numeric-designation artifacts;
+- regenerate Eventun, Swagger, Unreal Client/Models, and Ascentun contracts together; and
+- defer the Eventun-backed game-client subsystem, AccelByte Groups removal, player relation
+  resolver, and new client menus to the selected client slice.
 
 ### Slice B: Visible Team Presence
 
+- Eventun-backed client team subsystem and shared player relation resolver;
+- remove the new-flow dependency on AccelByte Groups once the replacement client state works;
 - minimap teammate marker;
 - bounty-beam teammate treatment after Blueprint inspection;
 - lobby, profile, pre-race, spectator, and post-match identity;
@@ -558,11 +685,11 @@ The knowledge-base task defines the required output. The extraction itself shoul
 
 ### Slice C: Discovery And Membership
 
-- browseable team list and detail;
-- open join, closed request, invitation, accept or decline, leave;
-- typed `AddTeamMember` outcome;
-- website-only capability management;
-- AccelByte Chat inbox actions.
+- game-client browseable team list and detail over the Team Core reads;
+- game-client open join, closed request, invitation, accept or decline, and leave over the Team
+  Core typed transitions;
+- website-only capability management; and
+- AccelByte Chat inbox actions only after the separate notification delivery slice.
 
 Text search is optional last-mile work after controller browsing is validated.
 
@@ -664,7 +791,7 @@ Capture screenshots or short recordings for presentation and animation review.
 | E23 | Are team challenges extensions of Eventun goals or a separate definition type? | Reuse requirement evaluation and publication where possible, but keep team subject and reward semantics explicit |
 | E24 | Which rewards are team-owned versus granted to individual members? | Team level unlocks team cosmetics; individual economy rewards require explicit activity eligibility |
 | E25 | Does a member who joins during an active challenge contribute immediately and share the team unlock? | Contribute from join time; receive team-owned unlock access while active, but no retroactive personal reward |
-| E26 | How are rewritten or corrected historical matches attributed after a player changes teams? | Attribute using trusted event time and membership intervals, with an operator correction path |
+| E26 | How are rewritten or corrected historical matches attributed after a player changes teams? | Attribute using trusted event time and membership intervals; before this behavior ships, add the separately reviewed audited supersession/void model because Team Core has no correction path |
 | E27 | Should team contribution facts be recalculated after a telemetry rewrite? | Yes; rebuild match-keyed facts before reconciling irreversible external rewards |
 
 ### Public Data And Administration

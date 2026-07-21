@@ -3,16 +3,18 @@
 Status: in-progress
 Status detail: The production-scale local rehearsal and populated API/performance smoke are
 complete. Shared-development cutover is intentionally waiting for the next game-client main
-integration; runtime hardening remains required before team implementation or production
-release.
+integration. The schema-neutral runtime-hardening correction is committed at Eventun `9213feb`
+and verified for local development. The coordinated shared-development cutover remains the
+unfinished deployment gate before enabling Team Core in a shared environment or releasing to
+production; T00 reapproval and isolated Team Core implementation work may proceed locally.
 
 Last consolidated: 2026-07-20
 
 ## Outcome And Boundary
 
-Move the accepted identified-match, serving-projection, and season foundation into the shared
-development environment once the coordinated game-client contract is ready, then close the
-remaining runtime resource boundaries before beginning team implementation.
+Move the accepted identified-match, serving-projection, season, and runtime-hardening foundation
+into the shared development environment once the coordinated game-client contract is ready, then
+validate the combined runtime before enabling Team Core there.
 
 This plan does not authorize a production migration or release. Physical telemetry retention,
 archive, and restore policy remain in the separate
@@ -26,6 +28,10 @@ archive, and restore policy remain in the separate
   resettable migrated snapshot is retained, and populated API plus representative query-plan
   smoke passed.
 - No shared development or production database was changed by that rehearsal.
+- The schema-neutral runtime-hardening correction is committed in Eventun at `9213feb`, including
+  the follow-up review corrections. The complete ordinary verification gate,
+  full Go tests, focused race tests, vet, generated-contract checks, and the linux/amd64 service
+  build pass without a database rehearsal or shared-environment access.
 - Applying the accepted transition to shared development, removing the legacy runtime paths,
   and validating the coordinated service/game-client behavior remain unfinished.
 - The one-time conversion machinery remains temporary but must stay available until the
@@ -89,31 +95,44 @@ This is the durable remainder formerly tracked as F15B.
 
 ## Runtime Resource And Service-Boundary Hardening
 
-This is the durable remainder formerly tracked as H01. It may proceed while the team design
-checkpoint runs, but it must complete before team implementation or any production release.
+This is the completed schema-neutral correction formerly tracked as H01. It remains deliberately
+sized for one Eventun Extend instance and did not add repositories, distributed scheduler
+ownership, durable delivery infrastructure, or broad package movement.
 
-- Replace whole-RPC database connection ownership with query- or transaction-scoped acquisition.
-  Database-free endpoints must not acquire a connection, and external service latency must not
-  retain one.
-- Revalidate manual and automatic reward fulfillment as short prepare and finalize transactions
-  with no pool connection held during the external grant call.
-- Configure explicit PostgreSQL pool limits, acquisition behavior, and pool telemetry from
-  measured concurrency rather than an arbitrary large default.
-- Add header, read, write, and idle bounds to gateway and metrics HTTP servers.
-- Give progression and reward schedules an explicit singleton/reschedule or bounded-concurrency
-  policy. Preserve progression lease/token fencing and replace any ineffective autocommit reward
-  preselection lock with a durable short claim or remove it.
-- Replace the mutable process-global AccelByte namespace with constructor-injected immutable
-  configuration.
-- Introduce typed domain errors and stable transport mapping incrementally as affected packages
-  are touched. Distinguish absence, conflicts, authorization denial, and infrastructure failure
-  without exposing raw database errors.
-- Keep this work behavior-focused. Relocate packages only when establishing one of these
-  boundaries requires it.
+### Current-State Incorporation
 
-Completion requires evidence that external latency cannot pin database capacity, scheduled work
-has a measured concurrency budget, HTTP resources are bounded, configuration is immutable after
-construction, and client-visible failures are stable.
+Accepted runtime behavior is incorporated into the current-system documents rather than retained
+as an initiative-only contract:
+
+- database, dependency, HTTP, scheduling, configuration, shutdown, and typed-error boundaries are
+  in [Eventun API](../../system/eventun/api.md#runtime-resource-and-failure-boundaries);
+- publication and reward prepare/external/finalize behavior is in
+  [Eventun progression](../../system/eventun/progression.md);
+- ambiguous AccelByte session creation and same-identity reconciliation are in the
+  [gauntlet stage runtime contract](../../system/eventun/gauntlet-stage-runtime-contract.md); and
+- bounded best-effort post-ingest dispatch is in
+  [identified match ingestion](../../system/eventun/identified-match-ingestion.md).
+
+The verification evidence below remains initiative evidence and does not imply deployment.
+
+### Local Verification
+
+- Focused deterministic tests cover capacity-one connection release, reward cancellation and
+  finalization states, shutdown admission and pool-close ordering, concurrent automatic grants,
+  ambiguous gauntlet create/reconcile without a duplicate create, persisted same-identity reclaim
+  after the allocation lease, production AccelByte response mapping, publication lock release and
+  stale-snapshot rejection, singleton schedules, request deadlines, pool behavior and metrics,
+  immutable namespace instances, team/gauntlet query failure mapping, enforced asynchronous
+  post-ingest composition, and bounded post-ingest shutdown.
+- `go test -count=1 ./...`, relevant `go test -race` packages, `go vet ./...`, generation and
+  source-contract checks, Unreal specification composition, shell syntax, formatting, module
+  stability, and the CGO-disabled linux/amd64 build passed locally.
+- The guarded-database documentation contract now reads the durable Historical Cutover Runbook
+  and checks stable structure rather than exact prose: repository links, quiescence/confirmation/
+  apply headings, the guarded production-delta command, and its target-bound confirmation token.
+  The obsolete disposable-baseline confirmation remains forbidden. The full `./scripts/verify.sh`
+  gate passes. No schema verification or database rehearsal was run because this correction did
+  not change SQL.
 
 ## Production Release Boundary
 
@@ -131,12 +150,15 @@ completion does not authorize it.
 
 ## Dependencies
 
-- The teams T00 design checkpoint starts after the shared-development cutover succeeds.
-- Runtime hardening may overlap T00 but must finish before T01/T02 or any other team
-  implementation begins.
+- The teams T00 design checkpoint is approved against the committed local foundation and retained
+  migrated database. Reconfirm its implementation assumptions after the shared-development
+  cutover rather than repeating the design checkpoint.
+- Local T01/T02 implementation and isolated verification may proceed against the committed
+  foundation. Enabling the combined implementation in shared development remains gated by the
+  successful cutover and runtime smoke.
 - Physical retention and archive choices are not prerequisites for teams.
-- Production release requires shared-development acceptance, runtime hardening, and an explicit
-  owner-selected window.
+- Production release requires shared-development acceptance and an explicit owner-selected
+  window.
 
 ## Evidence And Related Knowledge
 
@@ -146,3 +168,4 @@ completion does not authorize it.
 - [Insights, progression, and seasons review](../../sources/analysis/eventun-insights-progression-seasons-review.md)
 - [Teams delivery plan](../teams-and-team-gauntlets/delivery-plan.md)
 - [Ascent Rivals decision log](../../decisions/README.md#ar-2026-007--coordinate-development-cutover-with-the-game-client-mainline)
+- [Team Core sequencing decision](../../decisions/README.md#ar-2026-015--local-team-core-implementation-may-precede-shared-development-cutover)

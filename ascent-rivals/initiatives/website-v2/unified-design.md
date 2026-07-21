@@ -3,6 +3,7 @@
 Date: 2026-04-10
 Status: Draft
 Framework decision updated: 2026-07-15
+Last reviewed: 2026-07-20
 
 ## Related
 - [[ascent-rivals/system/overview|ascent-rivals-overview]]
@@ -341,7 +342,7 @@ This section captures the current page-priority model so the design work can sta
 - `/teams/[id]`
   - public team detail with management affordances when authorized
 - `/courses`
-  - course discovery, search, and cross-course summaries
+  - compact published-course discovery; persistent global search supplies direct course lookup
 - `/courses/[code]`
   - shareable course briefing, category leaderboard, records, and pilot placement context
 
@@ -557,8 +558,8 @@ The public player page should evolve beyond a simple stat card.
 - exact per-course leaderboard positions and gauntlet standings in their scoped contexts
 - finish times and lap times by course
 - gauntlet/tournament performance context
-- completed public Eventun achievements/masteries
-- known Eventun gameplay-medal totals through a safe public presentation contract
+- optional authorized own-profile career detail and recognition only after that reversible
+  boundary is approved
 
 ### Ranking privacy model
 
@@ -587,13 +588,23 @@ The current default player-page structure is:
 - Course Stats
 - Recent Races
 - Gauntlets, presented as `Gauntlet History`
-- Achievements & Medals
 
 This can be implemented as tabs, stacked sections, or a responsive hybrid, but the information model should remain stable.
 
-The initial `Gauntlet History` is a compact structure-aware collection rather than one cross-gauntlet performance chart. Active gauntlets with real public player results appear first; completed entries follow in order of the player's latest actual participation. Qualifier standing, accepted stage placement, and generic race participation remain separate result types. Invitation, eligibility, admission, group, and status-only state are not public profile history. Eventun should provide this as one Website-oriented projection with presentation metadata and explicit result presence rather than require browser-side N+1 composition.
+The initial `Gauntlet History` is a compact structure-aware collection rather than one
+cross-gauntlet performance chart. It contains exactly the three gauntlets with the player's
+latest actual participation. Lifecycle state is a row attribute rather than a sorting group.
+Qualifier standing, accepted stage placement, and generic race participation remain separate
+result types. Invitation, eligibility, admission, group, and status-only state are not public
+profile history. Eventun should provide this as one Website-oriented projection with
+presentation metadata and explicit result presence rather than require browser-side N+1
+composition.
 
-The initial `Achievements & Medals` section presents completed public Eventun achievements and masteries before known gameplay-medal totals. It is text-first and may use approved authored presentation assets when available. It does not infer trophies from stage placements or expose active challenges, incomplete progress, raw counters/dimensions, source identifiers, or reward data. Eventun should provide a purpose-built public recognition projection and explicit historical-coverage metadata when medal totals are not complete career totals.
+The reviewed anonymous-public calibration omits overall Total and Average Circuit Points, play time,
+credits/economy, detailed combat/objective totals, achievements, and medals. Those remain
+reversible own-profile candidates. If approved later, they require a purpose-built authorized
+response that never enters the shared public cache; the Website must not receive them in the
+public response and merely hide them in the browser.
 
 Default first-view priority:
 
@@ -1074,26 +1085,35 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 ### 3. Public player experience redesign
 
 - richer player overview
+- Matches, Podiums, Podium Rate, and Ascension Rate as the public career lead
 - course stats
-- structure-aware gauntlet history
-- achievements and gameplay medals
+- bounded recent races and three-entry structure-aware gauntlet history
+- candidate private career detail and recognition only through a later approved own-profile
+  overlay
 - no global rank/history module until a separate Eventun public-division design is approved
 
-### 4. Public team experience redesign plus preserved management workflows
+### 4. Public course discovery and record experience
+
+- compact `/courses` published-course directory
+- canonical `/courses/[code]` briefing and category leaderboard
+- bounded top-five gap context and exact record table
+- authenticated personal placement when available
+
+### 5. Public team experience redesign plus preserved management workflows
 
 - richer public team pages
 - team stats and historical results
 - improved team management UX
 - preserved invite, join-request, and roster-management flows
 
-### 5. Marketing and editorial content foundation
+### 6. Marketing and editorial content foundation
 
 - `/` marketing homepage
-- optional `/features`, `/media`, `/courses`, `/press`
+- optional `/features`, `/media`, and `/press`
 - homepage announcements and brand modules
 - Steam CTA and social-link integration
 
-### 6. Sponsor and partner presentation
+### 7. Sponsor and partner presentation
 
 - administrator-only sponsor registry/detail and media management in the Eventun Extend App
 - approved sponsor relationship display in public gauntlet context without a public sponsor profile link

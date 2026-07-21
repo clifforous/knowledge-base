@@ -177,7 +177,7 @@ Good:
 - `View Standings`
 - `Join Team`
 - `Accept Invite`
-- `Sign in with Steam`
+- `Sign in`
 
 Optional terminal treatment can appear around the action, but the action label should remain clear.
 

@@ -18,13 +18,19 @@
 
 ## Review Snapshot
 
-The team-specific code review baseline remains 2026-07-15. Later foundation knowledge is reconciled through the accepted Eventun season and retained-data correction at `37c0307`, including one successful production-scale local cutover rehearsal and populated smoke. Those later changes did not implement the team, slot, or bracket gaps listed here, and shared-development cutover remains pending:
+The team-specific code review baseline remains 2026-07-15. Later accepted foundation knowledge is
+reconciled through Eventun `9213feb`, including historical conversion, retained-data smoke, and
+runtime hardening. Shared-development cutover remains pending, and Team Core is an unfinished
+initiative rather than current-system behavior:
 
-- Eventun team behavior was originally inspected at `5aaaea2`; the foundation and season implementation is reconciled through `37c0307`
+- Eventun team behavior was originally inspected at `5aaaea2`; foundation, season,
+  historical-conversion, and runtime-hardening are reconciled through `9213feb`
 - Ascentun team behavior was inspected on `dev` at `a0a40ad`
 - Ascent Rivals game-client/server source, focused on gauntlet stage admission, session joins, team presentation, minimap behavior, party integration, and inbox behavior
 
-This note captures known implementation facts for T00. T00 must recheck the live repositories after the coordinated development cutover; this note is not final product design.
+This note captures the implementation facts used by the approved T00 checkpoint. T00 revalidated
+the committed local repositories; affected contracts still require a narrow reconfirmation after
+the coordinated development cutover. This note is not the proposed product design.
 
 ## Confirmed Current Behavior
 
@@ -54,7 +60,23 @@ The active create/edit forms intentionally filter out `token_gated`, but the che
 
 The current active route/component graph calls the legacy create, update, membership, invitation, ownership-transfer, roster rank/designation, and disband writes. No tracked workflow or deployment metadata, authenticated deployment history, or runtime access evidence was available in the review, so checked-in reachability is fact while deployment and production use remain unproven. On 2026-07-15 the owner explicitly selected temporary-risk option 2: leave those writes unchanged until the team-authority work, with no feature flag, compatibility layer, temporary safety patch, or numeric-designation extension. A future authority integration may replace this workflow through a breaking Ascentun change.
 
+Ascentun's public team directory and detail loaders use a client-credentials token. Eventun
+`9213feb` does not include `Team` or `Teams` in its subjectless ClientService allowlist, so the
+checked-in website reads and committed Eventun authorization boundary do not match. The approved
+replacement authorization contract remains in the
+[team experience design](../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md)
+until its implementation review is accepted.
+
 Current implication: team `rank` exists and is editable, but it is only ordinary roster metadata today. It is not yet materialized into gauntlet-stage candidate lists or enforced by Eventun as a team-stage admission order.
+
+An uncommitted Eventun artifact under implementation review replaces that baseline locally with
+explicit active/disbanded ownership, immutable nonoverlapping membership intervals, separate
+titles/capabilities/competition rank, exact versioned membership actions, retained audit, and a
+bounded roster revision. Its additive membership operations and resolve-only operations have the
+exact UUID/version boundary documented in the team initiative. Coder-reported isolated schema,
+migration, authorization, access-plan, and concurrency verification has passed; this evidence does
+not make the artifact committed, independently accepted, or deployed, and Ascentun still targets
+the legacy contract.
 
 ### Game-client team and social surfaces
 
@@ -71,7 +93,13 @@ The proposed green teammate minimap marker is partially stubbed:
 - `DecoratePlayerIcon` currently paints the spectated racer blue and every other racer red
 - the current minimap path does not compare the local/spectated player's team index with the target player's team index, so the green color is unused
 
-The generated Eventun client specification already exposes team list/detail/create/update, membership, pending-request, designation, and rank operations. `HGTeamMenu` and `HGNoTeamMenu` routes exist, but their reviewed C++ implementations are stubs, and no Eventun-backed Ascent Rivals team subsystem was found. Blueprint presentation still requires visual verification. The current Eventun team list API returns the full team list with full rosters. That contract is acceptable for the expected five-to-six-member teams in this iteration; a gamepad-first browser should precede optional text search, and payload size should be measured before later pagination work.
+The generated Eventun client specification exposes team list/detail/create/update, membership,
+pending-request, designation, and rank operations. `HGTeamMenu` and `HGNoTeamMenu` routes exist, but
+their reviewed C++ implementations are stubs, and no Eventun-backed Ascent Rivals team subsystem
+was found. Blueprint presentation still requires visual verification. The current Eventun team
+list API returns the full team list with full rosters. That contract is acceptable for the expected
+five-to-six-member teams in this iteration; a gamepad-first browser should precede optional text
+search, and payload size should be measured before later pagination work.
 
 The game client currently has two different team paths:
 
@@ -155,11 +183,11 @@ The current PostgreSQL model has additional constraints relevant to both team pr
 - the foundation implementation adds stable match-batch ids, event ids, producer sequence, source classification, artifact association, and idempotent acceptance while preserving source/event-type partitions
 - accepted batches now derive one current narrow match/heat/player/progression fact graph and idempotent serving projections transactionally; detailed lap/checkpoint rows remain only in raw partitions
 - leaving a team deletes `team_player`, so membership at historical event time cannot be reconstructed
-- F13 now consumes normalized progression facts through idempotent contributions and bounded, lease-backed workers
-- F14 now maintains ordinary player record/career and gauntlet contribution/projection tables synchronously, with accepted-batch serialization followed by ordered player and gauntlet locks plus a gap-free semantic revision shared by accepted changes, configuration changes, repairs, and rebuilds; the fingerprint includes the top-level projection configuration and every exact contribution/evidence identity, while only proven identical no-ops preserve the revision; batch/player and qualifier-leading child indexes bound fact-repair and qualifier-deletion cascades
+- normalized progression facts now feed idempotent contributions and bounded, lease-backed workers
+- ordinary player record/career and gauntlet contribution/projection tables are maintained synchronously, with accepted-batch serialization followed by ordered player and gauntlet locks plus a gap-free semantic revision shared by accepted changes, configuration changes, repairs, and rebuilds; the fingerprint includes the top-level projection configuration and every exact contribution/evidence identity, while only proven identical no-ops preserve the revision; batch/player and qualifier-leading child indexes bound fact-repair and qualifier-deletion cascades
 - all eight leaderboard and four gauntlet native materialized views, their refresh procedure, and the hourly pg_cron schedule are retired from the canonical schema and product reads
 - individual circuit-points qualification cutoff preview/publish/replace creates immutable versioned entry, qualifier, and selected-match evidence at an exact projection revision/schema/projector tuple; first stage-run claim binds only a snapshot current with the locked live tuple, same-session retry returns that stored binding, and runtime uses the frozen cutoff/circuit; allocation and update share gauntlet-before-stage lock order, update preserves all stage parents with run/history rows and edits open/invite stages in place, and a full-replacement omission of a run-backed stage fails before mutation, while the stricter cutoff-configuration freeze applies only to qualification-bound stages
-- F15 has not started: legacy `server_event` and `client_event` relations, remaining legacy reads, and the `internal/` package tree remain; no production backfill or destructive event cutover is complete
+- the one-time historical conversion and destructive-cutover implementation is locally complete and production-scale rehearsed; it has not been applied to shared development or production, and its temporary machinery remains until the production cutover succeeds
 - stage admission invokes broad `gauntlet_stats` calculation and filters to one player rather than reading a resolved slot
 - `gauntlet_stage_placement` includes `stage_run_id` but its primary key is still gauntlet, stage, and player
 - progression jobs now use token-fenced two-minute leases, bounded exponential backoff, five-attempt dead-lettering, and one-at-a-time claiming; all fact application, challenge rebuilding, goal evaluation, completion, and reward-record creation serialize on the player row
@@ -246,7 +274,7 @@ The following are not implemented in the reviewed code:
 
 ## Recommended Near-Term Order
 
-1. Use the implemented compact complete-match facts and F14 individual gauntlet contributions as inputs; add membership validity intervals and stage-run-scoped result identity.
+1. Use the implemented compact complete-match facts and individual gauntlet contributions as inputs; add membership validity intervals and stage-run-scoped result identity.
 2. Add membership-attributed team qualification contributions and configurable top-N team standings without collapsing history through current membership.
 3. Resolve allocation rules into concrete player-owned and team-owned racer slots.
 4. Add indexed admission plus dedicated-server provisional occupancy, replacement, and roster lock.

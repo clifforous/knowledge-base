@@ -1,8 +1,11 @@
 # Teams and Team Gauntlets Initiative
 
-Status: proposed
-Status detail: Program and solution designs are retained, but T00 reapproval waits for the
-coordinated Eventun shared-development cutover and implementation waits for runtime hardening.
+Status: in-progress
+Status detail: T00 is approved against the committed local Eventun foundation, with Team Core
+selected as the first implementation cutoff. An uncommitted Eventun implementation artifact based
+on `9213feb` exists and has coder-reported isolated verification, but implementation review and the
+Ascentun half remain unfinished. Coordinated Eventun and Ascentun deployment remains blocked on
+the shared-development cutover and combined runtime smoke.
 
 Last consolidated: 2026-07-20
 
@@ -17,12 +20,12 @@ authorized by this initiative.
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Existing Eventun and Ascentun team identity/lifecycle baseline | `implemented` | [Current team and gauntlet state](../../system/team-gauntlet-current-state.md) plus linked repository evidence | Known local-development code state; shared-development and production use are unproven | Revalidate the live repositories during T00 |
+| Existing Eventun and Ascentun team identity/lifecycle baseline | `implemented` | [Current team and gauntlet state](../../system/team-gauntlet-current-state.md) plus linked repository evidence | Revalidated during T00; shared-development and production use are unproven | Replace through accepted Team Core behavior after implementation review and the shared-development gate |
 | Eventun match, fact, cutoff, and season data foundation used by future team work | `verified` | [Foundation delivery snapshot](../eventun-foundation/README.md#delivery-snapshot) | Verified locally; shared-development deployment remains pending | Coordinated cutover |
-| Runtime resource and service-boundary hardening | `approved` | [Cutover and hardening plan](../eventun-foundation/development-cutover-and-runtime-hardening.md) | `not-deployed` | Implement and verify before team implementation |
-| T00 team design refresh and delivery cutoff | `not-started` | Current solution designs and [delivery plan](delivery-plan.md) | `not-applicable` | Successful shared-development cutover |
-| Team experience implementation | `not-started` | No selected implementation slice | `not-deployed` | T00 approval and completed runtime hardening |
-| Team gauntlet and bracket implementation | `not-started` | Existing partial behavior is documented in [current state](../../system/team-gauntlet-current-state.md), not as this initiative's implementation | `not-deployed` | T00 cutoff, team identity foundation, and selected gauntlet gates |
+| Runtime resource and service-boundary hardening | `verified` | Eventun commit `9213feb`; [cutover and hardening plan](../eventun-foundation/development-cutover-and-runtime-hardening.md) | Code-verified for local development; not deployed to shared development | Reconfirm during coordinated shared-development smoke |
+| T00 team design refresh and delivery cutoff | `approved` | Approved solution designs and [delivery plan](delivery-plan.md) | Revalidated against the committed local foundation and retained migrated database | Narrow contract/runtime reconfirmation after shared-development cutover |
+| Team experience implementation | `implementing` | Uncommitted Eventun working tree based on `9213feb`; implementation review pending and Ascentun unchanged | Coder-reported focused schema, migration, transaction, authorization, and query-plan verification in an isolated local environment; not independently accepted and not deployed | Review the Eventun artifact, implement Ascentun, then perform the coordinated shared-development cutover and combined runtime smoke |
+| Team gauntlet and bracket implementation | `not-started` | G01 explicit-team runtime vertical selected; existing partial behavior remains documented in [current state](../../system/team-gauntlet-current-state.md) | `not-deployed` | Team Core identity foundation and G01 implementation gate |
 
 ## Documents
 
@@ -39,11 +42,13 @@ authorized by this initiative.
 - [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [Foundation and API simplification review](../../sources/analysis/eventun-foundation-api-simplification-review.md)
 - [Team PostgreSQL derivation review](../../sources/analysis/eventun-team-postgresql-derivation-review.md)
+- [Team Core replacement decision](../../decisions/README.md#ar-2026-014--team-core-replaces-the-pre-alpha-team-model)
+- [Team Core sequencing decision](../../decisions/README.md#ar-2026-015--local-team-core-implementation-may-precede-shared-development-cutover)
 
 ## Remaining Before Closure
 
-- Complete the coordinated Eventun shared-development cutover.
-- Refresh and reapprove the designs through T00 against the implemented schema and client UI.
-- Complete runtime hardening before starting implementation.
-- Select and deliver the first team-experience cutoff, then the approved team-gauntlet slices.
+- Complete the Ascentun half of the breaking Team Core contract.
+- Complete the coordinated Eventun shared-development cutover and combined runtime smoke before
+  enabling Team Core in a shared environment.
+- Deliver the approved team-gauntlet slices after the Team Core deployment unit is proven.
 - Incorporate accepted behavior into `system/` and archive or supersede completed planning.
