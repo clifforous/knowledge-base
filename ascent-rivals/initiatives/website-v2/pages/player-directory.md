@@ -1,8 +1,9 @@
 # Ascent Rivals Player Directory Page Spec
 
 Date: 2026-04-14
-Status: Approved inclusion, collection-loading, and core-card model; visual design open
-Last reviewed: 2026-07-16
+Status: Approved desktop/mobile public-directory calibration; implementation states and contract
+verification remain open
+Last reviewed: 2026-07-21
 
 ## Related
 - [[../unified-design]]
@@ -72,7 +73,9 @@ Secondary:
 - Include every real pilot with a usable public identity, including new or inactive pilots with no matches.
 - Exclude only records explicitly classified by the source system as bots, test accounts, or internal identities; do not infer exclusion from a name pattern or zero activity.
 - Default to alphabetical ordering and make name/team search the primary interaction.
-- Keep podium finishes, matches played, and average circuit points as secondary card context and optional sorts rather than the directory's primary ranking.
+- Keep podium finishes and matches played as secondary card context and optional sorts rather
+  than the directory's primary ranking. Overall Total and Average Circuit Points remain outside
+  the anonymous public surface under the later bounded-profile decision.
 - Present team identity as `[TAG] Team Name` when space permits, reduce it to the tag on compact cards, and use `Independent` for an unaffiliated pilot.
 - Keep the pilot avatar as the card's only image; do not add the team avatar to ordinary player-directory cards.
 - Fetch one compact, unpaginated directory collection and perform search, filtering, sorting, and progressive display in the browser.
@@ -150,7 +153,7 @@ The current `GET /v1/player` response exposes substantially more data than the d
 - player id and public display name;
 - avatar URL;
 - public team id, name, and tag when present;
-- podium finishes, matches played, and average circuit points while those remain approved card/sort fields.
+- podium finishes and matches played while those remain approved card/sort fields.
 
 Do not include full career groups, match history, course history, nested team media, private account state, exact AccelByte MMR, wallet data, or other profile-detail payloads in the directory collection.
 
@@ -215,7 +218,6 @@ V1 controls:
 - sort Z-A
 - sort by podium finishes
 - sort by matches played
-- sort by average circuit points
 
 Design guidance:
 
@@ -238,7 +240,6 @@ V1 card content:
 - `Independent` when the pilot has no team
 - podium finishes
 - matches played
-- average circuit points
 - link to `/players/[id]`
 
 Optional V1 card content:
@@ -280,7 +281,6 @@ V1-safe signals:
 
 - matches played
 - podium finishes
-- average circuit points
 - team membership
 
 Guardrail:
@@ -395,7 +395,8 @@ These ideas are valuable but should not block V1:
 - the default directory order is alphabetical;
 - name and team search, supported sorts, and display pagination/progressive reveal do not require additional network requests;
 - the collection response contains only identity, search, card, and approved sort fields rather than full profile/history payloads;
-- podium finishes, matches played, and average circuit points remain secondary context rather than an implied player ranking;
+- podium finishes and matches played remain secondary context rather than an implied player
+  ranking;
 - exact AccelByte MMR, any Website-derived division, wallet state, private team state, and account data never enter the public directory payload;
 - a future public named division appears only after Eventun owns an explicitly approved stateful rank contract;
 - team identity uses `[TAG] Team Name` where space permits, tag-only compact treatment, and `Independent` when unaffiliated;
@@ -411,6 +412,9 @@ These ideas are valuable but should not block V1:
 
 ## Next Steps
 
-- Ask Pencil for one player directory mock using this spec and Terminal Ops.
+- Treat the reviewed desktop/mobile pilot-directory frames as the responsive implementation
+  baseline.
+- Review implementation-facing loading, empty, unavailable, search-empty, and partial-data states
+  in the shared utility-state pass.
 - Update [[player-profile]] when player-owned social-link fields become a real feature.
 - Keep homepage search result requirements aligned with this directory's public player-card fields.

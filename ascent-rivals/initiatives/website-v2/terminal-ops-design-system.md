@@ -1,12 +1,12 @@
 # Ascent Rivals Terminal Ops Design System
 
 Date: 2026-04-13
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-21
 Status: Draft
 
 ## Related
 - [[unified-design]]
-- [[design-language-v0.1]]
+- [[design-language-v0.2]]
 - [[information-architecture]]
 - [[README|Website V2 initiative index]]
 - [[tone-and-voice]]
@@ -28,7 +28,9 @@ Status: Draft
 
 This note defines the working Terminal Ops design system direction for the unified Ascent Rivals website.
 
-[[design-language-v0.1]] is the current applied visual baseline. This document retains the broader rationale, component inventory, and unresolved design-system requirements; where its earlier exploratory geometry conflicts with v0.1, the applied v0.1 rule takes precedence.
+[[design-language-v0.2]] is the current approved implementation baseline. This document retains the
+broader rationale and unresolved design-system requirements; where its earlier exploratory
+geometry conflicts with v0.2, the extracted v0.2 rule takes precedence.
 
 It should guide:
 
@@ -98,12 +100,11 @@ Core decisions:
 - permissioned actions appear in-page, near the relevant entity
 - contextual side panels are allowed inside data-heavy pages but are not the global nav model
 
-Terminal Ops remains a working direction until it is validated against:
-
-- player profile
-- course leaderboard
-- gauntlet detail
-- mobile shell state
+Terminal Ops is now validated across the homepage, gauntlet directory/detail, pilot
+directory/profile, course directory/detail and leaderboard, global search, shared page states, and
+their current desktop/mobile transformations. The reviewed Design Language v0.2 reference board
+consolidates the current static implementation baseline. Representative team and form surfaces and
+in-browser motion calibration remain future extensions.
 
 ## Voice Direction
 
@@ -376,13 +377,17 @@ Asset guardrails:
 
 ## Shape and Border Language
 
-Status: refined through the approved desktop/mobile homepage and gauntlet-discovery calibration frames. It must still be reviewed on a data-heavy detail page.
+Status: refined through the approved desktop/mobile homepage, gauntlet, pilot-profile, and
+course-detail calibration frames, including dense tables, rank rows, charts, and category
+controls. Forms and team-primary surfaces remain unvalidated.
 
 Approved motifs:
 
 - cut-corner panels
 - angled CTA edges
 - paired forward chevrons and short directional terminations for interactive controls
+- faceted radio-group shells with consistent opposing cuts when geometry clarifies a small
+  selection path; cut the shared shell rather than every option
 - restrained bracket-like section frames
 - thin technical border accents attached to a real edge or state
 - inset image boxes
@@ -425,7 +430,15 @@ Do not use the earlier zero-through-four cutout study as a production complexity
 
 ### Signal rails and interaction geometry
 
-A short neutral rail with a smaller gold termination is an optional state treatment, not required perimeter decoration. Default gold remains subdued; hover or focus may advance the termination approximately 4px once and return on blur; selected or active state may retain restrained gold at the endpoint. Do not use continuous motion.
+A short neutral rail with a smaller gold termination is an optional state treatment, not required
+perimeter decoration. Default gold remains subdued; hover or focus may advance the termination
+approximately 4px once and return on blur; selected or active state may retain restrained gold at
+the endpoint. Do not use continuous motion.
+
+In a faceted selector, a short amber rail is a selected-state marker and remains inset from cuts,
+outlines, and internal dividers. Keyboard focus is a separate high-contrast, shape-aware inset
+outline layered over the full-size interaction target; it must not shrink the radio target or
+collide with the shell geometry.
 
 Primary and secondary CTAs may use the approved paired-chevron and directional-termination motifs with the same short, one-time mechanical response. Critical control meaning must remain available without motion.
 
@@ -1065,10 +1078,15 @@ Each public entity page should support:
 1. Treat the reviewed active, sparse/upcoming, and mobile gauntlet-detail frames as the current interior-page baseline.
 2. Treat the reviewed public player-profile/career-summary desktop and mobile frames as the
    current identity, career-rate, and bounded-history baseline.
-3. Treat the reviewed desktop course directory/detail and exact leaderboard as the current
-   course baseline.
-4. Validate the course directory/detail composition at mobile width without embedding a course
-   selector on the detail route.
-5. Add dense-data, filter, table, chart, form, and state rules only after those compositions are reviewed.
-6. Validate team pages after the team model is stable enough.
-7. Promote the applied language to v0.2 when the representative interior archetypes are coherent at desktop and mobile widths.
+3. Treat the reviewed desktop/mobile course directory/detail, exact leaderboard, and canonical
+   faceted category-selection controls as the current course baseline.
+4. Treat the reviewed pilot-directory desktop/mobile frames as the current public identity
+   collection baseline.
+5. Treat the reviewed desktop/mobile global-search command and its loading, no-match,
+   partial-availability, and keyboard-focus study as the current shared-search baseline.
+6. Treat the reviewed desktop/mobile shared page-state frames as the current route-loading, empty,
+   unavailable, non-revealing not-found, optional-module-failure, and stale-refresh baseline.
+7. Treat the reviewed Design Language v0.2 reference board as the current static implementation
+   baseline; calibrate provisional component motion in the browser during implementation.
+8. Validate team pages after the team model is stable enough; form rules still require a reviewed
+   form composition.

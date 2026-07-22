@@ -173,7 +173,7 @@ The local foundation and rehearsal now include:
 - dependency/toolchain and package-layout cleanup is complete through the scoped foundation passes;
 - Accountun and Cardanoun proof-of-concept adapters are isolated, while Eventun's TapTools, Koios, and token-gating runtime/schema/API slice is removed;
 - identified, idempotent complete-match ingestion, source/event-type partitions, artifacts, synchronous narrow facts, incremental serving projections, individual cutoff snapshots, and season-aware records;
-- ClientService authentication, the four ServerService gauntlet runtime methods, twelve shared
+- ClientService authentication, the five ServerService gauntlet runtime methods, twelve shared
   reads, two shared writes, full served/Admin Swagger, and split Unreal Client/GameServer/Models
   generation are implemented. The generated GameServer subset remains at the original ten
   dedicated-server reads.

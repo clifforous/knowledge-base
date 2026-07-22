@@ -252,6 +252,11 @@ Public identity/roster and fact-backed statistics may fail independently. Privat
 
 Global search is a shared-shell utility rather than an initial destination route. Do not add a dedicated `/search` page merely to host the same grouped results. The accessible top-bar `SearchCommand` opens as a dialog or mobile sheet. Groups whose directory retains local search can link there with the query preserved, such as `/players?q={query}`; course matches link directly to their canonical detail routes.
 
+The reviewed desktop/mobile command calibration and compact state study are the current visual
+baseline. They keep the underlying shell stable, group shallow results by entity type, distinguish
+no matches from partial group availability, and use a separate shape-aware focus overlay over the
+full interaction target.
+
 | Surface | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
 | Top-bar `SearchCommand` | The approved Eventun public gauntlet, pilot, and team compact collections plus the AccelByte-authored course catalog through Eventun's public-safe projection | On first search interaction, compose the independently cached public collections into one explicit shallow Website catalog; return group availability independently; never expose service credentials or raw transport records | Cache the catalog in browser query state with bounded staleness and mutation invalidation; normalize once; perform grouped local matching; show at most a small result preview per group; support keyboard/touch navigation and direct entity links | None for the initial four public groups | No new Eventun cross-domain search endpoint is initially required if the approved compact reads remain suitably small; add one same-origin Website support handler/view model |

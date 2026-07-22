@@ -4,7 +4,7 @@ Status: in-progress
 Status detail: Requirements, workflow, and system design are being refined during manual
 repository validation; tool implementation remains deferred until that checkpoint closes.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-21
 
 ## Outcome And Boundary
 
@@ -29,7 +29,7 @@ service, autonomously consume model tokens, replace Perforce, or add project-man
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Manual repository workflow | `implemented` | [Organization policy](../../../ORGANIZATION.md) and [Pass 3 ledger](../repository-restructure/pass-3-governance-ledger.md) | In use in Cliff's personal repository | Complete direct, coordinated, parallel, grooming, and Windows-originated validation cases |
+| Manual repository workflow | `implemented` | [Organization policy](../../../ORGANIZATION.md), [Pass 3 ledger](../repository-restructure/pass-3-governance-ledger.md), [coordinated feature use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-coordinator-guided-feature-delivery), [cross-chat design use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-iterative-design-coordination-across-chats-and-a-live-artifact), and [direct implementation use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-analysis-gated-direct-feature-implementation) | In use in Cliff's personal repository; the coordinated Eventun/teams, Windows-originated Website V2 design, and direct Ascent Rivals implementation cases are recorded | Complete the remaining parallel task-log and grooming validation cases |
 | Requirements and workflow design | `designing` | [Requirements](requirements.md) and [workflow design](federated-personal-and-canonical-knowledge-workflow.md) | `not-applicable` | Owner review and further ordinary-work observations |
 | Tool system design | `designing` | [System design](system-design.md) | `not-applicable` | Resolve pilot-blocking technical decisions and validate with platform/client spikes |
 | Reusable repository template | `not-started` | No template repository exists | `not-applicable` | Close the manual repository checkpoint and remove personal assumptions |

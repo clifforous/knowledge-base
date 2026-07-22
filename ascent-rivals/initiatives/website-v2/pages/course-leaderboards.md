@@ -1,8 +1,9 @@
 # Ascent Rivals Course Leaderboards Page Spec
 
 Date: 2026-04-13
-Status: Approved desktop calibration; course mobile validation remains open
-Last reviewed: 2026-07-20
+Status: Approved responsive layout with canonical faceted selector; implementation states and
+contracts remain open
+Last reviewed: 2026-07-21
 
 ## Related
 - [[../unified-design]]
@@ -536,7 +537,10 @@ Desktop:
 
 - selected course briefing and leaderboard table should be visible without excessive scrolling
 - course directory uses the reviewed two-column collection
-- category filter can be tabs or segmented controls
+- category selection uses separate faceted option shells for Race/Time Trial and Finish
+  Time/Best Lap; Time Trial adds an Open/3K Class/10K Class shell
+- the visible option language carries the meaning; implementation may retain visually hidden
+  `Race type`, `Record type`, and `Time Trial class` fieldset legends
 
 Tablet:
 
@@ -548,9 +552,12 @@ Mobile:
 - stack modules
 - keep login/avatar visible in top bar
 - stack directory entries without adding a course dropdown to the detail page
-- table can horizontal-scroll or convert to rank cards
-- preserve rank, player, time, and category
-- validate the exact directory and detail composition in the next Pencil checkpoint
+- convert the exact leaderboard to compact rank rows rather than horizontal scrolling
+- preserve rank, pilot identity, team or `Independent`, exact time, and category
+- keep Loadout Value in accessible row detail for ordinary Race and Open Time Trial boards;
+  expose it visibly for `3K Class` and `10K Class` because it determines eligibility
+- stack the reviewed faceted Race/Time Trial and Finish Time/Best Lap shells; Time Trial adds a
+  third Open/3K Class/10K Class shell
 
 ## SEO and Sharing
 
@@ -602,6 +609,7 @@ These ideas are valuable but should not block V1:
 
 ## Next Steps
 
-- Validate the directory and detail routes at mobile width without reintroducing an embedded
-  selector.
+- Treat the canonical directory/detail frames and faceted-selection study as the responsive
+  implementation baseline; older exploratory category-control studies remain superseded and
+  need no retrofit.
 - Review implementation-facing loading, empty, error, stale, and partial-data states.

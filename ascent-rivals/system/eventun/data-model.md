@@ -117,9 +117,9 @@ legacy shape until the coordinated Eventun and Ascentun cutover.
 
 #### Committed Local Team Core Model
 
-Applicability: committed Eventun local-development behavior at `c4260f3`; it is not active in
-shared development or production. Implementation review was accepted before commit on 2026-07-20,
-while Ascentun integration and coordinated deployment remain unfinished.
+Applicability: committed Eventun local-development behavior through `3e1606c`; it is not active in
+shared development or production. Team Core was committed as `c4260f3`, and closed-membership
+correction was accepted and committed as `3e1606c`; coordinated deployment remains unfinished.
 
 The replacement model uses an Eventun-generated team UUID, explicit owner and active/disbanded
 lifecycle, reusable name/tag only after disband, immutable half-open membership intervals, current
@@ -132,9 +132,12 @@ audited team and subject player.
 Creation establishes the authenticated creator as owner and first member. Leaving or removal
 closes the active interval; disband retains team history, closes the roster, cancels pending
 actions, and advances the competition-roster revision. Joins, membership endings, competition-rank
-changes, and disband advance that revision; profile/media, presentation-title, capability, and
-pending-action changes do not. Historical membership correction remains deliberately absent and
-must be designed before attribution-dependent team statistics or qualification.
+changes, disband, and an accepted historical correction advance the affected revision;
+profile/media, presentation-title, capability, and pending-action changes do not. Closed effective
+membership intervals may now be voided or replaced through retained correction evidence. Active
+intervals remain under ordinary join/end operations. Corrected old rows stay addressable but become
+ineffective for future live attribution and overlap checks; exact correction retries return
+retained state, while changed reuse of a correction UUID returns `Aborted`.
 
 The pending foundation delta discards approved pre-alpha team state only after its guarded
 historical acceptance marker. The historical runner proves the exact marked replacement DDL in an
@@ -167,7 +170,10 @@ Competition structure can bind to runtime data through match/session context, bu
 - `gauntlet_stage_run_admission` stores sparse on-demand evaluated join decisions for audit/cache use
 - `gauntlet_stage_run_match` stores accepted match ids for a stage run; configured match plans remain in `gauntlet_stage_circuit`
 - `gauntlet_stage_run_match_result` stores per-player accepted result rows for each accepted stage-run match
-- `gauntlet_stage_placement` is the accepted final participation/result record and includes `stage_run_id`
+- `gauntlet_stage_placement` is keyed by StageRun and player and stores accepted final participation/results
+- `gauntlet_stage_field_head`, immutable field snapshots, and ordered field owners define one current explicit-team field leaf for a stage
+- `gauntlet_stage_run_slot`, roster-lock, and roster-entry rows bind one concrete team slot and its occupied/no-show evidence to a claimed StageRun
+- `gauntlet_stage_run_slot_result` and `gauntlet_stage_run_team_result` preserve direct one-slot player/team outcomes for field-backed runs
 - `gauntlet_stage_team` stores allowed or invited teams for a stage
 - `gauntlet_stage_bracket` stores simple required stage win/loss filters, not a bracket graph
 - `gauntlet_player_status` stores gauntlet-wide player group and stage win/loss summary state
@@ -185,7 +191,12 @@ Qualifier projection is server-only, canonical-unfiltered, and bot-excluding. Th
 
 Qualification cutoff publication is explicit operator state, not a wall-clock side effect, and supports only pure individual stages scored by `circuit_points`. `row_number` and cutoff `selection_rank` are unique deterministic ordinals using the complete stable tie-break order; displayed `ranking`, including sealed `qualifier_rank`, is a dense competitive rank over performance fields without the final player-id tie-breaker. Top-N and pagination use the ordinals, so shared competitive rank never changes cardinality. Admin preview returns a locked projection revision and exact projection schema/projector versions plus configuration/resolution hashes and deterministic entry/evidence rows. Publish seals immutable parent and child rows at the exact revision/schema/projector tuple and is idempotent by operation/key/request hash. Replace creates a new version linked to the latest sealed snapshot and requires a correction reason. First stage-run claim locks gauntlet state before the run row, requires the latest sealed cutoff to match the live configuration hash/revision/schema/projector tuple, and stores both its exact cutoff id and serialized stage rules. A same-session retry returns that stored binding without current-revision revalidation or mutation. Admission uses the snapshot entry's deterministic selection ordinal for its legacy row/rank fields and selection policy, plus the sealed qualification points/counts and total circuit points; no separate overall competitive rank is added to cutoff entries or admission. All stage restrictions are read from `rules_snapshot`; configured-match validation and required-match/completion counts also use that frozen circuit. Stage-run allocation takes the same gauntlet projection lock before the stage-row lock, so it cannot insert after an update's run-history snapshot and then be cascade-deleted. Update preserves every stage parent that has run/history rows, editing open/invite configuration in place; a full-replacement request that omits any run-backed stage fails before mutation rather than silently retaining an extra active stage. Only qualification-bound stages receive the stricter cutoff-configuration freeze. Later cutoff replacement remains frozen, while permitted cosmetic, circuit, and other non-cutoff live edits cannot retroactively change the run.
 
-Current team/bracket implementation note: team-restricted stages are eligibility filters over current player team membership. Final accepted placement remains per-player. Eventun does not yet compute team standings, concrete player-owned or team-owned racer slots, locked team rosters, team stage results, bracket seeds, or bracket graph progression. `gauntlet_stage_placement` contains `stage_run_id` but its primary key is not stage-run scoped.
+Accepted local Eventun commit `6343438` adds the explicit-team G01 foundation: immutable opening-stage
+fields, one team-owned slot per field owner, current-membership admission, an authoritative complete
+roster lock, StageRun-scoped match and placement identity, and direct one-slot team results. This code
+is not deployed, and the dedicated server does not yet own the provisional occupancy and roster-lock
+workflow. Team qualification, multiple slots per owner, mixed/player owners, priority replacement,
+and bracket graphs remain future work.
 
 The retired `token_meta` catalog, `team_gate_token` relation, and `token_gated` membership mode were removed during the foundation reset. Existing gated teams transition to invite-only. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
 

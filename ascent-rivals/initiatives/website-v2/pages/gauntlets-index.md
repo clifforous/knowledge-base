@@ -9,7 +9,7 @@ Last reviewed: 2026-07-20
 - [[../unified-design]]
 - [[../information-architecture]]
 - [[../terminal-ops-design-system]]
-- [[ascent-rivals/initiatives/website-v2/design-language-v0.1]]
+- [[ascent-rivals/initiatives/website-v2/design-language-v0.2]]
 - [[../tone-and-voice]]
 - [[../flows/gauntlet-authoring]]
 - [[gauntlet-detail]]

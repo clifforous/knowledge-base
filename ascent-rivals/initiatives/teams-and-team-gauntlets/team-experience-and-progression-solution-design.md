@@ -1,13 +1,13 @@
 # Ascent Rivals Team Experience And Progression Solution Design
 
-Status: Approved; Eventun committed, Ascentun coder-verified and awaiting review, deployment pending
+Status: Approved; local backend and web implementation reviewed, deployment pending
 Date: 2026-07-10
 Last updated: 2026-07-21
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: local foundation implementation, rehearsal, and runtime hardening are complete and committed. T00 approved this design against that local baseline. The Eventun Team Core schema, API, authorization, and pending-migration implementation passed local verification and implementation review and is committed as `c4260f3`. The uncommitted Ascentun working tree implementation based on `a0a40ad` passed coder verification and is awaiting implementation review; coordinated shared-development deployment remains pending. Membership validity is part of the committed local model, while correction tooling remains a required input before attribution-dependent statistics or qualification described in [[team-gauntlets-and-brackets-solution-design]].
+Foundation alignment: local foundation implementation, rehearsal, and runtime hardening are complete and committed. T00 approved this design against that local baseline. The Eventun Team Core schema, API, authorization, and pending-migration implementation passed local verification and implementation review and is committed as `c4260f3`. The staged, uncommitted Ascentun Team Core working tree based on `a0a40ad` also passed implementation review; coordinated shared-development deployment remains pending. Membership validity is part of the committed local model. G02 Pass 1 closed historical correction passed implementation review and is committed as Eventun `3e1606c`; frozen team qualification Pass 2 may now build on that boundary.
 
 ## Related
 
@@ -131,9 +131,10 @@ This design deliberately excludes team gauntlet orchestration. It supplies the c
 23. An actual membership-mode change cancels every effective pending action after locking affected
     players and actions in the normal deterministic order. An ownership transfer preserves pending
     actions because they represent team intent rather than personal owner state.
-24. Team Core deliberately defers membership-correction tooling. Before the first
-    attribution-dependent statistics or qualification work, define an audited supersession/void
-    model; every future correction must advance the competition-roster revision.
+24. The committed Team Core baseline deliberately defers membership-correction tooling. The first
+    G02 implementation pass adds the approved closed-only audited void/replacement model before
+    attribution-dependent statistics or qualification; every correction advances each affected
+    team's competition-roster revision exactly once.
 25. A join that supersedes actions owned by other teams locks every discovered affected team row in
     UUID order before any affected player, membership, or action row. After locking the player, it
     re-reads the pending-action team set. If that set expanded while locks were acquired, the join
@@ -211,19 +212,18 @@ Membership validity is immutable evidence and must not be split merely because a
 capability, or competition rank changes. Keep those mutable current values in separate membership
 state with exact audit rows. A team competition-roster revision advances for active membership
 join/end, competition-rank changes, explicit eligibility changes when added, and disband; cosmetic,
-title-only, capability, and pending-request changes do not advance it. A future correction must
-also advance it.
+title-only, capability, and pending-request changes do not advance it. A closed historical
+correction also advances each affected team's revision exactly once.
 
 Team Core replaces the old membership shape and discards the invalid pre-alpha team state after a
 guarded target preflight. It does not synthesize owners, join times, or historical membership.
 Ascentun sessions that cache discarded team identity are invalidated or versioned at the cutover.
 The replacement shape enforces at most one active team membership per player and nonoverlapping
-half-open validity intervals. Team Core does not implement historical correction: immutable
-interval rows cannot yet express exact old and new corrected evidence. An audited
-supersession/void model must be selected before team-attributed statistics or qualification ships.
-That later work will store selected `team_id` and `membership_interval_id` in attribution evidence,
-advance the team roster revision for corrections, and leave general match facts without team
-identity.
+half-open validity intervals. The committed Team Core baseline does not implement historical
+correction. The first G02 pass retains its exact old rows and adds closed-only audited
+void/replacement evidence; active intervals remain governed by ordinary membership operations.
+The later attribution pass stores selected `team_id` and effective `membership_interval_id`
+evidence while leaving general match facts without team identity.
 
 Audit references use composite integrity, not existence-only foreign keys: referenced membership
 intervals must match the audited team and subject player, and referenced action generations must
@@ -823,7 +823,7 @@ Capture screenshots or short recordings for presentation and animation review.
 | E23 | Are team challenges extensions of Eventun goals or a separate definition type? | Reuse requirement evaluation and publication where possible, but keep team subject and reward semantics explicit |
 | E24 | Which rewards are team-owned versus granted to individual members? | Team level unlocks team cosmetics; individual economy rewards require explicit activity eligibility |
 | E25 | Does a member who joins during an active challenge contribute immediately and share the team unlock? | Contribute from join time; receive team-owned unlock access while active, but no retroactive personal reward |
-| E26 | How are rewritten or corrected historical matches attributed after a player changes teams? | Attribute using trusted event time and membership intervals; before this behavior ships, add the separately reviewed audited supersession/void model because Team Core has no correction path |
+| E26 | How are rewritten or corrected historical matches attributed after a player changes teams? | Attribute using trusted event time and effective membership intervals; the separately reviewed G02 Pass 1 supplies closed-only void/replacement evidence before this attribution ships |
 | E27 | Should team contribution facts be recalculated after a telemetry rewrite? | Yes; rebuild match-keyed facts before reconciling irreversible external rewards |
 
 ### Public Data And Administration

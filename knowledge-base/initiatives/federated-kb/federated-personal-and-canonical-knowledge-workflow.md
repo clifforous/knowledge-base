@@ -2,7 +2,7 @@
 
 Status: proposed workflow design
 
-Last revised: 2026-07-20
+Last revised: 2026-07-21
 
 ## Document Role And Status
 
@@ -545,6 +545,221 @@ During design, implementation, review, and eventual testing of `kb`, record:
 Observations that change repository-wide policy belong in the repository-restructure governance
 ledger and `ORGANIZATION.md`. Observations specific to `kb` belong in this initiative. Accepted
 material design changes also receive a concise knowledge-base decision entry.
+
+### Observed Use Case: Coordinator-Guided Feature Delivery
+
+The Eventun foundation and teams work provides one sustained coordinated-feature case. The owner
+uses a long-running coordinator conversation to retain product direction, review implementation
+checkpoints, decide what should happen next, and prepare bounded prompts for separate Eventun,
+Ascentun, and Ascent Rivals coder conversations. Independent review conversations may also inspect
+the same foundation. The owner brings proposals and completion reports back to the coordinator,
+which compares them with the repositories and accepted knowledge before approving, narrowing, or
+returning corrections.
+
+The useful durable output is not the conversation transcript or the generated coder prompts. It is:
+
+- accepted design rules and owner decisions that survive the individual conversation;
+- current-system corrections after implementation review accepts local behavior;
+- initiative checkpoints for approved, implementing, verified, committed or submitted, and
+  deployed states;
+- unresolved risks and the next meaningful gate;
+- enough source and revision identity to resume after a client crash, lost conversation, coder
+  replacement, or context compaction; and
+- a compact basis for constructing the next coder prompt without replaying all prior discussions.
+
+This case also demonstrates why lifecycle dimensions must remain independent. Eventun changes may
+be committed and locally verified while Ascentun remains uncommitted, an Ascent Rivals Perforce
+changelist remains intentionally unsubmitted during release-fix work, and no component is deployed
+to shared development. Review acceptance and successful tests must not silently promote any of
+those states.
+
+The manual workflow uses the knowledge base as the shared memory between conversations:
+
+1. The coordinator retrieves current-system and active-initiative context before selecting work.
+2. A coder receives a bounded pre-edit prompt and returns a proposal rather than editing
+   immediately.
+3. The coordinator reviews the proposal, preserving accepted decisions while identifying only
+   material corrections and genuine owner choices.
+4. The coder implements and reports source-control state plus verification evidence separately
+   from deployment.
+5. The coordinator performs implementation review and incorporates accepted behavior or delivery
+   status into the appropriate documents.
+6. The next coder conversation is bootstrapped from that durable state rather than from copied chat
+   history.
+
+Implications for the proposed `kb` tool are:
+
+- one feature or workstream needs a stable handle across multiple conversations and repositories;
+- each conversation needs isolated capture ownership while incorporation into shared documents is
+  serialized;
+- retrieval should return current behavior, active initiative decisions, pending deltas, and
+  delivery state without treating them as one authority level;
+- capture should prefer decisions, contract changes, corrections, blockers, and lifecycle gates
+  over prompts, review chatter, command output, and repeated verification summaries;
+- explicit owner acceptance and implementation-review outcomes should be usable incorporation
+  evidence, while silence and ordinary conversation endings should not;
+- source-control and environment state must represent Git commits, uncommitted work, Perforce
+  changelists, submission, and deployment independently; and
+- status and grooming should expose unincorporated decisions or stale checkpoints without turning
+  the knowledge tool into a task manager.
+
+This use case satisfies the coordinated-feature portion of the manual repository checkpoint. It
+does not yet prove the separate parallel task-log, unresolved grooming, or reusable-template cases.
+
+### Observed Use Case: Iterative Design Coordination Across Chats And A Live Artifact
+
+[Website V2](../../../ascent-rivals/initiatives/website-v2/README.md) provides a distinct
+design-to-implementation-preparation case. The owner uses one
+long-running coordinator conversation to review current product knowledge, resolve scope and
+architecture, develop route and data requirements, decide the visual direction, review design
+checkpoints, and select the next bounded task. A separate designer conversation operates the live
+Pencil workfile on Windows from prompts prepared in the coordinator. The owner reviews the result,
+adds subjective visual feedback, and returns the designer's summary to the coordinator; the
+coordinator can also inspect the actual Pencil frames through MCP before accepting or returning a
+revision. Adjacent Eventun and team conversations may change contracts that Website V2 will later
+consume.
+
+This case crosses an important storage boundary. The personal knowledge repository remains in WSL,
+while the mutable Pencil artifact remains on a Windows drive because live authoring against the WSL
+filesystem proved unreliable. The workfile can advance through several experiments before one
+reviewed checkpoint is incorporated into Markdown. It is evidence for the design, not accepted
+knowledge merely because a frame exists, and it is not implementation or deployment evidence. The
+greenfield Website V2 application remains unimplemented at the time of this observation.
+
+The observed loop is:
+
+1. The coordinator retrieves current-system facts and the active Website V2 initiative rather than
+   reconstructing context from old chat history.
+2. The owner and coordinator resolve one bounded product, architecture, content, or visual question.
+3. The coordinator prepares a focused designer prompt that names the accepted baseline and protects
+   unrelated frames.
+4. The designer changes the external workfile and reports the affected frames and layout checks.
+5. The owner supplies visual judgment, while the coordinator inspects the artifact and checks it
+   against product contracts and prior decisions.
+6. Revisions repeat until the owner accepts the checkpoint. Ordinary progression language such as
+   `looks good`, `continue`, or `what is next` accepts only the immediately preceding bounded result
+   when it is not qualified.
+7. The coordinator directly incorporates material decisions, page rules, artifact checkpoint state,
+   and the next gate because it owns the serialized documentation step. Routine prompts, rejected
+   compositions, tool output, and review chatter remain outside durable knowledge.
+8. A later observation can reopen a previously accepted detail. The active specification is
+   corrected or superseded rather than retaining contradictory layers merely to preserve chronology.
+9. A future implementation conversation will bootstrap from the reviewed initiative, current-system
+   facts, decisions, and selected design frames instead of replaying the coordinator and designer
+   transcripts.
+
+Durable outputs from this workflow include:
+
+- accepted scope, architecture, route, data, interaction, responsive, and visual-language rules;
+- current-system corrections discovered while evaluating the proposed site;
+- material direction changes and their rationale;
+- the latest reviewed design checkpoint and whether the live artifact may be ahead of it;
+- unresolved backend contracts, deferred product choices, and the next meaningful gate; and
+- delivery state that keeps design acceptance, implementation, verification, source control, and
+  deployment independent.
+
+The prompts sent to the designer, every experimental frame, copied designer completion reports,
+raw MCP output, routine visual QA, and minor spacing corrections are not durable outputs. A frame
+name or later preservation snapshot is useful only when it identifies evidence for an accepted
+checkpoint.
+
+Implications for the proposed `kb` tool are:
+
+- one parent feature must relate coordinator, designer, reviewer, and future implementation work
+  without forcing those conversations to share one writable log;
+- retrieval for a handoff should return current facts, active specifications, material decisions,
+  the latest accepted artifact checkpoint, and open gates without replaying conversation history;
+- capture must support an attributed mutable external artifact and record the reviewed checkpoint
+  separately from the artifact's live head, without copying machine-local paths into shared
+  knowledge or treating artifact existence as acceptance;
+- acceptance evidence must be scoped to the immediately preceding bounded result, while later owner
+  corrections can supersede it cleanly;
+- a coordinator that owns incorporation can update destinations directly, while independent worker
+  conversations still require task-owned capture and serialized incorporation;
+- routine design iterations need an inexpensive no-capture outcome so the tool does not turn every
+  visual adjustment into repository noise; and
+- Windows-hosted clients must be able to retrieve and mutate the WSL-owned personal repository while
+  Windows-only design tools remain external evidence.
+
+This use case satisfies the Windows-originated interaction portion of the manual repository
+checkpoint and adds evidence for the mixed single-session/coordinated-design profile. The external
+designer conversation did not write knowledge concurrently, so this case does not prove parallel
+task-log capture, serialized incorporation of competing entries, or unresolved grooming.
+
+### Observed Use Case: Analysis-Gated Direct Feature Implementation
+
+The Ascent Rivals Play-menu matchmaking-window improvement provides a small direct-feature case.
+The owner began with a concrete usability observation and tentative behavior: clarify that a
+same-day match starts `today`, add a minute-updating countdown inside eight hours, and refresh
+operator-adjusted matchmaking windows more frequently. The owner explicitly requested analysis
+without edits because the Perforce session was not ready.
+
+One conversation retained the full bounded lifecycle rather than handing work to separate
+coordinator, coder, and reviewer chats. It retrieved the relevant Ascent Rivals knowledge and UI
+workflow, inspected the Unreal client and Gauntlet subsystem, identified existing countdown
+formatting support, and found an additional stale-data path: the Play menu listened for active
+calendar transitions but not refreshed future-calendar data. The conversation returned a proposed
+slice before mutation. After the owner approved it, an expired Perforce ticket stopped the change
+without bypassing source control. The same conversation resumed after login, checked out the exact
+files, implemented the accepted slice, preserved repository formatting, and directly updated the
+Gauntlet client-entry initiative.
+
+The implementation artifact remained an opened local Perforce working copy. The conversation did
+not claim submit, deployment, or runtime UI verification. Related direct Ascent Rivals chats can use
+the same pattern when one agent can own analysis, implementation, and durable incorporation without
+parallel writers; a later review or QA chat should resume from product and source-control identity,
+not from copied transcript history.
+
+The observed loop is:
+
+1. Retrieve current and initiative knowledge before interpreting the feature request.
+2. Inspect source-controlled implementation and reusable project utilities while respecting an
+   explicit analysis-only boundary.
+3. Return a bounded proposal that separates requested behavior from additional defects discovered
+   during the ownership trace.
+4. Treat the owner's instruction to implement as scoped acceptance of that proposal.
+5. Stop at a transient authorization boundary rather than modifying read-only Perforce files or
+   treating the blocker as a product decision.
+6. Resume in the same conversation after authorization, implement only the accepted slice, and
+   preserve source-control and file-format conventions.
+7. Incorporate the durable behavior and known limitation into the owning Ascent Rivals initiative,
+   while reporting implementation, submission, deployment, and verification as independent states.
+
+Durable outputs from this workflow include:
+
+- the accepted same-day and eight-hour countdown behavior;
+- the ownership relationship between the root Play-menu tile and Gauntlet calendar data;
+- the separate five-minute calendar refresh and hourly broad Gauntlet sync;
+- the requirement to react to full-calendar refreshes and select the earliest applicable window;
+- the local Perforce implementation boundary and remaining runtime QA; and
+- the product-knowledge update that lets a later review or related feature chat recover the result.
+
+The original prompt, intermediate plan, source-search transcript, Perforce login exchange, command
+output, and routine encoding checks are not durable knowledge. The login failure matters only as
+evidence that a client must preserve task context across a pause and resume; it does not deserve a
+task-log entry or product note by itself.
+
+Implications for the proposed `kb` tool are:
+
+- a direct task needs a lightweight stable handle even when no coordinator or parallel worker exists;
+- retrieval should locate current behavior, the active initiative, and related prior decisions by
+  product subject and feature identity rather than conversation identity;
+- explicit analysis-only and mutation-approved phases should remain visible to the active agent,
+  but routine phase transitions should not become durable records;
+- lifecycle capture should be offered at meaningful gates such as accepted proposal, completed
+  implementation, or incorporation, not after every progress turn;
+- a single conversation that owns the serialized documentation step should be able to incorporate
+  directly without first creating a redundant task log;
+- transient authentication and tooling blockers should stay task-local unless they reveal a durable
+  workflow constraint;
+- later review or QA conversations should receive accepted behavior, changed ownership, source-control
+  state, and unresolved verification rather than a transcript summary; and
+- local implementation, Perforce submit, deployment, and runtime verification must remain separate
+  fields even for a small feature.
+
+This use case satisfies the small-direct-task portion of the manual repository checkpoint. It does
+not exercise parallel task-owned capture, serialized incorporation of competing entries, or
+grooming dispositions.
 
 ## Open Workflow Decisions
 

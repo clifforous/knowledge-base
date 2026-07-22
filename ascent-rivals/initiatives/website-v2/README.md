@@ -4,7 +4,7 @@ Status: in-progress
 Status detail: Approved baselines and draft specifications remain an active design and
 delivery initiative; they are not the deployed website.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-21
 
 Website V2 remains initiative material because the current deployed website is described in
 [the website system document](../../system/website.md). Status statements in each document
@@ -22,7 +22,7 @@ domain behavior in Eventun and AccelByte.
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
 | Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents | `not-applicable` | Close remaining contract gaps and slice-specific acceptance detail |
-| Terminal Ops visual calibration | `designing` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-20 course desktop checkpoint, plus the linked Markdown baselines | `not-applicable`; design artifact | Validate course mobile, then validate team surfaces |
+| Terminal Ops visual calibration | `approved` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-21 Design Language v0.2 reference board, plus the linked Markdown baselines | `not-applicable`; design artifact | Preserve one reviewed snapshot, begin the greenfield application foundation, and later validate team and form extensions |
 | Website V2 application | `not-started` | No implementation revision is recorded | `not-deployed` | Greenfield repository foundation and first approved route slice |
 | Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
 
@@ -32,7 +32,7 @@ domain behavior in Eventun and AccelByte.
 2. [Unified design](unified-design.md) for the integrated experience direction.
 3. [Information architecture](information-architecture.md) and the
    [route/API matrix](route-api-matrix.md) for route and contract detail.
-4. [Design language v0.1](design-language-v0.1.md) and the
+4. [Design language v0.2](design-language-v0.2.md) and the
    [Terminal Ops design system](terminal-ops-design-system.md) for the visual baseline.
 5. Page and flow specifications for implementation-specific behavior.
 6. [Delivery plan](delivery-plan.md) for the approved sequence and remaining planning work.
@@ -49,15 +49,16 @@ domain behavior in Eventun and AccelByte.
 ## Experience and Visual Design
 
 - [Unified design](unified-design.md)
-- [Design language v0.1](design-language-v0.1.md)
+- [Design language v0.2](design-language-v0.2.md)
 - [Terminal Ops design system](terminal-ops-design-system.md)
 - [Shell concepts](shell-concepts.md)
 - [Tone and voice](tone-and-voice.md)
 
 The live Pencil artifact is owner-managed by Cliff outside this repository because Pencil does
 not work reliably against the WSL filesystem. No shareable durable artifact identity is
-currently recorded. The artifact was last reviewed on 2026-07-20 through the course desktop
-checkpoint; Design Language v0.1 and the checkpoint below capture the accepted direction.
+currently recorded. The artifact was last reviewed on 2026-07-21 through the shared page-state
+and Design Language v0.2 reference-board checkpoint; the approved Design Language v0.2 and the
+checkpoint below capture the accepted frame direction and extracted implementation rules.
 Import one reviewed preservation copy only at an explicit design checkpoint; label it as a
 snapshot and do not maintain two nominally live copies.
 
@@ -68,7 +69,8 @@ snapshot and do not maintain two nominally live copies.
 
 ## Current Design Checkpoint
 
-- Homepage desktop and mobile calibration are reviewed and define Design Language v0.1.
+- Homepage desktop and mobile calibration are reviewed and provide the original visual thesis now
+  consolidated in Design Language v0.2.
 - Gauntlet directory and Schedule desktop/mobile calibration are reviewed applications of
   that language.
 - Active combined, sparse/upcoming, and active mobile gauntlet-detail calibrations are
@@ -78,10 +80,30 @@ snapshot and do not maintain two nominally live copies.
   public career lead, Podium Rate and Ascension Rate comparisons, published-course records,
   bounded recent races, and a three-entry recent gauntlet history. Candidate private career
   detail and recognition remain reversible own-profile additions rather than public defaults.
-- Course-directory and course-detail desktop calibrations are reviewed. The directory uses a
-  complete two-column collection without redundant page-local search, result count, archive
-  scope, or pagination; the detail validates the full-width record and leaderboard composition.
-  Course mobile validation remains next.
+- Pilot-directory desktop/mobile calibration is reviewed. It validates client-side name/team
+  search and sorting, compact public identity cards, neutral team affiliation, missing-avatar and
+  zero-stat cases, bounded long names, and progressive reveal without server pagination.
+- Course-directory and course-detail desktop/mobile calibrations are reviewed. The directory
+  uses complete responsive collections without redundant page-local search, result count,
+  archive scope, or pagination. The detail validates exact record and gap presentation,
+  responsive rank rows, class-dependent Loadout Value presentation, and balanced mobile footers.
+  The canonical course-detail frames now use the reviewed faceted category controls in place of
+  the earlier labeled category grid.
+- Global-search desktop/mobile calibration and its compact state study are reviewed. They validate
+  a modal/sheet command over the stable shell, grouped shallow public results, direct entity links,
+  deterministic keyboard focus, local no-match recovery, and independent partial availability.
+- Shared page-state desktop/mobile calibration is reviewed. It validates route loading, a valid
+  empty collection, essential-route unavailability, non-revealing not-found handling, local
+  optional-module failure, and safe stale-content refresh without replacing the stable shell.
+- The bounded cross-frame alignment pass is reviewed. Current canonical frames use the same
+  desktop/mobile shell and footer measurements, generic sign-in language, search identity,
+  profile record terminology, natural user-facing numbers, route metadata, and accepted faceted
+  and segmented control variants. One immutable, nonvisual pilot-profile root metadata field still
+  contains legacy `RACE FINISH`; it is an artifact caveat and is not implementation guidance.
+- The Design Language v0.2 reference board is reviewed. It consolidates the canonical palette,
+  typography, spacing, geometry, shells, footers, actions, selectors, content specimens, shared
+  states, focus treatment, and responsive transformations. It defines static states and motion
+  intent; implementation timing and easing remain provisional until reviewed in the browser.
 - Team-page validation follows review of the implemented team contracts.
 
 ## Material Decisions
@@ -108,9 +130,8 @@ snapshot and do not maintain two nominally live copies.
 
 ## Remaining Before Closure
 
-- finish course mobile validation and later team design validation;
-- promote the provisional design language only after dense tables, filters, charts, forms,
-  partial-data states, and responsive entity layouts are coherent;
+- preserve one reviewed Pencil snapshot at this checkpoint and carry the approved v0.2 baseline
+  through later team, form, and in-browser motion validation without treating it as immutable;
 - close the route/API contract gaps and review the implemented team-facing contracts;
 - implement and verify the route slices, Steam session boundary, permissions, uploads,
   accessibility, responsive behavior, caching, metadata, and release evidence;

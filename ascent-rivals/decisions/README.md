@@ -182,7 +182,7 @@ evidence and must not be presented as current truth before incorporation.
 - **Why:** Simulated metal, random border fragments, and repeated cutouts made composed pages
   noisy and gimmicky. The revised language preserves the in-world terminal character while
   keeping repeated content readable and implementable in CSS and SVG.
-- **Affected knowledge:** [Design Language v0.1](../initiatives/website-v2/design-language-v0.1.md),
+- **Affected knowledge:** [Design Language v0.2](../initiatives/website-v2/design-language-v0.2.md),
   [Terminal Ops design system](../initiatives/website-v2/terminal-ops-design-system.md), and the
   [Website V2 initiative checkpoint](../initiatives/website-v2/README.md#current-design-checkpoint).
 - **Evidence:** The owner-reviewed external Pencil checkpoints summarized by the affected
@@ -209,8 +209,7 @@ evidence and must not be presented as current truth before incorporation.
 ### AR-2026-013 — Course discovery and course records use separate routes
 
 - **Date:** 2026-07-20
-- **Status:** Approved desktop information architecture; course mobile validation and
-  implementation remain pending.
+- **Status:** Approved responsive information architecture; implementation remains pending.
 - **Changed:** From an embedded course selector, archive scope, local directory search, and
   cross-course summary concepts to a simple published-course directory at `/courses` and one
   focused record surface at `/courses/[code]`. Course changes use ordinary route navigation.
@@ -221,8 +220,8 @@ evidence and must not be presented as current truth before incorporation.
 - **Affected knowledge:** [Course leaderboards specification](../initiatives/website-v2/pages/course-leaderboards.md),
   [information architecture](../initiatives/website-v2/information-architecture.md), and the
   [route/API matrix](../initiatives/website-v2/route-api-matrix.md).
-- **Evidence:** The reviewed course directory/detail desktop calibrations and the Website V2
-  initiative delivery checkpoint.
+- **Evidence:** The reviewed course directory/detail desktop/mobile calibrations, faceted-selection
+  state study, and the Website V2 initiative delivery checkpoint.
 
 ### AR-2026-014 — Team Core replaces the pre-alpha team model
 

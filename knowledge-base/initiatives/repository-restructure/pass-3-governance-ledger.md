@@ -4,7 +4,7 @@ Status: Governance implementation complete; empirical workflow validation pendin
 
 Date: 2026-07-19
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## Purpose
 
@@ -127,17 +127,51 @@ apply it during normal work. This correction improves direct incorporation, but 
 tasks mostly owned disjoint initiative documents and therefore still do not exercise the planned
 parallel task-log and serialized-incorporation case.
 
+## Fourth Live-Use Observation
+
+The Website V2 design workflow now records a Windows-originated interaction against the WSL-hosted
+personal repository. One long-running coordinator conversation owns product and design decisions,
+prepares prompts for a separate Pencil designer conversation, inspects the Windows-hosted live
+artifact through MCP, and incorporates accepted checkpoints into the Website V2 initiative. The
+live artifact can advance beyond the reviewed Markdown checkpoint without becoming accepted
+knowledge, implementation, or deployment evidence.
+
+This case confirms the existing cross-environment and scoped-acceptance policies without requiring
+a repository-wide correction. It also shows why prompts, copied completion reports, experimental
+frames, and routine visual feedback should remain transient while accepted design rules, artifact
+checkpoint state, contract gaps, and the next gate remain durable. The complete observation and
+tool implications are recorded in the
+[cross-chat design use case](../federated-kb/federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-iterative-design-coordination-across-chats-and-a-live-artifact).
+
+This satisfies the Windows-originated manual-use case. It does not satisfy parallel task-owned
+capture because the designer conversation did not write to the knowledge repository.
+
+## Fifth Live-Use Observation
+
+The Ascent Rivals Play-menu matchmaking-window change records the small-direct-task case. One
+conversation performed an explicitly read-only ownership trace, proposed a bounded UI and calendar
+freshness slice, received owner approval, paused when Perforce authentication was unavailable,
+resumed after login, implemented the accepted change in an opened local working copy, and updated
+the owning Gauntlet client-entry initiative.
+
+The case confirms that a small feature can move from analysis to implementation and direct durable
+incorporation without a coordinator/coder split or a task log. Scoped approval, local implementation,
+Perforce submission, deployment, and runtime verification remained independent. Transient prompts,
+command output, authentication recovery, and formatting checks stayed outside durable knowledge.
+The complete observation and tool implications are recorded in the
+[direct implementation use case](../federated-kb/federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-analysis-gated-direct-feature-implementation).
+
+This satisfies the small-direct-task manual-use case. It does not satisfy parallel task-owned
+capture or grooming.
+
 ## Remaining Empirical Checkpoint
 
 Do not extract the reusable template or begin the `kb` implementation solely from this pass.
-First exercise the policy during ordinary work:
+The small-direct, coordinated-feature, and Windows-originated cases are now recorded. Two cases
+remain:
 
-1. one small direct task that produces either a direct durable update or an explicit
-   no-capture result;
-2. one coordinated feature with implementation and review contributions;
-3. one feature with at least two parallel task-owned logs and serialized incorporation;
-4. one grooming pass containing an unresolved, abandoned, or already-represented entry;
-5. one Windows-originated agent interaction against the WSL-hosted personal repository.
+1. one feature with at least two parallel task-owned logs and serialized incorporation; and
+2. one grooming pass containing an unresolved, abandoned, or already-represented entry.
 
 After these cases, review classification friction, capture noise, missing retrieval links,
 task-log ownership, and whether the validator reports useful failures. Amend policy before

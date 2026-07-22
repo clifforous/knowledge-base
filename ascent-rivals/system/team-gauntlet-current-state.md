@@ -19,13 +19,14 @@
 ## Review Snapshot
 
 The team-specific cross-repository review baseline remains 2026-07-15. Later accepted Eventun
-foundation knowledge is reconciled through `9213feb`, and the reviewed Team Core backend is
-committed locally as `c4260f3`. Shared-development cutover remains pending, and the Ascentun half
+foundation knowledge is reconciled through `9213feb`, the reviewed Team Core backend is committed
+locally as `c4260f3`, and closed-membership correction is committed as `3e1606c`.
+Shared-development cutover remains pending, and the Ascentun half
 of Team Core is unfinished:
 
 - Eventun team behavior was originally inspected at `5aaaea2`; foundation, season,
   historical-conversion, and runtime-hardening are reconciled through `9213feb`, and Team Core is
-  reconciled through `c4260f3`
+  reconciled through `3e1606c`
 - Ascentun team behavior was inspected on `dev` at `a0a40ad`
 - Ascent Rivals game-client/server source, focused on gauntlet stage admission, session joins, team presentation, minimap behavior, party integration, and inbox behavior
 
@@ -75,9 +76,15 @@ rank, exact versioned membership actions, retained audit, and a bounded roster r
 additive membership operations and resolve-only operations use the exact UUID/version boundary
 documented in the team initiative. Local schema, migration, authorization, access-plan, and
 concurrency verification and implementation review are accepted. The contract is not deployed,
-and the committed Ascentun baseline still targets the legacy API. An uncommitted Ascentun Team Core
-working tree targets the replacement contract and is awaiting implementation review; it is local
-evidence, not shared-development or production behavior.
+and the committed Ascentun baseline still targets the legacy API. The staged, uncommitted Ascentun
+Team Core working tree targets the replacement contract and has passed implementation review; it is
+local evidence, not shared-development or production behavior.
+
+Committed Eventun `3e1606c` adds closed-only audited membership correction and serializes ordinary
+membership boundaries with player serving projections before assigning their timestamps. Old
+interval evidence is retained but can be marked ineffective; an exact replacement remains closed,
+and active membership still changes only through ordinary lifecycle operations. This is the local
+prerequisite for event-time team attribution and qualification, neither of which is implemented yet.
 
 ### Game-client team and social surfaces
 
@@ -163,19 +170,24 @@ Current implication: this is not a bracket system. There is no bracket graph, no
 
 ### Stage runs and participation
 
-Current gauntlet stage runtime support is player-result based:
+Accepted local Eventun commit `6343438` extends the gauntlet stage runtime foundation:
 
 - `gauntlet_stage_run` owns a durable run id.
-- stage-run creation currently persists run/session lifecycle state but does not resolve or persist entrant, team, representative, or slot-pool rows
+- claim can bind one immutable explicit-team field and create one concrete team-owned slot per field owner
 - the AccelByte `session_id` is distinct from Eventun `stage_run_id`.
 - `gauntlet_stage_run_admission` records sparse evaluated join decisions.
 - `gauntlet_stage_run_match` records accepted configured matches.
-- `gauntlet_stage_run_match_result` records per-player accepted match results.
-- `gauntlet_stage_placement` stores final aggregate player placements and is the participation signal.
+- `gauntlet_stage_run_match_result` records per-player accepted match results and exact field identity when applicable.
+- one immutable roster entry per slot records occupied or no-show state, including exact membership evidence
+- `gauntlet_stage_placement` is StageRun/player scoped and remains the player participation signal
+- direct one-slot aggregate slot and team-owner results are persisted for occupied explicit-team owners
 
 Multi-match stages are supported. Eventun accepts each configured `match_id`, then completes the run after all required matches are accepted. Final aggregate placement is ordered by summed circuit points, best placement, placement sum, then player id.
 
-Current implication: team stage winners are not computed as teams. Final accepted stage placements are still per-player rows. A future team gauntlet needs an explicit rule for deriving team results from player results before progression or prize/accounting flows treat a team as the stage participant.
+Current implication: Eventun can preserve a direct team winner when one team owns one racer slot, but
+the dedicated server does not yet implement provisional occupancy, pre-lock disconnect release, or
+authoritative roster-lock submission. Multi-racer team aggregation and team qualification remain
+undefined runtime paths.
 
 ### Database correctness and derivation
 
@@ -190,7 +202,7 @@ The current PostgreSQL model has additional constraints relevant to both team pr
 - individual circuit-points qualification cutoff preview/publish/replace creates immutable versioned entry, qualifier, and selected-match evidence at an exact projection revision/schema/projector tuple; first stage-run claim binds only a snapshot current with the locked live tuple, same-session retry returns that stored binding, and runtime uses the frozen cutoff/circuit; allocation and update share gauntlet-before-stage lock order, update preserves all stage parents with run/history rows and edits open/invite stages in place, and a full-replacement omission of a run-backed stage fails before mutation, while the stricter cutoff-configuration freeze applies only to qualification-bound stages
 - the one-time historical conversion and destructive-cutover implementation is locally complete and production-scale rehearsed; it has not been applied to shared development or production, and its temporary machinery remains until the production cutover succeeds
 - stage admission invokes broad `gauntlet_stats` calculation and filters to one player rather than reading a resolved slot
-- `gauntlet_stage_placement` includes `stage_run_id` but its primary key is still gauntlet, stage, and player
+- `gauntlet_stage_placement` is keyed by StageRun and player; stage standings explicitly name one completed StageRun, while timelines select one deterministic latest completed run
 - progression jobs now use token-fenced two-minute leases, bounded exponential backoff, five-attempt dead-lettering, and one-at-a-time claiming; all fact application, challenge rebuilding, goal evaluation, completion, and reward-record creation serialize on the player row
 
 These are documented with source references and database recommendations in [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review|eventun-team-postgresql-derivation-review]].

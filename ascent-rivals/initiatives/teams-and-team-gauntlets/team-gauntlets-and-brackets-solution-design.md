@@ -1,13 +1,24 @@
 # Ascent Rivals Team Gauntlets And Brackets Solution Design
 
-Status: Solution design draft
+Status: approved design; local G01 implementation verified
 Date: 2026-07-10
 Last updated: 2026-07-21
 Program index: [[teams-solution-design]]
 Primary backend repository: [Eventun](https://github.com/ikigai-github/eventun)
 Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 
-Foundation alignment: the capability review below originated from the pre-implementation projection and individual-cutoff contract. The projection, individual cutoff, season, repair, historical rehearsal, and runtime-hardening work is now implemented and committed locally. T00 approved the revised capability design against that baseline. Eventun Team Core passed local verification and implementation review and is committed as `c4260f3`; Ascentun integration is unfinished, shared deployment remains gated by the coordinated shared-development cutover and combined runtime smoke, and later team-gauntlet work remains separately gated by deployed Team Core identity and membership behavior.
+Foundation alignment: the capability review below originated from the pre-implementation
+projection and individual-cutoff contract. The projection, individual cutoff, season, repair,
+historical rehearsal, and runtime-hardening work is implemented and committed locally. T00 approved
+the revised capability design against that baseline. Eventun Team Core passed local verification
+and implementation review and is committed as `c4260f3`; the G01 Eventun field, slot, roster-lock,
+and result foundation passed implementation review and is committed as `6343438`. The unsubmitted
+Ascent Rivals default changelist implements the dedicated-server provisional occupancy, roster-lock,
+and reconnect integration and passed its local build, focused automations, PostgreSQL smoke, and
+implementation review. G02 Pass 1 closed historical membership correction passed implementation
+review and is committed as Eventun `3e1606c`; frozen team qualification Pass 2 is now active.
+Shared deployment remains gated by source-control completion, the
+coordinated shared-development cutover, and combined runtime smoke.
 
 ## Related
 
@@ -279,7 +290,8 @@ For a team qualification rule:
 6. aggregate those scores into the team score;
 7. retain the contributing-member breakdown;
 8. rank teams by aggregate score, a deterministic lexicographic comparison of the ordered
-   contributing-member evidence, earliest final achievement boundary, then team UUID.
+   contributing-member evidence; after an equal shared contributor prefix, rank the greater
+   contributor count first, then earliest final achievement boundary and team UUID.
 
 Top N is configuration, not a hard-coded product constant. A team with fewer than N scored
 members remains eligible only when it satisfies the separately configured
@@ -322,7 +334,13 @@ At cutoff:
 6. record unresolved deficits and applied fallback rules;
 7. publish the field atomically.
 
-A delayed complete-match batch or rewritten historical fact does not silently mutate a published field. An operator may run a recomputation, review the delta, and publish a replacement only before a stage run is claimed and bound to that field. Claim validates that the field still references the current valid source snapshots and configuration, then atomically binds the field and instantiates its concrete stage-run slots. Once bound, field owners and slots remain fixed; only provisional occupants may change until roster lock. A later field correction requires an explicit audited void/rebind or repair decision rather than an ordinary replacement.
+A delayed complete-match batch, repair, membership correction, or later projection revision does
+not silently invalidate or mutate a published field. An operator may explicitly recompute, review
+the delta, and publish a replacement only before a stage run is claimed and bound. A cutoff-relevant
+configuration change does make an unbound field stale. Claim validates the referenced
+configuration and frozen cutoff identities, but does not reject only because the live projection
+revision or cutoff head advanced after publication. Once bound, owners and slots remain fixed; a
+later correction requires an explicit audited repair decision rather than ordinary replacement.
 
 ### Current Individual Projection And Cutoff Boundary
 
@@ -336,7 +354,14 @@ The implemented individual qualification snapshot is immutable selection evidenc
 | Concrete stage-run slots | At stage-run claim, expand each published owner into the configured racer-seat count | G01 onward; slots reference the field owner and retain source provenance |
 | Locked roster and owner results | Persist actual occupants, slot results, owner aggregation, and downstream advancement | G01 proves the one-racer team path; G03 through G05 extend policies and progression |
 
-The conceptual field relations are `gauntlet_field_snapshot` and `gauntlet_field_owner`; final names should follow the implemented schema conventions. G01 initially publishes only the opening stage-target field. Later bracket matches reference typed bracket relations rather than a free-form target key. A stage run binds exactly one matching field snapshot. Each field-owner row has nullable `player_id` and `team_id` foreign keys with an exactly-one-non-null check, plus allocation rule, selection order, source snapshot or bracket position, and display label. Slots reference field owners rather than binding runtime admission directly to a player-only qualification row.
+The generalized field relations are conceptually a field snapshot and typed field owners. G01's
+implemented physical slice deliberately narrows that shape to `gauntlet_stage_field_snapshot` and
+non-null team-backed `gauntlet_stage_field_owner` rows for the opening stage, with one slot per
+owner. A StageRun binds exactly one matching snapshot. G04 may add nullable `player_id` and
+`team_id` foreign keys with an exactly-one-non-null check, allocation rules, source snapshots or
+bracket positions, and display labels; G01 does not pre-create those unimplemented variants. Slots
+reference immutable field owners rather than binding runtime admission directly to a player-only
+qualification row.
 
 G01 introduces the field/slot binding for explicit team stages without widening the existing
 player-only qualification snapshot. When an individual qualification stage is later moved into the
@@ -359,17 +384,41 @@ Team qualification extends the existing gauntlet consistency domain with members
 - the team metric definition, including top N and deterministic tie-breaks;
 - the complete selected-team, contributing-member, and selected-match evidence.
 
-Team Core intentionally does not implement historical membership correction. Before G02 creates
-the first attribution-dependent statistics or qualification state, add an audited interval
-supersession/void model capable of retaining exact old and new evidence. A correction then
-determines the union of old and prospective affected gauntlets, follows the shared ordered
-team/player/gauntlet locking discipline, advances the team's competition-roster revision, and
-recomputes affected team contributions and scores while advancing each semantically changed
-gauntlet projection revision exactly once. This remains the same repair/revision protocol as
-performance facts rather than a second global membership-freshness system. An ordinary
-current-roster change after field publication does not transfer or recalculate team ownership; it
-affects runtime eligibility only according to the field's roster policy and competition-roster
-revision. Roster lock freezes the actual occupants.
+The first G02 implementation pass adds closed-interval correction before any team-attributed
+projection exists. Ordinary membership mutations acquire the affected player's serving-projection
+lock after ordered team/player rows, revalidate membership, and only then capture their boundary
+with millisecond `clock_timestamp()`. Therefore a concurrent projector either observes the prior
+interval state and the later boundary falls after its lock, or observes the committed new state;
+there is no discovery snapshot in which an uncommitted membership boundary can be missed.
+
+Correction is deliberately closed-only. `VOID` retires one exact effective closed interval;
+`REPLACE` also creates one exact effective closed interval. Active intervals are rejected and remain
+under ordinary join/leave operations. The caller supplies a nonzero correction UUID and semantic
+payload, while Eventun canonicalizes it and retains a server-owned SHA-256 hash. An exact UUID retry
+returns retained state and exact replacement identity; changed semantic reuse returns `Aborted`.
+
+The correction transaction inserts a retained correction identity with deferred old/replacement
+references, marks the exact old row ineffective, inserts the optional replacement, advances each
+affected team's competition-roster revision once, and adds correction-team plus team-audit evidence
+before deferred validation. The reverse composite interval references prove both halves agree on
+correction, interval, team, and player. Replacement actor fields remain non-null UUID foreign keys
+and accept only the normal join/end reasons, so correction cannot invent an unknown actor. Old rows
+remain available to immutable historical snapshot foreign keys. Future live team-attribution rows
+must reference the exact effective interval identity and must never select retired evidence.
+
+Pass 2 adds targeted attribution and correction reprojection using the same ordered
+team/player/gauntlet revision protocol as fact repair, not a second freshness system. Configuration
+create, update, and removal lock the gauntlet, fingerprint semantics, and advance its projection
+revision exactly once when changed while preserving existing bound-stage freeze rules. Once that
+gauntlet lock is taken, configuration recomputation may not acquire earlier team or player locks.
+An ordinary current-roster change after field publication does not transfer or recalculate team
+ownership; roster lock freezes actual occupants.
+
+Publishing a qualified field requires a current cutoff and current qualification configuration.
+The opening stage modes are exclusive: `invite` uses explicit `gauntlet_stage_team` owners, while
+`qualification` uses one team cutoff and no configured teams. Both resolve into the existing G01
+field/runtime path. Qualification source values reuse the persisted `server` term rather than adding
+`dedicated_server` as an alias.
 
 Multi-source field publication is atomic. It validates every source preview, resolves fallback and duplicate-owner policy, persists the final owner entitlements, and publishes one field version. A repair or replacement of an upstream selection snapshot may make an unbound field stale, in which case stage-run claim fails until an explicit replacement field is published. It cannot silently mutate the published field or a bound stage run.
 
@@ -392,7 +441,9 @@ Each stage-run racer slot should contain:
 | `eligibility_policy` | Current member, explicit roster, threshold, or another approved rule |
 | `lock_state` | Open, locked, completed, void |
 
-Before lock, live occupant state is owned by the dedicated server. At lock, Eventun persists one occupant per slot and the roster version.
+Before lock, live occupant state is owned by the dedicated server. At lock, Eventun persists one
+occupied player or explicit no-show per concrete slot, together with the exact membership interval
+and the team's then-current competition-roster revision.
 
 Field publication proves that total concrete racer slots fit the stage competitor capacity and
 that any unresolved deficit is either explicitly allowed to remain vacant or blocks publication.
@@ -419,7 +470,7 @@ This directly enforces fairness: team size changes the candidate pool, not the n
 Replace broad standing evaluation with an indexed request:
 
 ```text
-GetStageRunAdmission(stage_run_id, player_id)
+CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)
 ```
 
 The response should contain:
@@ -497,12 +548,31 @@ Before roster lock, a team-owned seat may be provisional:
 The first match start or another configured deadline locks the roster:
 
 1. Dedicated server pauses new admission decisions.
-2. It submits the actual slot-to-player map with the last observed roster version.
-3. Eventun validates owner, eligibility, uniqueness, capacity, and stage-run state.
-4. Eventun atomically records occupants, locks all slots, and opens the match result transaction.
-5. Dedicated server starts the race only after lock acknowledgement.
+2. It submits StageRun and session identity, a nonzero roster-lock UUID, and the complete slot map,
+   marking every slot occupied by one player or as a no-show.
+3. Eventun canonicalizes the semantic payload, computes its SHA-256 hash, and validates current
+   owner membership, uniqueness, capacity, and StageRun state under locks.
+4. Eventun requires occupied count at least the frozen `min_lobby_size` and no more than the frozen
+   `max_lobby_size` or concrete slot count. Publication's owner-count check against the competitor
+   range remains a separate boundary.
+5. Eventun atomically records occupants, no-shows, exact membership intervals, team roster
+   revisions, and the server-owned request hash, then starts the StageRun.
+6. An exact UUID/payload retry returns retained state; changed global UUID reuse returns `Aborted`.
+7. Dedicated server starts the race only after lock acknowledgement.
 
-The current local-only “mark started” behavior should be replaced by this contract. On timeout, the server should fail closed for formal finals unless an explicit operator bypass policy exists.
+There is no caller-supplied idempotency hash. The same rule applies to field publication and
+replacement: callers provide a nonzero UUID and ordinary payload, while Eventun owns canonical
+hashing. Expected configuration and owner hashes remain explicit stale-preview guards. On timeout,
+the server fails closed unless an explicit operator bypass policy is later approved.
+
+### Runtime Lock Order
+
+The shared dependency order is team UUID, player UUID, gauntlet projection UUID, stage, field
+publication head, StageRun, slots, then roster-lock and result rows. An operation may skip tiers but
+must not acquire an earlier tier after a later one. Field publication locks ordered teams before the
+gauntlet and stage; claim starts at the gauntlet tier and does not relock immutable team owners;
+roster lock acquires ordered teams and players before its StageRun and slots; result acceptance
+starts at the StageRun tier. Mixed-operation race tests must continue to prove this order.
 
 ## Disconnects And Substitution
 
@@ -536,6 +606,31 @@ Recommended result layers:
 | Owner result | Player result or configured aggregation across a team's slots |
 | Stage-run result | Accepted ordering of owners in one heat or match |
 | Bracket advancement | Upstream owner routed to downstream bracket positions |
+
+G01 implements exact StageRun-scoped identities: per-match rows use StageRun, match, and player
+with a unique occupied slot; final slot rows use StageRun and slot; player participation placement
+uses StageRun and player; and the direct team-owner result uses StageRun and field owner with unique
+team and slot identities. Composite foreign keys carry the same field snapshot, owner, team,
+player, and membership interval through roster, per-match, aggregate slot, placement, and team
+results. Placement additionally proves its gauntlet and stage agree with the referenced StageRun.
+Eventun computes the accepted-match semantic hash from canonical standings, so an identical retry
+is idempotent and changed facts are rejected. Legacy runs retain their established acceptance
+semantics: null standings, standings without statistics, and bot/non-player standings without a
+player identity are skipped, and only retained human rows enter the semantic hash. A field-bound
+run fails closed on any such row because a formal field is bot-free and every accepted result must
+map to one occupied slot.
+
+Stage standings are StageRun reads, not logical-stage aggregates. Each stage-standings request
+names one completed `stage_run_id`, and both the response envelope and every returned row identify
+that run. Player-event timelines intentionally choose one run when several completed runs exist:
+the authoritative run is the greatest `updated_at`, then greatest `run_number`, then greatest UUID.
+That same run supplies both the timeline's `stage_run_id` and its player result, so a replay cannot
+blend with or duplicate an earlier run.
+
+G01 database, scan, transaction, and commit failures use the common request-context infrastructure
+mapping. Wrapped cancellation and deadline causes remain `Canceled` and `DeadlineExceeded`; they
+are not rewritten as `Internal`. Deliberate domain statuses and `pgx.ErrNoRows` absence handling
+remain operation-specific.
 
 ### Team Result Policy
 
@@ -650,7 +745,9 @@ Names are conceptual and should be reconciled with the existing proto style.
 - report disconnect or no-show facts where required;
 - retrieve an authoritative stage-run snapshot for recovery.
 
-All mutations require idempotency keys or natural unique keys and return versioned state.
+All mutations require idempotency keys or natural unique keys and return versioned state. Internal
+idempotency hashes are computed and retained by Eventun; they are not request fields that force a
+dedicated server or administrator to reproduce Eventun's canonicalization algorithm.
 
 ## Website Changes
 
@@ -708,7 +805,8 @@ Target measured hot database reads are p95 below 5 ms for runtime admission and 
 
 - explicitly assigned team owners through one opening stage field;
 - one team-owned racer slot per owner;
-- current-member eligibility and `FIRST_COME` provisional occupancy;
+- current-member indexed eligibility while the dedicated server owns and serializes `FIRST_COME`
+  provisional occupancy;
 - disconnect release before lock, same-player reconnect after lock, and no substitution;
 - authoritative roster lock and direct single-slot team result; and
 - minimal Ascentun authoring and dedicated-server/client admission explanation.

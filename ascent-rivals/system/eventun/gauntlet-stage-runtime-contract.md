@@ -155,7 +155,10 @@ Primary runtime tables:
 - `gauntlet_stage_run_admission`: sparse on-demand admission evaluation/audit records
 - `gauntlet_stage_run_match`: accepted-match ledger for a run
 - `gauntlet_stage_run_match_result`: per-player results for accepted matches
-- `gauntlet_stage_placement`: final aggregate stage placements and participation signal
+- `gauntlet_stage_placement`: StageRun/player-scoped final aggregate placements and participation signal
+- immutable explicit-team field head/snapshot/owner rows
+- one concrete StageRun slot per field owner plus complete occupied/no-show roster-lock evidence
+- direct aggregate slot and one-slot team-owner results for occupied field slots
 
 Important naming:
 
@@ -187,6 +190,13 @@ The AccelByte session is public in the current model:
 
 Eventun sparse admission rows are audit/cache records. They are not a participant roster and do not count as participation.
 
+Accepted local Eventun commit `6343438` makes the complete roster lock authoritative for an
+explicit-team field. Before lock, Eventun performs indexed eligibility only and does not reserve a
+seat. The dedicated server must serialize provisional occupancy and release it on a failed join or
+pre-lock disconnect. After lock, only the exact locked player may reconnect; a no-show slot cannot
+be filled. This Eventun contract is implementation-reviewed but not deployed, and the dedicated-
+server integration remains outstanding.
+
 The dedicated server should call `CheckGauntletStageRunAdmission` for every human competitor join or rejoin, including pure open stages. Open stages do not require a restricted eligibility lookup, but the admission call still validates run/session/phase, applies already-completed-stage rules, and records the admission evaluation.
 
 Current implementation gap: `UHGPlayerLifecycleServerSubsystem::BeginGauntletStageAdmission` returns to the normal join path without calling Eventun when the claim reports `allow_any_human_player=true` and `requires_restricted_admission=false`. Until that fast path is removed or the contract is deliberately changed, pure unrestricted joins bypass Eventun's already-completed-stage check and sparse admission audit row.
@@ -199,7 +209,10 @@ Stage admission policy fields:
 
 The DS owns capacity, replacement, and kick behavior. Eventun returns policy inputs and audit state.
 
-Current implementation gap: reviewed Eventun and Ascent Rivals admission/join paths do not yet enforce `players_per_team` or `team_member_rank`. Treat those fields as configured policy intent until explicit runtime enforcement is added and verified.
+Current implementation gap: the accepted Eventun G01 field enforces one concrete slot per team, but
+the reviewed Ascent Rivals dedicated-server path does not yet consume that field, own provisional
+occupancy, or submit the roster lock. `team_member_rank` and priority replacement remain configured
+future policy rather than active enforcement.
 
 ## Join Mode Behavior
 

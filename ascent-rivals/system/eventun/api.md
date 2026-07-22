@@ -126,10 +126,10 @@ The unfinished server-side projection and fail-closed visibility behavior remain
 
 ## Committed Local Team Core API
 
-Applicability: committed Eventun local-development behavior at `c4260f3`. Implementation review was
-accepted before commit on 2026-07-20. The contract is not active in shared development or deployed
-to production; those environments retain the legacy contract until the coordinated Eventun and
-Ascentun cutover.
+Applicability: committed Eventun local-development behavior through `3e1606c`. Team Core was
+committed as `c4260f3`, and closed-membership correction was accepted and committed as `3e1606c`.
+The contract is not active in shared development or production; those environments retain the
+legacy contract until the coordinated Eventun and Ascentun cutover.
 
 The breaking artifact replaces legacy delete/abdicate, numeric designation/rank authorization,
 and split pending-request operations with explicit team ownership and tombstones, membership
@@ -145,6 +145,13 @@ initially affected team in UUID order before player rows, then re-read the pendi
 under the player lock. An expanded set returns retryable `Aborted` before membership, action,
 revision, or audit writes. Title, competition-rank, and capability responses are captured before
 the mutation transaction releases its locks.
+
+Admin `CorrectTeamMembershipInterval` can void or replace only an effective closed membership
+interval. The request carries an exact correction UUID and complete replacement evidence when
+applicable; Eventun canonicalizes the semantics, computes the request hash, retains old and new
+evidence plus affected-team audit identities, and advances each affected team revision once. Exact
+retries return the retained correction and replacement identity. Changed UUID reuse is `Aborted`,
+and active-interval correction is `FailedPrecondition`.
 
 The artifact adds `Team` and `Teams` to the subjectless ClientService allowlist with Eventun Server
 `READ`; every team mutation remains subject-bearing and uses Eventun domain authorization without
@@ -219,7 +226,9 @@ normal service configuration. The complete product and migration contract remain
 - Player and dedicated-server producers call the same ingest operation. Eventun classifies a namespaced player subject as self-reported `client` data and an exactly subjectless Server-authorized token as higher-trust `server` data; the producer does not choose source kind. Both remain necessary because time trials and some local/career modes have no dedicated server. Facts, serving projections, and product policies preserve this provenance.
 - Replay association now uses the separate shared `ClientService.CreateMatchArtifact` operation rather than a late authored `ReplaySaved` telemetry event.
 - Identified ingest transactionally derives one current narrow match/heat/player/progression fact graph and applies idempotent record, career, and gauntlet serving projections before commit. Career and leaderboard/rank reads use ordinary projections; lifetime and seasonal leaderboard responses assemble all course/category groups set-wise and evaluate mutable `player_view` presentation once per request. Match History starts from source/player-selective server facts, performs keyed match/artifact lookup, orders by MatchStart, and preserves SessionStart version and replay association selected at the complete time/batch/sequence/event boundary. Gauntlet list/detail/stats/standings use ordinary projections and bounded views/functions. Time-trial history selects current candidates from facts, then fetches exact bounded PlayerHeatStart/End raw detail so the reported PlayerHeatEnd best-lap value remains authoritative. Full `match_summary` and current-match post-match insight baselines/metrics remain session/match-scoped raw reads for bot rows, loadouts, complete heat/standing presentation, and metrics absent from compact facts. Detailed post-match self-history selects current canonical server Ascent/placed candidates from facts, applies the ascension cutoff and per-heat limit, then fetches raw PlayerHeatStart/End detail only for those exact selected batch/event identities. Player discovery's one-day fallback, gauntlet runtime phase/match validation, most-recent-gauntlet lookup, replay purge, and fact repair/derivation are the other deliberate raw/legacy consumers. All twelve native materialized views, their refresh procedure, and the pg_cron schedule are retired.
-- `gauntlet_stage_placement` includes `stage_run_id` but its current primary key is not stage-run scoped, which blocks independent accepted placements across multiple bracket runs in one logical stage.
+- Accepted local Eventun commit `6343438` adds explicit-team field preview/publish/replace, player field read, and server roster-lock operations. Claim returns the bound field and concrete slots; admission switches to field eligibility/reconnect semantics; match acceptance and completion retain exact roster, slot, player, membership, and team-result evidence.
+- Stage standings now require one completed `stage_run_id` and return that identity in the envelope and rows. Player-event timelines select one deterministic latest completed run, preventing replay results from blending.
+- These G01 contracts are implementation-reviewed but not deployed. Dedicated-server provisional occupancy, disconnect release, roster-lock timing, and fail-closed start integration remain outstanding.
 
 ## Open Questions
 - Which admin controls should ship first for live gauntlet operations?

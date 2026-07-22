@@ -1,8 +1,8 @@
-# Ascent Rivals Website Design Language v0.1
+# Ascent Rivals Website Design Language v0.2
 
-Date: 2026-07-18
-Status: Provisional applied baseline
-Last reviewed: 2026-07-20
+Date: 2026-07-21
+Status: Approved implementation baseline
+Last reviewed: 2026-07-21
 
 ## Related
 
@@ -16,9 +16,10 @@ Last reviewed: 2026-07-20
 
 ## Purpose
 
-This document is the first applied visual-language baseline for Website V2. It translates the
-approved homepage, gauntlet, and pilot-profile desktop/mobile calibrations plus the course
-desktop checkpoint into rules that can guide Pencil mocks and the Next.js/React implementation.
+This document consolidates the accepted Website V2 desktop/mobile calibrations and reviewed v0.2
+reference board into a reusable visual, interaction, and responsive implementation contract. It
+supersedes Design Language v0.1 without claiming that the website is implemented, verified, or
+deployed.
 
 Source calibration frames:
 
@@ -34,10 +35,30 @@ Source calibration frames:
 - `Ascent V2 — Gauntlet Detail Active Mobile Calibration`
 - `Ascent V2 — Pilot Profile Career Calibration`
 - reviewed mobile companion to the pilot-profile career calibration
+- `Ascent V2 — Pilot Directory Calibration`
+- `Ascent V2 — Pilot Directory Mobile Calibration`
 - `Ascent V2 — Course Detail Leaderboard Calibration`
 - `Ascent V2 — Course Directory Calibration`
+- `Ascent V2 — Course Detail Leaderboard Mobile Calibration`
+- `Ascent V2 — Course Directory Mobile Calibration`
+- `Ascent V2 — Course Category Faceted Selection Study`
+- `Ascent V2 — Global Search Command Calibration`
+- `Ascent V2 — Global Search Command Mobile Calibration`
+- `Ascent V2 — Global Search Command State Study`
+- `Ascent V2 — Shared Page States Calibration`
+- `Ascent V2 — Shared Page States Mobile Calibration`
 
-This version is intentionally provisional. It has been validated on marketing, gauntlet discovery/detail, and pilot-profile compositions at desktop and mobile widths, plus course directory/detail at desktop width. The reviewed frames cover local search where a directory needs it, URL-backed view/scope controls, entity rows, a repeated-occurrence agenda, conditional detail sections, ordered stage circuits, desktop qualifier standings, mobile rank-list translation, bounded charts, client-side progressive reveal, and a dense course leaderboard. Course mobile behavior, forms, team surfaces, and several implementation states remain unvalidated.
+This baseline has been validated on marketing, gauntlet
+discovery/detail, pilot-profile and directory, and course directory/detail compositions at desktop
+and mobile widths. The reviewed frames cover local search where a directory needs it, URL-backed
+view/scope controls, self-explanatory faceted category paths, entity cards and rows, a
+repeated-occurrence agenda, conditional detail sections, ordered stage circuits, desktop qualifier
+standings, mobile rank-list translation, bounded charts, client-side progressive reveal, and a
+dense responsive course leaderboard, plus the shared global-search command with representative
+loading, no-match, partial-availability, and keyboard-focus states. The shared page-state frames
+also cover route loading, valid empty collections, essential-route unavailability, non-revealing
+not-found handling, local optional-module failure, and safe stale refresh. Forms and team surfaces
+remain unvalidated.
 
 ## Design Thesis
 
@@ -90,18 +111,20 @@ Do not invent live signals, viewer counts, shutdown pressure, telemetry, or urge
 
 ## Color System
 
-### Working semantic tokens
+### Canonical semantic tokens
 
 | Token | Value | Role |
 |---|---:|---|
 | `canvas` | `#090A0F` | primary page field |
 | `surface-deep` | `#07090D` | footer and deepest recesses |
-| `surface-nav` | `#080B10` | navigation and shell bands |
+| `surface-nav` | `#080B10E8` | navigation and translucent shell bands |
 | `surface-section` | `#0B0E14` | broad section bands |
 | `surface-panel` | `#111318` | calm panel surface |
-| `surface-raised` | `#161A21` | destination cards and raised information |
+| `surface-raised` | `#181B22` | destination cards and raised information |
+| `surface-selected` | `#18232E` | selected control field |
 | `surface-display` | `#101721` | media, scan, and received-signal display |
 | `rule` | `#303641` | seams, dividers, and low-emphasis structure |
+| `rule-strong` | `#46505C` | faceted-shell outlines and emphasized boundaries |
 | `brand-dark` | `#11111F` | canonical dark-blue brand anchor |
 | `brand-gold` | `#F2A900` | primary action, selection, and brand signal |
 | `brand-gold-dim` | `#F2A90055` | quiet emphasized rule or secondary control |
@@ -113,6 +136,13 @@ Do not invent live signals, viewer counts, shutdown pressure, telemetry, or urge
 | `signal-danger` | `#C95644` | destructive, eliminated, or error state |
 
 Alpha variants are allowed for atmospheric illumination, subdued rules, and state backgrounds. They should not lower text contrast.
+
+These tokens are extracted from the reviewed frames. The Pencil file also retains exploratory
+variables such as `metal-*`, `metal-rust`, `terminal-green`, `terminal-bg`, and older
+`surface-*` values. They are not part of v0.2 and must not be exported into the application merely
+because they still exist in the workfile. The reviewed v0.2 reference board identifies them as
+legacy rather than presenting them as usable palette choices. They may be removed after Cliff
+preserves any useful history.
 
 ### Color rules
 
@@ -134,7 +164,8 @@ Alpha variants are allowed for atmospheric illumination, subdued rules, and stat
 | Reading and general UI | IBM Plex Sans | body copy, navigation, descriptions, and ordinary labels |
 | Operational | IBM Plex Mono | commands, actions, short eyebrow labels, data, and technical notation |
 
-These are the v0.1 implementation candidates. Opinion Pro Condensed remains a brand reference but requires confirmed webfont licensing before use.
+These are the v0.2 implementation families. Opinion Pro Condensed remains a brand reference but
+is not an implementation dependency.
 
 ### Working type range
 
@@ -177,15 +208,22 @@ Working values:
 
 Applied baselines:
 
-- desktop section gutter: `64–80px`;
-- mobile page gutter: `20px`;
+- desktop calibration viewport: `1440px` with a `64px` outer gutter and `1312px` content field;
+- mobile calibration viewport: `390px` with a `20px` outer gutter and `350px` content field;
 - common panel inset: `24px`;
 - desktop navigation height: `80px`;
 - mobile navigation height: `72px`;
+- desktop footer height: `200px`;
+- mobile footer height: `212px`;
 - primary and secondary CTA height: `56px`;
 - minimum compact touch target: `44 × 44px`.
 
 Internal spacing should be balanced visually. Body or action text must not crowd the lower edge of a panel.
+
+The `1440px` and `390px` values are calibration widths, not fixed application breakpoints. The
+implementation should preserve the gutter and content relationships fluidly, introduce an
+intermediate layout where the desktop shell no longer fits, and avoid a sudden desktop-to-mobile
+collapse tied only to those two example widths.
 
 ## Composition and Surface Hierarchy
 
@@ -300,6 +338,26 @@ Use a cyan checkpoint trajectory as the preferred factual non-image fallback whe
 
 ## Components
 
+### Canonical component inventory
+
+| Component family | Canonical role | Responsive rule |
+|---|---|---|
+| Global shell | Brand, primary destinations, search, and account access | Keep the desktop destinations while they fit; use borderless Search, Menu, and account controls on mobile |
+| Global footer | Brand and stable secondary destinations | Use the `200px` desktop footer and `212px` mobile two-row footer |
+| Primary and secondary action | High-value forward action and lower-emphasis companion action | Stack at full content width when horizontal actions no longer fit |
+| Standard segmented control | A small mutually exclusive page view such as Gauntlets/Schedule | Preserve one connected `44px` shell; keep its state in the URL where it changes the view |
+| Faceted radio group | A compact, closely related category path such as Race/Time Trial and Finish Time/Best Lap | Use one shared opposing-cut shell per group; stack full-width groups on mobile |
+| Directory item | Scan-and-compare identity or event summary | Preserve the leading identity and primary status; move secondary data below or omit it |
+| Data table / rank list | Exact competitive comparison | Use semantic tables on wide layouts and an open ranked list on mobile rather than horizontal scrolling |
+| Global search command | Shallow public entity discovery | Use a modal dialog on desktop and a full-width sheet within the mobile shell |
+| Rate and chart module | At-a-glance comparison or bounded history | Preserve labels, values, and accessible summaries when reducing chart detail |
+| Shared page-state surface | Route, collection, entity, module, or freshness state | Preserve the global shell; keep optional failures local to their module |
+| Media or scan viewport | Approved gameplay, event imagery, or factual fallback | Change crop and overlay density by width; do not change the represented fact |
+
+The implementation should compose these families rather than create page-specific copies with
+slightly different measurements. Page components may add content structure without redefining the
+global shell, footer, action, selector, focus, or state language.
+
 ### Primary CTA
 
 - gold filled surface;
@@ -315,6 +373,28 @@ Use a cyan checkpoint trajectory as the preferred factual non-image fallback whe
 - light label;
 - one directional termination;
 - equal height to the primary CTA.
+
+### Standard segmented control
+
+- use one rectangular connected shell with shared seams;
+- each option retains a minimum `44px` interaction height;
+- selected state uses a quiet tonal field and a `2px` amber index;
+- hover, focus, and selected state remain visually distinct;
+- do not use the faceted selector merely to make an ordinary two-view switch look more technical;
+- when the control changes the page view, make the URL the state source.
+
+### Faceted radio group
+
+- use a single shell with top-right and bottom-left cuts around the whole group;
+- keep internal options rectangular and separated by ordinary seams;
+- use `56px` desktop and `52px` mobile group heights in the reviewed category path;
+- selected state uses `surface-selected`, stronger label weight, and one `3px` amber rail inset
+  approximately `11px` from the group edge;
+- keyboard focus uses a separate `2px` cyan, shape-aware inset outline over the full interaction
+  target; it may coexist with selection on another option;
+- expose the group legend to assistive technology without adding vague visible labels such as
+  `Context` or `Measure`;
+- keep shareable category state in the URL.
 
 ### Destination card group
 
@@ -350,6 +430,28 @@ Mobile:
 - one or two diagonal corner cuts are sufficient;
 - keep overlays sparse enough that imagery remains legible.
 
+### Global search command
+
+- open from the stable global shell without navigating to an intermediate search page;
+- group shallow results by public entity type and link directly to canonical entity routes;
+- preserve deterministic keyboard focus and distinguish focus from activation;
+- report no matches separately from dependency failure;
+- allow one unavailable group while valid groups remain usable;
+- do not imply analytics-based relevance, popularity, or command latency unless implemented.
+
+### Shared page-state surfaces
+
+- route loading preserves the global shell and reserves the expected content structure;
+- a valid empty collection states that the request succeeded and offers a safe next action;
+- essential-route failure offers Retry first and a safe route second without exposing provider or
+  infrastructure detail;
+- not-found and not-public use one non-revealing entity response;
+- optional-module failure preserves valid surrounding content and retries only that module;
+- stale refresh keeps the last safe content visible, labels it neutrally, and uses a polite status
+  announcement without inventing a timestamp;
+- loading, empty, unavailable, not-found, and stale are different states and must not share one
+  generic error component with interchangeable copy.
+
 ## Motion
 
 Motion should confirm interaction or factual state change.
@@ -372,6 +474,21 @@ Avoid:
 - delaying content for atmosphere.
 
 Reduced motion must replace drawing, scanning, and mechanical movement with an immediate state change or simple fade.
+
+### Implementation calibration
+
+The reference board defines stable component states and transition intent; it is not an animation
+storyboard. The first implementation may choose reasonable short transitions for button feedback,
+expand/collapse, segmented-view changes, faceted selection, menus, dialogs, and sheets, then review
+them in the browser with representative content.
+
+Initial motion choices remain provisional. They must:
+
+- make interaction feel responsive rather than delay content;
+- preserve a clear distinction among hover, focus-visible, selected, expanded, and activated;
+- avoid moving surrounding layout merely to animate a state marker;
+- use one coherent timing and easing family instead of page-specific effects;
+- disable nonessential movement and remove animated height travel under reduced motion.
 
 ## Imagery and Atmosphere
 
@@ -435,6 +552,24 @@ Applied patterns:
 - keep mobile body text at approximately `16–17px`;
 - maintain 44px touch targets without requiring visible borders.
 
+### Canonical responsive transformations
+
+| Desktop pattern | Narrow/mobile transformation |
+|---|---|
+| Full destination navigation | Stable brand lockup plus Search, Menu, and account controls |
+| Side-by-side actions | Full-width vertical action stack |
+| Horizontal Ascension progression | Straight vertical diamond rail |
+| Multi-column destination or identity collection | One-column cards or open rows with reduced metadata |
+| Wide standings or leaderboard table | Open ranked list preserving rank, identity, and primary value |
+| Adjacent faceted category groups | Full-width stacked groups separated by `16px` |
+| Search modal | Mobile sheet under the stable `72px` shell |
+| Dense chart annotations | Reduced visual detail with unchanged value labels and accessible summary |
+| Page-local anchor row | Compact labeled section-jump control |
+| Multi-column footer links | Two centered link rows beneath left-aligned branding |
+
+Responsive reduction changes composition, not product meaning. Route, selected filters, primary
+facts, status, and action semantics must remain equivalent across widths.
+
 ### Operational detail composition
 
 - Let one current qualifier, stage, or bracket surface carry the operational focus instead of nesting several equally strong cards.
@@ -475,6 +610,19 @@ Applied patterns:
 - Meet WCAG AA contrast for core text and controls.
 - Keep the design usable with motion disabled and terminal notation removed from screen-reader labels where it adds no meaning.
 
+### Artifact and handoff boundary
+
+- The external Pencil workfile is reviewed design evidence, not generated application source.
+- The Markdown contract controls when exploratory variables, hidden notes, and superseded study
+  frames disagree with a canonical visible frame.
+- Ignore the immutable, nonvisual desktop pilot-profile root metadata value `RACE FINISH`; visible
+  copy, control metadata, accessibility labels, and this contract use `RACE / FINISH TIME`.
+- Ignore the superseded labeled course-category study in favor of the faceted-selection study.
+- Do not export every Pencil variable into CSS. Export only the canonical token set shown on the
+  reviewed v0.2 reference board.
+- Preserve one reviewed `.pen` snapshot only at an explicit checkpoint; the Windows workfile
+  remains the live artifact during iteration.
+
 ## Rejected Patterns
 
 - faux scrap-metal panels;
@@ -495,28 +643,30 @@ Applied patterns:
 
 ## Validation Boundary
 
-Version 0.1 confirms the marketing shell, responsive visual thesis, gauntlet directory and
+Version 0.2 consolidates the marketing shell, responsive visual thesis, gauntlet directory and
 Schedule composition, active and sparse gauntlet-detail behavior, the public pilot-profile
-desktop/mobile composition, and the desktop course directory/detail composition. It validates
+desktop/mobile composition, the course directory/detail compositions, and the global-search
+command at desktop/mobile widths. It validates
 ordered stage circuits, conditional section omission, desktop qualifier standings, a mobile
 rank-list translation, client-side progressive reveal, bounded career-rate comparisons,
 responsive pilot course-record summaries, recent-race visualization, a three-entry gauntlet
-history, and one exact course leaderboard with a top-five gap view. It does not yet finalize:
+history, one exact course leaderboard with a top-five gap view, grouped shallow search results,
+local search-command recovery states, and representative route-, collection-, entity-, module-,
+and stale-data states. The 2026-07-21 alignment pass also confirms common desktop/mobile shell and
+footer measurements, generic sign-in language, search identity, natural user-facing numbers, and
+the accepted faceted and segmented controls across the current canonical frames. It does not yet
+finalize:
 
-- course-directory and course-detail behavior at mobile width;
 - broader leaderboard and very dense table behavior beyond the reviewed course board;
-- complex filters, sorting, pagination, and grouped search-result presentation;
+- complex filters, sorting, and pagination beyond the reviewed collection controls;
 - broader chart behavior beyond the reviewed career-rate and recent-race examples;
 - gauntlet bracket graphs, stage-run detail, and completed-result composition;
 - team identity modules and authorized management states;
 - forms and permissioned workflows;
-- loading, empty, error, stale, and partial-data visuals;
 - final font loading and licensing decisions;
 - final dark-token consolidation for implementation.
 
-Revise this language through representative page mocks in this order:
-
-1. validate course directory/detail at mobile width;
-2. team pages after the team model is stable enough.
-
-Promote the document to v0.2 only after the interior mocks establish reusable rules for dense data, controls, charts, and responsive entity layouts.
+The bounded Pencil reference board has been reviewed across canonical tokens, typography,
+geometry, shells, footers, actions, selectors, rows, shared states, focus treatment, and responsive
+transformations. It establishes static states and intent rather than final transition timing.
+Team, form, and in-browser motion validation may revise this baseline later.
