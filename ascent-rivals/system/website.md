@@ -25,7 +25,8 @@ no current CMS requirement.
 
 The MSI Grand Prix hero uses the approved MSI tournament crest with a separate “Sponsored by
 MSI” lockup immediately above it. Both are repository-owned static assets derived from the
-approved Idemax mock rather than hotlinked media.
+approved Idemax mock rather than hotlinked media. The `/tournaments` upcoming promotion uses
+the same tournament crest over the event race artwork without repeating the sponsor lockup.
 
 ### Ascentun
 

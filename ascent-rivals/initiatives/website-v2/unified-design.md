@@ -480,7 +480,8 @@ These are in scope for the long-term site design, though not all are phase-1 req
 ### Public stats
 
 - richer public player stats
-- richer public team stats, initially secondary to individual pilot results and subject to post-implementation review
+- approved represented-performance and current-roster team context, initially secondary to
+  individual pilot results and subject to post-implementation visual review
 - richer gauntlet stats
 - exact course and gauntlet ranking context
 - medal and trophy display models
@@ -645,14 +646,17 @@ The team experience should preserve all current management flows and add a riche
 
 ### Public team direction
 
-- roster
+- complete active roster with explicit owner treatment and optional public title/competition rank
 - public membership mode using `Open`, `Request to Join`, or `Invite Only` for every audience
 - prominent individual pilot identities and profile links
-- fact-backed team stats as a secondary launch surface, with exact modules re-evaluated after team-feature iteration
-- team standings in gauntlets only when the competition defines team-result semantics
-- medals earned by the team
-- trophies earned in team-based finals
-- public team history over time
+- represented-performance summary as a secondary launch surface
+- complete current-roster comparison for one course/category, including unranked pilots
+- bounded results earned while each pilot represented the team at MatchStart
+- team gauntlet history only from qualification or accepted-result evidence owned by the team
+
+Represented individual performance is not a team win, podium, rating, trophy, or medal. Aggregate
+team scores, medals, trophies, and course-strength claims remain deferred until explicit competition
+semantics own them.
 
 ### Private team direction
 
@@ -668,8 +672,12 @@ Membership-mode decision:
 
 - use the stable public labels `Open`, `Request to Join`, and `Invite Only`;
 - show the same label to anonymous and authenticated visitors;
-- vary the available action according to authentication, current membership, and invitation state;
+- render the available action from one authoritative Eventun viewer state rather than deriving it
+  from membership mode;
 - map the reviewed new-team enums to these labels rather than exposing backend terminology directly.
+
+The viewer state covers join, request, cancel, invitation accept/decline, leave, manage, already on
+another team, and no available action.
 
 This includes:
 
@@ -690,9 +698,10 @@ The current default team-page structure is:
 
 - Overview
 - Roster
-- Gauntlet Results
-- Team Stats
-- Trophies and Medals
+- Represented Performance
+- Current-Roster Comparison
+- Recent Represented Results
+- Team Gauntlet History, when team-owned evidence exists
 - Manage
 
 `Manage` should only appear for authorized users, but it should remain attached to the main team context rather than being treated as a disconnected admin surface.
@@ -1048,7 +1057,8 @@ Potential scope:
 
 - Trying to solve marketing, operations, competition discovery, stats, lore, and watch in a single pass will create an unfocused first version.
 - Treating the replacement target as a visual merge without migrating authenticated non-blockchain operations would leave a second operational site in place.
-- Team charts are incorrect until Eventun can attribute performance to membership at event time; summing current roster careers is not an acceptable shortcut.
+- Team charts are incorrect unless they use the approved event-time attribution and T03 projection
+  semantics; summing current roster careers is not an acceptable shortcut.
 - Over-separating event types too early could make the site feel empty when the actual event volume is still low.
 - Overloading the marketing homepage with player utility could weaken conversion and recreate the superseded command-center compromise.
 - Public/private blending is directionally correct, but it can produce confusing permission edges if actions are not clearly scoped.
@@ -1101,8 +1111,10 @@ These are not yet sprint plans, but they are strong candidates for implementatio
 
 ### 5. Public team experience redesign plus preserved management workflows
 
-- richer public team pages
-- team stats and historical results
+- compact public directory and complete active roster
+- represented-performance summary, complete current-roster comparison, represented-result history,
+  and owner-aware gauntlet history
+- authoritative viewer action state without browser inference from membership mode
 - improved team management UX
 - preserved invite, join-request, and roster-management flows
 

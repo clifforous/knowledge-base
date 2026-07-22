@@ -2,8 +2,10 @@
 
 Date: 2026-04-13
 Status: Approved public layout baseline; bracket/result detail and implementation remain open
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-22
 Design checkpoint: Active combined, sparse/upcoming, and active mobile calibrations reviewed
+Contract alignment: T03 owner/slot terminology approved; affected visual annotations remain to be
+revalidated
 
 ## Related
 - [[../unified-design]]
@@ -117,6 +119,8 @@ Website contract guidance:
 - a server-provided current phase/component is preferable once bracket and stage-run state becomes richer;
 - if Website V2 derives state from timestamps and arrays initially, keep the algorithm centralized and test qualifier-only, stage-only, combined, sparse, and exact-boundary cases;
 - do not use `live` unless a reliable backend state supports it.
+- never collapse field owners, racer slots, occupied slots, admissions, and participants into one
+  generic participant count.
 
 ## Current V1 Data Availability
 
@@ -376,6 +380,9 @@ Content:
 - entry requirement
 - min/max competitors
 - team/group constraints where available
+- qualified player/team owner count or field-owner count only when the public projection supplies
+  that exact meaning
+- racer-slot count separately when useful
 - ordered circuit matches with a published course name or course-code fallback
 - laps and heats only as optional match runtime settings inside stages
 
@@ -386,6 +393,8 @@ Terminology:
 - use `Bracket` only when a published bracket graph exists;
 - do not infer a bracket merely from stage win/loss prerequisites;
 - use `Heat` only for match-internal runtime rounds in a stage match
+- label owner counts as `Qualified Players`, `Qualified Teams`, or `Field Owners` according to the
+  returned owner composition; label capacity as `Racer Slots`
 
 V1 visual model:
 
@@ -427,6 +436,22 @@ Design guidance:
 - standings should be easy to scan
 - standings can live inside qualifier/final sections or behind page-local navigation
 - do not make standings the only page identity
+
+### Accepted Result Ownership
+
+Every accepted gauntlet result used by Website V2 has an explicit owner variant: player or team.
+
+- render a player-owned result as an individual result;
+- render a team-owned result as the team's result;
+- when a player occupied a team-owned racer slot, keep personal participation and the team-owned
+  result visually separate;
+- do not label the team's placement as the occupying player's individual finish;
+- preserve exact StageRun identity from the public projection rather than selecting or inferring a
+  run in the browser;
+- use `Final`, win, trophy, or medal only when explicit competition semantics provide that meaning.
+
+Member participation without team-owned qualification or accepted-result evidence is a
+`No team result` state, not a team placement.
 
 ## 6. Sponsors
 
@@ -537,6 +562,8 @@ Required states:
 - no qualifiers
 - no stages/finals
 - no standings yet
+- no team-owned result despite member participation
+- typed result module unavailable while schedule/detail remains available
 - no sponsors
 - failed standings fetch
 - failed qualifier standings fetch
@@ -547,6 +574,7 @@ Tone:
 - `No qualifier windows published.`
 - `No final stage scheduled.`
 - `Standings sync pending.`
+- `No team result recorded.`
 
 ## Responsive Behavior
 
@@ -590,3 +618,5 @@ Do not expose private player-specific eligibility data in metadata.
 - Use the reviewed active desktop, sparse/upcoming desktop, and active mobile frames as the gauntlet-detail implementation baseline.
 - Add the planned stage-title field and decide whether an optional gauntlet/default race-mode field belongs in Eventun before relying on either value in implementation.
 - Decide how much stage/final bracket data Eventun must expose before bracket visualization becomes a V1 requirement.
+- Revalidate affected desktop/mobile field-count and accepted-result annotations against the typed
+  owner contract; do not redesign the reviewed overall composition.

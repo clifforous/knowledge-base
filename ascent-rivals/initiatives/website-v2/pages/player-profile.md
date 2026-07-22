@@ -650,7 +650,8 @@ Initial release:
   sorting groups;
 - link every entry to `/gauntlets/[id]` and show the gauntlet title plus ticker or concise date context where useful;
 - show current overall qualifier rank, qualification points, and qualifiers counted/played when qualifiers apply;
-- show an accepted stage placement and circuit points when a completed stage result exists;
+- show an accepted stage result and circuit points when one exists, preserving whether the result
+  owner is the player or a represented team;
 - otherwise use a factual participation fallback such as races played and podiums;
 - use a compact responsive list whose result fields adapt to the gauntlet structure rather than forcing every entry into one rigid tournament-results table;
 - do not add an aggregate gauntlet chart in the initial release because qualifier-only, staged, playtest, and other gauntlet structures are not one comparable series.
@@ -658,6 +659,8 @@ Initial release:
 Result and privacy rules:
 
 - an overall qualifier rank is not a tournament finish;
+- a team-owned placement is not the occupying player's individual tournament finish; show personal
+  participation and the represented team's result as separate facts;
 - use `Stage N` for an accepted stage result and use `Final` only when the competition contract explicitly identifies that stage as the deciding final;
 - do not expose invitations, eligibility, admission state, group assignment, or status-only rows on another player's public profile;
 - a `gauntlet_player_status` row alone is not sufficient public participation evidence;
@@ -666,7 +669,9 @@ Result and privacy rules:
 Website API requirement:
 
 - add a compact player-gauntlet-history read instead of joining the existing broad gauntlet list with `PlayerGauntletStats` and issuing one `GauntletEventsPlayer` request per gauntlet;
-- return presentation metadata, lifecycle state, latest real player-activity time, qualifier summary when applicable, accepted stage placements when applicable, and the small aggregate participation fallback in one collection;
+- return presentation metadata, lifecycle state, latest real player-activity time, qualifier summary
+  when applicable, owner-discriminated accepted stage results when applicable, represented team when
+  relevant, and the small aggregate participation fallback in one collection;
 - derive participation and ordering from canonical qualifier contributions, gauntlet match contributions, or accepted stage placements rather than configuration dates or invitation/status rows;
 - preserve current-versus-completed and missing-versus-zero distinctions in the contract;
 - return at most three entries for the public profile and do not add pagination or progressive

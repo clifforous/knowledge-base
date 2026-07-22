@@ -2,7 +2,7 @@
 
 Date: 2026-04-13
 Status: Approved discovery model, compact discovery contract, and desktop/mobile visual calibration; implementation details open
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-22
 
 ## Related
 
@@ -120,7 +120,7 @@ Current gauntlet fields include:
 - qualifiers and stages;
 - first and final event times;
 - media and sponsor relationships;
-- participant count and scoring configuration.
+- field-owner and racer-slot capacity where those meanings are explicit, plus scoring configuration.
 
 Limitation:
 
@@ -253,9 +253,13 @@ Each card should prioritize:
 - active or nearest future occurrence type and time;
 - concise qualifier or stage position such as `Qualifier 2 of 4` or `Stage 1 of 3` when meaningful;
 - region;
-- participant count only when its meaning is clear;
+- published owner count or racer-slot count only when its meaning is explicit;
 - approved sponsor branding only when supplied through the public gauntlet context;
 - route to `/gauntlets/[id]`.
+
+When counts appear, label them by returned meaning: `Qualified Players`, `Qualified Teams`, or
+`Field Owners` for owners, and `Racer Slots` for capacity. Omit an unknown count rather than use
+`Participants`.
 
 Optional supporting context:
 
@@ -317,8 +321,12 @@ Card content:
 - title and verified media;
 - most recent occurrence date;
 - result or winner summary only when supported by accepted result data;
-- participant count where meaningful;
+- occurrence-scoped owner or racer-slot count where meaningful;
 - canonical detail link.
+
+An accepted result summary must retain its player-or-team owner. Do not turn a team-owned placement
+into an occupying player's individual finish, and use `Final`, win, trophy, or medal only when the
+competition explicitly supplies that semantic.
 
 Use `Past` when only schedule history is known. A card may say `Completed` inside result context only when an explicit completion/result contract supports it.
 
@@ -346,7 +354,10 @@ Add one compact, complete Eventun discovery read rather than making Website V2 j
 The response provides:
 
 - authoritative server time once at the response level;
-- unique public gauntlet identity and presentation summary: id, title, subtitle/ticker, region, colors, participant count, and bounded card media;
+- unique public gauntlet identity and presentation summary: id, title, subtitle/ticker, region,
+  colors, and bounded card media;
+- occurrence-scoped field-owner composition plus optional published-owner and racer-slot counts;
+  never one ambiguous participant count;
 - normalized qualifier and stage occurrences needed by both the unique directory and repeated-occurrence Schedule view;
 - active occurrence, if any;
 - next occurrence, if any;

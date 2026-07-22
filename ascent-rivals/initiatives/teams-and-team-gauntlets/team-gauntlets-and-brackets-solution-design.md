@@ -627,6 +627,37 @@ the authoritative run is the greatest `updated_at`, then greatest `run_number`, 
 That same run supplies both the timeline's `stage_run_id` and its player result, so a replay cannot
 blend with or duplicate an earlier run.
 
+### Public Field And Result Projections
+
+Website V2 and game-client presentation may share narrow public competition reads, but they do not
+consume the evidence-rich field, roster-lock, repair, or audit messages directly.
+
+- Gauntlet discovery has no generic `participant_count`. For the active, next, or otherwise selected
+  occurrence it may return field-owner composition (`PLAYER_ONLY`, `TEAM_ONLY`, or `MIXED_OWNER`),
+  optional published owner count, and optional racer-slot count. Owner count and racer-slot count
+  remain separate; unrestricted or unpublished fields omit counts they cannot state factually.
+- A public field projection returns public player/team owner summaries, allocation source where it
+  is useful to explain qualification or invitation, and the exact occurrence/stage identity. It
+  excludes configuration and request hashes, membership intervals, roster revisions, publisher
+  identity, replacement evidence, and repair state.
+- A public timeline selects or enumerates exact StageRuns. Every standings/result request names one
+  nonzero `stage_run_id`; neither Website nor game client infers a run from stage number or sends an
+  empty run identity.
+- A public accepted-result row uses an explicit player-or-team owner variant. A player occupying a
+  team slot may be shown as representing that team, but the team's placement is not relabeled as the
+  player's tournament finish. Player participation, team qualification standing, and accepted team
+  result remain separate facts.
+- Mixed-owner or multi-racer fields expose a common ordering only after the relevant owner-result
+  policy is approved and implemented. Until then the public response omits the unsupported aggregate
+  instead of inventing a comparable score.
+- `Final`, win, trophy, and medal labels require explicit competition semantics. Being the last
+  authored stage or having the smallest placement value is insufficient.
+
+The compact player-gauntlet and team-gauntlet history reads reuse these owner-discriminated result
+messages. Player history may include personal participation and the represented team's result as
+separate fields. Team history includes only qualification or accepted-result evidence owned by that
+team; the activity of a current or former member does not independently create a team result.
+
 G01 database, scan, transaction, and commit failures use the common request-context infrastructure
 mapping. Wrapped cancellation and deadline causes remain `Canceled` and `DeadlineExceeded`; they
 are not rewritten as `Internal`. Deliberate domain statuses and `pgx.ErrNoRows` absence handling

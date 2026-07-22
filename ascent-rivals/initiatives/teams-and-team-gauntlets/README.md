@@ -12,10 +12,11 @@ automations, the Eventun PostgreSQL smoke, and implementation review. None of th
 deployed. Coordinated deployment remains gated by source-control completion, the shared-development
 cutover, and combined runtime smoke.
 Eventun G02 Pass 1 closed-membership correction passed implementation review and is committed as
-`3e1606c`. The unstaged Eventun G02 Pass 2 working tree implements frozen team qualification and
-has passed coder verification; it is awaiting implementation review and is not deployed.
+`3e1606c`. G02 Pass 2 frozen team qualification passed coder verification and implementation review
+and is committed as `1e3b76e`; it is not deployed. The T03 reusable public-team and fact-backed
+performance-read contract is approved for implementation from that clean source baseline.
 
-Last consolidated: 2026-07-21
+Last consolidated: 2026-07-22
 
 ## Outcome And Boundary
 
@@ -37,8 +38,9 @@ authorized by this initiative.
 | G01 Eventun field/slot/roster/result foundation | `verified` | Eventun commit `6343438`; [delivery checkpoint](delivery-plan.md#g01-implementation-review-checkpoint) | Full repository verification, disposable PostgreSQL schema/runtime suite, and implementation review passed locally; no authentic-data reconstruction or shared-environment deployment was run | Coordinated shared-development cutover and combined runtime smoke |
 | G01 dedicated-server runtime integration | `verified` | Unsubmitted Ascent Rivals default changelist; [runtime verification checkpoint](delivery-plan.md#g01-dedicated-server-runtime-verification-checkpoint) | Development Editor build, five focused roster automations, and Eventun PostgreSQL smoke passed locally; no shared-environment deployment or player-connected combined smoke | Owner source-control decision, then coordinated shared-development cutover and combined runtime smoke |
 | G02 closed-membership-correction pass | `verified` | Eventun commit `3e1606c`; [Pass 1 checkpoint](delivery-plan.md#g02-pass-1-implementation-review-checkpoint) | Full repository verification, isolated PostgreSQL correction/identity/timestamp/migration/access-plan/race/benchmark suite, and implementation review passed locally; not deployed | Use the committed correction and serialization boundary in Pass 2 |
-| G02 frozen team qualification pass | `implemented` | Unstaged Eventun working tree based on `3e1606c`; [Pass 2 checkpoint](delivery-plan.md#g02-pass-2-implementation-review-checkpoint) | Full repository verification and isolated PostgreSQL migration, attribution, ranking, cutoff, field, race, access-plan, and rebuild suites passed locally; not deployed and not yet implementation-review accepted | Implementation review |
-| Later roster policy, mixed-owner, and bracket slices | `approved` | G03-G07 remain defined in the delivery plan | `not-deployed` | Complete and review G02 Pass 2 |
+| G02 frozen team qualification pass | `verified` | Eventun commit `1e3b76e`; [Pass 2 checkpoint](delivery-plan.md#g02-pass-2-implementation-review-checkpoint) | Full repository verification and isolated PostgreSQL migration, individual-rule reuse, full-population and complete contributor-tuple ranking, membership-semantic revisioning, effective field capacity, immutable cutoff/field evidence, sealed-cutoff fact repair and authoring replacement, qualified-field publication/claim, field-history deletion protection, race, access-plan, rebuild suites, and independent implementation review passed locally; not deployed | Coordinated shared-development cutover and combined runtime smoke |
+| T03 reusable public team and performance reads | `approved` | [T03 contract checkpoint](delivery-plan.md#t03-public-read-contract-checkpoint); clean Eventun baseline `1e3b76e` | `not-implemented`; no runtime evidence | Eventun pre-edit implementation checkpoint |
+| Later roster policy, mixed-owner, and bracket slices | `approved` | G03-G07 remain defined in the delivery plan | `not-deployed` | Complete the selected next implementation slice |
 
 ## Documents
 

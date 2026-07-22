@@ -1,7 +1,9 @@
 # Ascent Rivals Team Profile Page Spec
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved public T03 read/presentation contract; management details remain draft;
+desktop/mobile visual calibration pending
+Last reviewed: 2026-07-22
 Analytics priority confirmed: 2026-07-15 — individual pilots, their profiles, and the roster remain more prominent than team aggregates until the implemented team feature has been reviewed through real iteration.
 
 Membership direction confirmed: 2026-07-15. The stable public concepts are `Open`, `Request to Join`, and `Invite Only`. Exact backend enum names remain subject to the new team implementation. Token-gated membership is not part of Website V2.
@@ -71,11 +73,18 @@ Secondary:
 - preserve current join, leave, invite, request, and management flows
 - expose membership rules without confusing players
 - keep management actions near the relevant team object
-- include fact-backed team stats at Website V2 launch when the preceding team contracts support them, but keep them secondary and provisional
+- include the approved T03 performance modules at Website V2 launch after implementation review,
+  while keeping their visual prominence provisional and secondary
+- do not invent browser-side team aggregates
 - keep individual pilots and links to their profiles prominent
-- avoid presenting unsupported team aggregates as if they exist
+- avoid presenting represented individual performance as a team win, podium, rating, trophy, or medal
 
-## Current V1 Data Availability
+## Current-System Reference
+
+The following legacy operations explain the current Ascentun surface but are not the Website V2
+public contract. The committed local Team Core replacement separates compact list, team detail,
+exact membership action, and management data; coordinated deployment remains unfinished. See
+[[ascent-rivals/system/eventun/api#Committed Local Team Core API|Eventun API]].
 
 ### Team detail
 
@@ -117,7 +126,8 @@ Legacy reference designation names:
 Replacement-contract direction:
 
 - explicit ownership, public title, effective capability, and competition rank are distinct;
-- final roster presentation fields must be reviewed after T01/T02 implementation;
+- the approved public roster exposes identity, name, avatar, explicit owner treatment, approved
+  public title, and optional competition rank;
 - visible titles and rank never authorize Website actions.
 
 ### Pending invites and requests
@@ -198,6 +208,58 @@ Sources:
 - `POST /v1/team/{teamId}/abdicate`
 - `DELETE /v1/team/{teamId}`
 
+## Approved T03 Public Read Contract
+
+Website V2 designs against reusable Eventun projections, not the broad management response.
+
+### Public identity and active roster
+
+The public detail contains team identity, public name/tag, membership mode, colors, bounded media,
+status, and the complete active roster at the expected maximum of 16 members. Each roster row may
+contain only:
+
+- player identity;
+- public player name;
+- public avatar;
+- explicit owner treatment;
+- approved public presentation title;
+- optional competition rank.
+
+The public response excludes management capabilities, membership-interval identities, roster
+revisions, pending-action versions, and audit/correction evidence. A player may hide optional team
+badges or cosmetics on other presentation surfaces, but the canonical roster on the team's own
+profile remains complete.
+
+### Authenticated viewer state
+
+One private Eventun response supplies the viewer's relationship, exact applicable unexpired action
+reference, and explicit allowed transition. The page renders only the returned state:
+
+- join;
+- request to join;
+- cancel request;
+- accept invitation;
+- decline invitation;
+- leave;
+- manage;
+- already on another team;
+- no available action.
+
+Membership mode remains a public description and is never sufficient to infer one of these actions.
+Management capabilities and pending queues use separate authorized reads.
+
+### Independent performance modules
+
+The public profile may compose four independent modules below the roster:
+
+1. represented-performance summary;
+2. current-roster leaderboard comparison;
+3. recent represented results;
+4. team gauntlet history.
+
+Each module has its own loading, empty, unavailable, and freshness state. One failed module does not
+replace the public identity or roster.
+
 ## V1 Page Structure
 
 Default first-view priority:
@@ -205,10 +267,15 @@ Default first-view priority:
 1. team identity and membership status
 2. relevant join/leave/manage action for the current user
 3. roster and individual pilot profile links
-4. fact-backed team performance context after the implemented contracts have been reviewed
-5. gauntlet/trophy sections only when their ownership and result semantics are supported
+4. represented-performance and current-roster comparison
+5. recent represented results and team-owned gauntlet history when available
 
-The public profile uses readable section anchors, initially `Overview` and `Roster`, with `Stats`, `Gauntlets`, and `Trophies` added only when the post-team implementation supports those sections. The dedicated management route uses a section index for Team Info, Media, Roster, Invites, Join Requests, and Ownership/Disband. Do not use tabs to hide one long unsaved form; tabs are acceptable later only if the panels have independent loading, validation, and save behavior. Compact layouts use a labeled section jump menu.
+The public profile uses readable anchors for `Overview`, `Roster`, `Performance`, and `Gauntlets`,
+omitting destinations whose module is unavailable or inapplicable. Do not add a `Trophies` anchor
+without explicit trophy semantics. The dedicated management route uses a section index for Team
+Info, Media, Roster, Invites, Join Requests, and Ownership/Disband. Do not use tabs to hide one long
+unsaved form; tabs are acceptable later only if the panels have independent loading, validation,
+and save behavior. Compact layouts use a labeled section jump menu.
 
 ## 1. Team Briefing
 
@@ -221,7 +288,7 @@ Content:
 - team hero/avatar
 - team name
 - team tag
-- member count
+- active member count
 - public membership mode: `Open`, `Request to Join`, or `Invite Only`
 - team colors as accent, not full-page takeover
 
@@ -247,34 +314,26 @@ Purpose:
 Anonymous:
 
 - always show the public membership mode;
-- show `Sign in` or `Sign in to Join` when an open or request-based action becomes available after authentication.
+- use the shared `Sign In` control without promising a join outcome before Eventun evaluates the
+  authenticated viewer.
 
-Logged-in player without team:
+Authenticated viewer:
 
-- `Join Team` for `Open` teams;
-- `Request to Join` for `Request to Join` teams;
-- show `Invite Only` without a join/request action unless a valid invitation provides an `Accept Invite` action.
-
-Logged-in player on this team:
-
-- show own team status
-- `Leave Team` if not the explicit owner
-- management entry if manager/owner/admin
-
-Logged-in player on another team:
-
-- show already-on-team state
-- do not show join/request action
-
-Admin/manager:
-
-- show `Manage Team`
+- render only the authoritative viewer state returned by Eventun: `Join Team`, `Request to Join`,
+  `Cancel Request`, `Accept Invitation`, `Decline Invitation`, `Leave Team`, `Manage Team`, already
+  on another team, or no available action;
+- preserve an explicit no-action state rather than manufacturing a disabled action;
+- use the exact pending-action reference supplied by the private response for cancellation or
+  invitation resolution;
+- confirm destructive actions such as leaving.
 
 Design guidance:
 
 - show the same membership label to every audience; authentication and team state change the action, not the public description
 - membership actions should live near the team briefing
 - destructive actions such as leave/disband should be visually separated and confirmed
+- do not infer an action from membership mode, roster membership, owner styling, public title,
+  competition rank, or cached browser assumptions
 
 ## 3. Roster
 
@@ -286,20 +345,23 @@ Content:
 
 - player avatar
 - player name
-- approved public title after the replacement contract is reviewed
-- competition rank when its implemented meaning is useful to viewers
+- explicit owner marker/treatment for the owner row
+- approved public title
+- optional competition rank when present
 - link to player profile
 
 Interaction:
 
-- sort by name
-- sort by approved public title when useful
-- sort by competition rank when available
+- keep the complete active roster visible, including members without competition rank;
+- default to the authoritative roster order if Eventun supplies one, otherwise use a stable
+  presentation order with the owner clearly identified;
+- optional local sorting must not hide unranked members or imply management precedence.
 
 Design guidance:
 
 - roster should be the primary public data section in V1
 - public titles can use in-world labels, but should remain understandable and must not imply authorization
+- do not expose capability, membership-interval, revision, pending-action, audit, or correction data
 
 Terminal Ops components:
 
@@ -311,9 +373,10 @@ Terminal Ops components:
 
 Website V2 initial-release direction:
 
-- include a concise fact-backed team performance section after the preceding Eventun team work is implemented and reviewed;
+- include the approved concise fact-backed team performance section after T03 is implemented and
+  reviewed;
 - keep the section below the roster and subordinate to individual pilot identity and performance;
-- treat the exact metrics and visualization as provisional until the team feature has been used and iterated on;
+- treat visualization and prominence as provisional even though the response semantics are fixed;
 - omit unsupported modules rather than approximating them from current-roster lifetime totals.
 
 Reason:
@@ -321,14 +384,61 @@ Reason:
 - current team responses include roster and metadata, not team aggregate performance
 - deriving team stats by fetching every current player career would misattribute historical results as well as create inefficient Website reads
 
-Candidate content after contract review:
+### 4.1 Represented-Performance Summary
 
-- pilot results attributed to the team at performance time
-- current-roster leaderboard comparison that preserves each pilot's individual result
-- team gauntlet standings only when the competition computes team results
-- course strengths based on an approved team metric
-- recent team-represented match/event history
-- aggregate medals or trophies only when their team ownership semantics exist
+Show:
+
+- distinct matches represented;
+- player-match results;
+- individual podium finishes;
+- individual ascensions;
+- latest represented result time.
+
+These facts count individual results earned while a player represented the team at canonical
+MatchStart. Label them `Represented Performance` or equally explicit copy. Do not label them team
+wins, team podiums, a team rating, trophies, or medals.
+
+### 4.2 Current-Roster Leaderboard Comparison
+
+Show:
+
+- selected published course and record category;
+- the complete current roster;
+- each ranked player's global rank and exact result;
+- an explicit `Unranked` state for every roster member without a qualifying result;
+- optional loadout value only when it belongs to the selected public leaderboard category.
+
+This is a roster comparison over individual global records. It does not create an aggregate team
+rank, score, course strength, or average. The course/category selection is local, shareable only if
+the route contract deliberately adopts query state, and must not drop unranked rows.
+
+### 4.3 Recent Represented Results
+
+Show a bounded newest-first collection containing, where present:
+
+- player;
+- course;
+- race mode;
+- result time;
+- placement;
+- circuit points;
+- podium;
+- ascension.
+
+Every row was earned while that player represented this team at MatchStart. Missing placement,
+circuit points, podium, or ascension remains different from zero or false.
+
+### 4.4 Team Gauntlet History
+
+Show only qualification or accepted-result evidence whose typed owner is the team. Member
+participation by itself does not create a team result. When a player occupies a team-owned racer
+slot, show the player's participation and the team's owned result as separate facts.
+
+Use `Stage NN` or another factual competition label. Use `Final`, win, trophy, or medal only when
+explicit competition semantics provide that meaning.
+
+Course strengths, trend charts, team ratings, aggregate medals, and trophies remain deferred until
+their metric or ownership semantics are approved.
 
 Design guidance:
 
@@ -338,31 +448,19 @@ Design guidance:
 
 ## 5. Gauntlet Results
 
-V1 status:
+Initial status:
 
-- optional only if existing gauntlet data can associate team results safely
-
-V2:
-
-- team gauntlet history
-- team finals placements
-- invite-only/team tournament results
-- trophy case
+- use the owner-aware team gauntlet history defined above;
+- present an explicit no-team-result state when members participated but no qualification or
+  accepted result is owned by the team;
+- omit the module when the read is unavailable without suppressing the identity, roster, or other
+  performance modules.
 
 ## 6. Trophies and Medals
 
-V1 status:
-
-- optional/empty unless reliable backend data exists
-
-V2:
-
-- team trophies for team finals
-- event medals
-
-Guardrail:
-
-- do not fake official trophies or medals from incomplete data
+Deferred. Do not derive trophies or medals from represented podiums, stage placement, member
+participation, or generic accepted results. Add the section only after a competition contract owns
+the exact meaning.
 
 ## 7. Manage Team
 
@@ -478,20 +576,26 @@ Guardrail:
 
 | State | Behavior |
 |---|---|
-| Anonymous | can view public team briefing and roster; can sign in to join if relevant |
-| Logged-in player without team | can join `Open` teams, request `Request to Join` teams, or accept a valid invitation; `Invite Only` otherwise has no direct membership action |
-| Logged-in player on another team | can view team but cannot join until leaving current team |
-| Logged-in member | can view own team state and leave if not the explicit owner |
-| Authorized manager/owner | can perform only the roster, invite, request, media, membership, capability, transfer, or disband actions explicitly allowed by Eventun |
-| Admin | can access management actions where supported |
+| Anonymous | Can view public identity, complete active roster, and available public performance modules. |
+| Authenticated viewer | Receives one authoritative relationship/action state from Eventun; the page renders no inferred transition. |
+| Already on another team | Can view the full public profile; receives the explicit relationship state without join/request controls. |
+| Current member | Can view the full public profile; leave or manage appears only when explicitly allowed. |
+| Authorized manager/owner/admin | Can enter management only when Eventun returns `manage`; management reads and mutations reauthorize separately. |
 
 ## Empty / Loading / Error States
 
 Required states:
 
 - team not found
-- no roster members
-- failed team fetch
+- sparse but complete roster
+- failed public team/roster fetch
+- represented-performance summary unavailable
+- current-roster comparison unavailable
+- current-roster comparison with ranked and explicit unranked members
+- recent represented results unavailable or empty
+- team gauntlet history unavailable
+- no team-owned gauntlet result despite member participation
+- viewer state unavailable without leaking relationship or pending-action detail
 - failed pending invites/requests fetch
 - no pending invites
 - no pending join requests
@@ -500,13 +604,15 @@ Required states:
 Tone:
 
 - `Team profile not found.`
-- `Roster empty.`
+- `No represented results yet.`
+- `No team-owned gauntlet result recorded.`
 - `Pending queue clear.`
 - `Team registry sync failed.`
 
 Guardrail:
 
 - do not expose private invite/request errors to anonymous users
+- optional performance failure does not replace the public team identity or roster
 
 ## Responsive Behavior
 
@@ -527,6 +633,8 @@ Mobile:
 - keep login/avatar visible in top bar
 - convert roster table to compact player rows if needed
 - keep join/manage actions visible near top
+- retain explicit owner treatment and unranked leaderboard rows
+- allow independently unavailable performance modules to collapse without residual gaps
 - keep destructive actions behind menus or confirmation flows
 
 ## SEO and Sharing
@@ -540,28 +648,32 @@ Public team pages should support:
 
 Do not expose pending invites, join requests, or private management state in metadata.
 
-## V2 Candidate Data Needs
+## Deferred Data Needs
 
 These ideas are valuable but should not block V1:
 
-- team stats aggregate
-- team gauntlet standings
+- explicit team-format score or standings beyond the approved owner-aware history
 - team trophies and medals
-- team match history
-- team course strengths
+- aggregate team course strengths
 - team sponsor relationships
 - recruiting message or team bio
 - public social links
 - region/time-zone fields
 - explicit team activity status
-- richer role permissions
+- richer public role presentation
 
 ## Open Questions
 
-- Which implemented public titles and competition-rank fields should be shown after T01/T02 replaces the legacy designation model?
-- What is the first source of truth for team trophies and team gauntlet standings?
+- Which approved public titles and competition-rank values should appear in the initial roster
+  presentation rather than remain optional response fields?
+- Should the initial represented-performance summary use only numeric facts or one restrained
+  visualization after populated data can be reviewed?
 
 ## Next Steps
 
-- Ask Pencil for one public team profile mock and one authorized management state mock.
-- Reconcile the mock and exact statistics modules against the implemented T01-T03 contracts.
+- Update the desktop and mobile public-profile specimens against the approved T03 semantics.
+- Include populated, sparse-roster, unranked-comparison, independently unavailable-module, and
+  no-team-result states.
+- Keep the management design separate; this checkpoint does not redesign forms or management
+  contracts.
+- Revalidate exact fields, populated values, and failure behavior after T03 implementation.

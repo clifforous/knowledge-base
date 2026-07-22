@@ -4,13 +4,13 @@ Status: Governance implementation complete; empirical workflow validation pendin
 
 Date: 2026-07-19
 
-Last updated: 2026-07-21
+Last updated: 2026-07-22
 
 ## Purpose
 
 Record the governance artifacts adopted after structural migration and content consolidation,
-and make the remaining manual-use checkpoint explicit before template extraction or `kb`
-implementation.
+and make the remaining empirical checkpoint explicit before template extraction and coworker
+onboarding.
 
 ## Adopted Governance
 
@@ -166,7 +166,6 @@ capture or grooming.
 
 ## Remaining Empirical Checkpoint
 
-Do not extract the reusable template or begin the `kb` implementation solely from this pass.
 The small-direct, coordinated-feature, and Windows-originated cases are now recorded. Two cases
 remain:
 
@@ -176,6 +175,18 @@ remain:
 After these cases, review classification friction, capture noise, missing retrieval links,
 task-log ownership, and whether the validator reports useful failures. Amend policy before
 extracting a baseline repository.
+
+## Revised Implementation Sequencing
+
+On 2026-07-22 the owner accepted starting the self-only `kb` implementation before the two cases
+above. The existing observations are sufficient to build and dogfood foundation, retrieval,
+status, visible operation receipts, direct capture/incorporation, and manual Git reminders. The
+remaining parallel and grooming cases will be exercised through that personal pilot so they test
+the intended interface instead of only manual ceremony.
+
+This order change does not close the empirical checkpoint. Parallel-capture and grooming schemas
+remain provisional, and template extraction, coworker onboarding, canon work, and compatibility
+commitments remain gated on completing the cases and incorporating any resulting policy changes.
 
 ## Closure Condition
 

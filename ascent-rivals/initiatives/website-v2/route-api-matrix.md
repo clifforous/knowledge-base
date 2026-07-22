@@ -91,7 +91,10 @@ Use these logical read classes even if implementation later combines compatible 
    - identity, title/subtitle/ticker, colors, region, entry requirement, media, sponsor display, qualifiers, stages/circuits, and normalized occurrence schedule;
    - tagged entity cache with schedule-aware freshness where timing affects presentation.
 2. Standings and accepted results
-   - gauntlet/stage/qualifier standings and accepted final result summaries;
+   - gauntlet/stage/qualifier standings and accepted result summaries using an explicit player-or-
+     team owner variant;
+   - exact StageRun identity selected by the public timeline rather than an empty or browser-inferred
+     run id;
    - short public cache and explicit refresh where useful.
 3. Published bracket and public match state
    - published graph, seeds/byes only when public, match state, and accepted results;
@@ -105,7 +108,12 @@ An unavailable standings, bracket, sponsor, or personal module must fail indepen
 ### Gauntlet Contract Gaps
 
 - implement the compact domain-neutral discovery collection approved in [[ascent-rivals/initiatives/website-v2/pages/gauntlets-index]];
+- replace generic participant count with occurrence-scoped field-owner composition, optional
+  published-owner count, and optional racer-slot count; never conflate owners, slots, and occupants;
 - confirm whether the existing public detail operation can return the approved normalized qualifier/stage/occurrence presentation without exposing authoring-only fields;
+- add a narrow public field/result projection with typed player/team owners; do not expose the
+  evidence-rich runtime field response or label a represented team's placement as the occupant's
+  individual finish;
 - define the public published-bracket graph and match-state read when bracket contracts ship;
 - verify a bounded personal-overlay read instead of making the browser join several player-gauntlet calls;
 - review post-team allocation, field-publication, and stage fields before freezing create/edit projections;
@@ -204,24 +212,32 @@ This route group is provisional until the Eventun [T00–T03 team work](../teams
 
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
-| `/teams` | Eventun public team browse projection; optional T03 fact-backed summary fields after review | Return one cached compact collection with public identity, membership/recruiting context, approved media/colors, and roster count; do not embed management queues or every roster merely because legacy `Teams` does | Client-side name/tag search, membership filter, approved sorts, and display pagination/progressive reveal over the complete collection | Request-time current-team and create-eligibility summary composes separately; it must not make the directory private | T02 browse contract is planned; prefer a reusable compact projection over the legacy full-roster list |
+| `/teams` | Eventun public team browse projection | Return one cached complete compact collection of active teams with stable identity, name/tag, membership mode, approved bounded media/colors, status, and active-member count; do not embed management queues, performance modules, or rosters | Client-side name/tag search, optional membership filter, approved sorts, and display pagination/progressive reveal over the complete collection | Request-time current-team and create-eligibility summary composes separately; it must not make the directory private | T03 reusable public summary contract approved; implementation pending |
 | `/teams/create` | Eventun authenticated team creation, approved media-purpose lookup, and signed upload | Authenticate and obtain eligibility/form options server-side; submit one authoritative create mutation; refresh current-player state; invalidate team collection/detail tags; route to the new team management context | One form with local validation, direct signed media upload, retry, and unsaved-change handling | Eligible authenticated player; administrator create-on-behalf remains an explicit post-T01 contract decision | Final create fields, ownership rule, typed result, conflict behavior, and media attachment lifecycle require T01/T02 review |
-| `/teams/[id]` | Eventun public team detail and active roster; T03 team performance; published team competition results when their ownership semantics exist | Cache identity/roster separately from fact-backed statistics; compose a request-time team action state for authenticated users; execute join/request/invite-response/leave mutations through same-origin actions and revalidate affected team/player collections | Local roster/stat controls, exact pilot links, public membership label, and only the action returned for the current player state | Current membership, pending invitation/request for this player, and allowed actions; no public pending queues or capability internals | T02 public detail/action-state and typed transition contracts are planned; T03 statistics are a launch dependency but exact modules remain provisional |
+| `/teams/[id]` | Eventun public team detail/active roster; T03 summary, current-roster comparison, represented-result history, and owner-aware gauntlet history | Cache identity/roster independently from each fact-backed module; compose authenticated viewer state request-time; execute membership mutations through same-origin actions and revalidate affected team/player collections | Local roster and leaderboard controls, exact pilot links, public membership label, and only the action returned for the current player state | Current relationship, exact pending action, and allowed actions; no public pending queues, capability internals, membership intervals, or audit evidence | T03 reusable reads approved; implementation and measured-data verification pending |
 | `/teams/[id]/manage` | Eventun authorized management snapshot, pending queues, team mutation contracts, media-purpose lookup, and signed upload | Reject unauthorized access before prefill; recheck every mutation in Eventun; keep independently saveable management sections; invalidate team, player, pending, search, and relevant statistic tags after success | Team info/media forms, roster/capability controls, invite/request queues, direct signed uploads, confirmations, conflicts, and retries | Explicit effective capabilities and ownership from Eventun; numeric designation or a visible title is not authorization evidence | T01/T02 replacement contracts required; management fields and capabilities must be reviewed after implementation |
 
 ### Team Read and Mutation Decomposition
 
 1. Public team directory
-   - compact identity, membership/recruiting presentation, media/colors, and member count;
+   - stable identity, name/tag, public membership mode, bounded media/colors, active status, and
+     active-member count;
    - one cached collection for local search/filter/sort.
 2. Public team detail and roster
    - identity plus the complete active roster at the expected small team scale;
-   - public titles and competition rank only when their implemented meanings are approved; never serialize management capabilities as decorative profile fields.
+   - player identity/name/avatar, explicit owner treatment, approved public title, and optional
+     competition rank; never serialize management capabilities, membership intervals, roster
+     revisions, pending-action versions, or audit evidence as public profile fields.
 3. Fact-backed team performance
-   - T03 career/competition summaries, team-filtered roster leaderboards, and historical results attributed to the team represented when the performance occurred;
+   - T03 represented-performance summary, current-roster leaderboard comparison, bounded represented-
+     result history, and owner-aware team gauntlet history;
+   - summary/history use membership at canonical MatchStart; roster comparison deliberately uses the
+     current roster and preserves each player's global rank;
    - separate public cache and independent unavailable state; never sum current members' lifetime pilot careers as a substitute.
 4. Current-player action state
-   - current team, relationship to the viewed team, relevant unexpired invitation/request, and explicit allowed action such as join, request, cancel, accept, decline, leave, or manage;
+   - current team, relationship to the viewed team, relevant unexpired exact invitation/request,
+     and one explicit state: join, request, cancel, accept, decline, leave, manage, already on another
+     team, or no available action;
    - request-time authenticated response; React does not reproduce the membership transition state machine.
 5. Authorized management state
    - effective capabilities, editable public fields/media, active roster management facts, and pending invitation/request queues;
@@ -234,10 +250,12 @@ Public identity/roster and fact-backed statistics may fail independently. Privat
 
 ### Team Contract Gaps
 
-- complete and review [T00–T03](../teams-and-team-gauntlets/delivery-plan.md) before freezing Website contracts; Website V2 launch requires fact-backed T03 reads and membership-at-performance-time attribution;
-- add a compact reusable public team browse projection rather than shipping the legacy every-team-plus-full-roster response to the browser indefinitely;
-- finalize public team identity, recruiting, region/time-zone, watch/community link, media, roster, title, competition-rank, and affiliation-visibility fields against the implemented model;
-- expose one bounded current-player/team action-state response with unexpired pending state and explicit allowed actions; do not make the Website derive transition eligibility from membership mode alone;
+- implement and review the approved [T03 public-read checkpoint](../teams-and-team-gauntlets/delivery-plan.md#t03-public-read-contract-checkpoint); Website V2 launch requires those fact-backed reads and membership-at-performance-time attribution;
+- add the compact reusable public team directory/detail projections rather than shipping Team Core's capability- and evidence-bearing roster response publicly;
+- verify the approved public identity, bounded media, complete-roster, title, competition-rank, and
+  affiliation-visibility behavior against the implementation; recruiting, region/time-zone, and
+  watch/community fields remain separate future decisions;
+- expose the approved bounded viewer-state response with unexpired exact pending state and explicit allowed actions; do not make the Website derive transition eligibility from membership mode alone;
 - keep one deterministic add-member transition with typed outcomes where the reviewed Eventun design retains it; decline, cancel, leave, remove, transfer, and disband may remain explicit mutations;
 - ensure the implemented T02 scope includes the approved `Open`, `Request to Join`, and `Invite Only` Website flows, including player-side invite acceptance/decline and requester cancellation;
 - replace numeric designation authorization with explicit ownership and effective capabilities; visible titles remain presentation data;
@@ -245,7 +263,8 @@ Public identity/roster and fact-backed statistics may fail independently. Privat
 - define optimistic-concurrency/version behavior for independently saved management sections and destructive confirmations;
 - reuse the approved signed-upload boundary and define cleanup/expiry for unattached team media;
 - integrate actionable invite/request notification intent through the approved AccelByte Chat delivery path; Website V2 needs only a concise current-player indicator linking to the authoritative team page, not a second inbox;
-- define T03 public team summary, roster-comparison, leaderboard, and historical-result reads without introducing a speculative aggregate team score;
+- verify the approved T03 summary, full current-roster comparison, bounded represented-result
+  history, and owner-aware gauntlet history without introducing a speculative aggregate team score;
 - define mutation-driven invalidation for team identity, roster, current-player state, pending queues, public search, player team summaries, and fact-backed team views.
 
 ## Global Search Utility Group
@@ -262,7 +281,7 @@ full interaction target.
 | Top-bar `SearchCommand` | The approved Eventun public gauntlet, pilot, and team compact collections plus the AccelByte-authored course catalog through Eventun's public-safe projection | On first search interaction, compose the independently cached public collections into one explicit shallow Website catalog; return group availability independently; never expose service credentials or raw transport records | Cache the catalog in browser query state with bounded staleness and mutation invalidation; normalize once; perform grouped local matching; show at most a small result preview per group; support keyboard/touch navigation and direct entity links | None for the initial four public groups | No new Eventun cross-domain search endpoint is initially required if the approved compact reads remain suitably small; add one same-origin Website support handler/view model |
 | `/gauntlets?q={query}` | Existing public gauntlet discovery collection | Render the ordinary directory and supply the initial query state; keep all public current, upcoming, and past gauntlets searchable | Apply the query through the directory's approved local search and controls | Existing participation overlay remains independent | Existing directory contract; query variant is `noindex` and canonicalizes to `/gauntlets` |
 | `/players?q={query}` | Existing compact public pilot directory collection | Render the ordinary directory and supply the initial query state | Apply the query through local pilot/team matching | None | Existing directory contract; query variant is `noindex` and canonicalizes to `/players` |
-| `/teams?q={query}` | Planned T02 compact public team browse collection | Render the ordinary directory and supply the initial query state | Apply the query through local team-name/tag matching | Current-team/create eligibility remains independent | Provisional until T02 review; query variant is `noindex` and canonicalizes to `/teams` |
+| `/teams?q={query}` | Approved T03 compact public team browse collection | Render the ordinary directory and supply the initial query state | Apply the query through local team-name/tag matching | Current-team/create eligibility remains independent | Contract approved and implementation pending; query variant is `noindex` and canonicalizes to `/teams` |
 | Course results in top-bar `SearchCommand` | Eventun public-safe projection of authoritative AccelByte course metadata | Include shallow `published` course identities in the grouped catalog; hidden and archived courses remain absent | Match course/planet labels locally and link each result directly to `/courses/[code]`; do not route through a `/courses?q=` variant | None | Requires the approved safe course projection |
 
 ### Search Catalog Contract
@@ -276,7 +295,8 @@ Return one full shallow collection for each initial group:
    - stable id, display name, avatar, public team name/tag or `Independent`, canonical route, and public searchable labels;
    - apply the same explicit bot/test/internal classification used by `/players`.
 3. Teams
-   - stable id, name, tag, optional avatar, public membership/recruiting label, member count, canonical route, and public searchable labels;
+   - stable id, name, tag, optional bounded avatar, public membership label, active-member count,
+     canonical route, and public searchable labels;
    - do not include complete rosters, capabilities, or pending membership state.
 4. Courses
    - stable code, display name, planet, optional approved image, canonical route, and public searchable labels for `published` courses;

@@ -13,10 +13,10 @@ dedicated-server integration and passed its Development Editor build, focused ro
 Eventun PostgreSQL smoke, and implementation review. Coordinated deployment remains gated by
 source-control decisions, the shared-development cutover, and combined runtime smoke.
 Eventun G02 Pass 1 closed-membership correction passed implementation review and is committed as
-`3e1606c`. The unstaged Eventun G02 Pass 2 working tree implements frozen team qualification and
-has passed coder verification; it is awaiting implementation review and is not deployed.
+`3e1606c`. G02 Pass 2 frozen team qualification passed coder verification and implementation review
+and is committed as `1e3b76e`; it is not deployed. T03 may proceed from that clean baseline.
 
-Last consolidated: 2026-07-21
+Last consolidated: 2026-07-22
 
 ## Outcome And Boundary
 
@@ -199,13 +199,78 @@ Depends on T01.
 
 Depends on T01 membership intervals and the relevant T02 public read contracts.
 
-- Add public team-filtered roster statistics, bounded roster comparison, and approved team
-  leaderboard/history reads.
+- Replace the internal Team Core response as a public presentation dependency with domain-neutral
+  public team summaries and public roster members that both Website V2 and the game client may use.
+- Add a bounded authenticated viewer-state read so consumers receive the current relationship,
+  exact pending-action reference, and allowed transitions without reproducing Eventun's membership
+  state machine.
+- Add fact-backed team performance summary, current-roster leaderboard comparison, represented-
+  result history, and owner-aware gauntlet history as independently cacheable reads.
 - Attribute complete-match performances to membership at canonical MatchStart
   (`match_fact.started_at`) rather than the current roster.
 - Do not invent a generic team score by summing current members' lifetime careers.
 - Prefer bounded SQL over mutable aggregate state; add an incremental projection only when
   representative plans show it is required.
+
+#### T03 Public Read Contract Checkpoint
+
+The following logical Eventun reads are approved. Names may follow repository protobuf conventions,
+but the messages remain domain-neutral and must not contain Website component names, routes, copy,
+or URLs.
+
+1. **Public team directory.** Return one complete shallow collection of active teams at the
+   accepted scale. Each summary contains stable team identity, name, tag, public membership mode,
+   colors, bounded public media, status, and `active_member_count`. Disbanded teams are absent from
+   normal browse; a direct historical reference may resolve to a read-only tombstone.
+2. **Public team detail.** Return the public summary plus the complete active roster, bounded by the
+   configured 16-member limit. A public member contains player identity, name, avatar, explicit
+   owner marker, approved presentation title, and optional competition rank. It excludes effective
+   capabilities, membership-interval identity, action versions, roster revision, and audit or
+   correction evidence. Hiding affiliation suppresses optional badges and cosmetics on other
+   player-facing surfaces; it does not make the canonical roster incomplete on the team's own
+   public profile.
+3. **Authenticated team viewer state.** For one viewed team, return the authenticated player's
+   relationship, current team identity where relevant, one exact unexpired membership-action
+   reference when applicable, and an explicit set of allowed transitions such as join, request,
+   cancel, accept, decline, leave, or manage. This response is request-time private state. Detailed
+   effective capabilities and team-wide pending queues remain separate permissioned management
+   reads.
+4. **Fact-backed performance summary.** Support lifetime and optional exact-season scope. Return
+   distinct represented matches, represented player-match results, individual podium finishes,
+   individual ascensions, and latest represented-result time. Names must retain the `represented`
+   or `individual` distinction: these are performances earned by players while their membership was
+   effective at MatchStart, not team-format wins, podiums, or a synthetic team rating.
+5. **Current-roster leaderboard comparison.** Accept team, public course, player-facing category,
+   and optional season. Return every current public roster member with the player's global record
+   and rank when one exists, explicit unranked state otherwise, and response-level as-of time.
+   Filtering occurs before no global top-N truncation, global ranks are preserved, and no aggregate
+   team rank or score is produced. A nested optional record carries rank, time, and optional loadout
+   value so generated Unreal consumers preserve absence without interpreting zero as missing.
+6. **Represented-result history.** Return newest-first public match results attributed to the team
+   at MatchStart, with a caller limit capped at 100 and optional exact-season scope. Each row carries
+   public player identity, match time, public course identity, player-facing race mode, and
+   presence-aware placement, circuit points, podium, and ascension result. Do not expose session,
+   match, batch, event, replay, client-version, membership-interval, or repair identities. A stable
+   opaque continuation may be added only when a consumer needs more than the bounded first page.
+7. **Owner-aware team gauntlet history.** Return only team qualification or accepted result evidence
+   where the team itself is the competition owner. Member participation alone does not create a team
+   result. Qualifier standing, accepted stage result, and generic participation remain distinct;
+   an accepted result includes its exact StageRun identity and never implies a final, win, trophy,
+   or medal unless the competition contract explicitly supplies that meaning.
+
+Public reads are callable by authenticated players and by the Website confidential client through
+an explicit subjectless Server `READ` allowlist. Existing internal Team Core responses are not made
+broadly public merely to satisfy Website access. Website V2 composes these reads server-side and may
+map them to route-specific view models; the generated game client may consume the same domain
+messages directly. Management, authoring, admission, roster lock, repair, and audit responses remain
+separate.
+
+Public identity/roster, viewer state, summary, roster comparison, represented history, and gauntlet
+history have independent failure and cache lifecycles. Mutations invalidate affected public team
+identity, player affiliation, viewer state, and current-roster reads. Accepted facts or repaired
+attribution invalidate the affected performance/history reads. Implementation must measure the
+complete directory, one 16-member detail, the full roster comparison, summary, and bounded history
+on representative migrated data before adding pagination, caches, or new aggregate projections.
 
 ### T04 — Add Initial Team Cosmetics
 
@@ -416,8 +481,11 @@ documentation:
 
 - Server-authored canonical, unfiltered, non-bot match contributions resolve the effective
   membership interval at `match_fact.started_at` only after the ordered player serving lock. The
-  exact team, player, membership interval, match fact, and `server` source identity remain relational
-  evidence; incremental ingestion and full rebuild use the same attribution.
+  exact team, player, membership interval, immutable membership semantic fingerprint, match event,
+  and `server` source identity remain relational evidence. Sequence rows have composite constraints
+  to that exact contribution identity; incremental ingestion and full rebuild use the same
+  attribution. Contribution and sequence projection fingerprints include the membership semantic
+  hash, so a membership-evidence change discovered during rebuild advances the projection revision.
 - Team-qualification configuration is stage-scoped. Member-scoring identity excludes aggregate-only
   `top_n_members` and `minimum_contributors`; changing only those values rewrites only changed
   configuration rows and advances the gauntlet projection state once, without member-row rewrites or
@@ -425,46 +493,73 @@ documentation:
   ordered player set, take the gauntlet lock, revalidate the set, and rebuild projections.
 - Member ordering is qualification points, counted qualifiers, played qualifiers, total circuit
   points with null last, earliest final achievement, then UUID. Team aggregate score is the `BIGINT`
-  sum of selected contributors' qualification points. Team ordering compares contributor tuples
+  sum of selected contributors' qualification points. Team ordering compares the complete
+  contributor tuples—including each contributor's final-achievement time and player UUID—
   lexicographically, then contributor count descending after an equal shared prefix, team final
-  achievement, and UUID; competitive dense rank excludes the UUID tiebreaker.
+  achievement, and team UUID; competitive dense rank excludes only the final team UUID tiebreaker.
+- Team qualification reuses the individual eligibility contract: the gauntlet stat must be
+  `circuit_points`, and a member must satisfy the same `stat_top_k` qualifier-participation gate
+  before contributor selection. Per-qualifier `qualifier_rank` is nevertheless computed over the
+  full team-member qualifier population before top-N contributor filtering, so non-contributor
+  members still participate in the competitive rank population.
 - `top_n_members` must be positive. `minimum_contributors` defaults to one and must remain between one
   and top N. Team activity participates in cutoff resolution but does not rewrite member projection
   identity.
+- Qualified selection uses the effective field capacity `min(max_competitors, max_lobby_size)`.
+  Preview, candidate selection, the sealed cutoff `entry_limit`, and field publication therefore
+  agree even when the competitor and lobby limits differ.
 - Admin preview, publish, and replace expose immutable team cutoff evidence: selected teams,
   contributors, qualifier and match evidence, exact membership identities, projection/configuration
-  versions and hashes, and deterministic ranks. Callers supply a nonzero idempotency UUID and ordinary
-  semantic payload; Eventun owns the SHA-256 request hash. Exact retries return retained state and
-  changed semantic reuse returns `Aborted`.
+  versions and hashes, and deterministic ranks. Snapshot match evidence references the immutable
+  event-identity ledger by exact event and batch rather than mutable compact facts, allowing fact
+  repair without changing sealed history. Sealed snapshot and field identity is also independent of
+  replaceable live stage and qualifier authoring rows. Callers supply a nonzero idempotency UUID and
+  ordinary semantic payload; Eventun owns the SHA-256 request hash. Exact retries return retained
+  state and changed semantic reuse returns `Aborted`. Field snapshots retain a non-cascading
+  gauntlet identity foreign key without coupling to mutable stage authoring; hard deletion rejects a
+  gauntlet with any immutable field history.
 - Stage modes are mutually exclusive. An explicit configured-team field uses an opening `invite`
   stage and `gauntlet_stage_team`; a qualified-team field uses an opening `qualification` stage with
   team configuration and a current team cutoff but no configured teams. Both allocate through the
-  existing G01 field, slot, claim, roster-lock, and result path.
+  existing G01 field, slot, claim, roster-lock, and result path. A team-qualified run cannot be
+  claimed until that qualified field exists, and claim and active-run join status preserve the
+  `team_qualification` entitlement source.
 - Qualified-field publication freezes its cutoff, full configuration hash, selected team identities,
   ranks, scores, contributor counts, and final-achievement evidence. Later membership, match, repair,
-  projection-revision, or cutoff-head changes do not invalidate a published field. Cutoff-relevant
-  configuration changes stale an unbound field; claim validates frozen identities and configuration
-  without requiring the current live revision or cutoff head.
+  team disband, projection-revision, or cutoff-head changes do not invalidate a published field.
+  Publication revalidates that every selected cutoff team is active, so a disbanded team cannot enter
+  a newly published field. Cutoff-relevant configuration changes stale an unbound field; claim
+  validates frozen identities and configuration without requiring the current live revision or
+  cutoff head.
 - Canonical SQL ownership remains singular: `c11` owns serving projections, `c12` owns the individual-
   cutoff assertion, and `c17` owns team qualification and cutoff functions. The production delta
   reinstalls exact canonical definitions after its unchanged historical prefix. Existing explicit
   fields backfill `allocation_source = 'explicit_team'` before the column becomes non-null, projector
   state promotes to `2/2`, and incompatible sealed individual cutoff evidence fails migration
-  preflight rather than being reinterpreted.
+  preflight rather than being reinterpreted. The full team-qualification configuration hash includes
+  lobby limits, overflow policy, admission-priority rule, and roster-lock point as well as the
+  scoring and aggregate settings.
 
 `bun run gen` and `./scripts/verify.sh` passed protobuf formatting, lint, generation, API and
 permission inventories, Go and Bun tests, vet, and the linux/amd64 build. `./scripts/verify_schema.sh`
 passed canonical/delta parity, migration preflight and transition, deterministic contributor and team
-ranking, immutable cutoff and field identities, the real membership-mutation versus ingestion race,
-publication/repair/full-rebuild serialization, populated access plans, cold reads, and targeted/full
-rebuild parity. The populated team-cutoff candidate path observed p95 between 62.767 ms and 68.102 ms
-under the one-CPU disposable fixture, below its 100 ms gate. No authentic reconstruction or shared
-database was used.
+ranking, individual stat and participation-rule reuse, full-population qualifier ranking, immutable
+cutoff, membership, and field identities, sealed-cutoff compact-fact repair and authoring replacement,
+qualified-field-required claim, active-team publication with post-publication freezing, correct
+entitlement-source responses, membership-semantic closure/rebuild revisioning, asymmetric
+competitor/lobby capacity, API and relational field-history deletion rejection, the real membership-
+mutation versus ingestion race, publication/repair/full-rebuild serialization, populated access
+plans, cold reads, and targeted/full rebuild parity. The latest populated team-cutoff candidate path
+observed p95 92.348 ms under the
+one-CPU disposable fixture, below its 100 ms gate. No authentic reconstruction or shared database was
+used.
 
-This is coder verification, not implementation-review acceptance, source-control completion, or
-deployment. Detailed Pass 2 behavior remains in this initiative until the owner accepts the
-implementation review and directs incorporation into current-system knowledge. The unrelated stale
-G01 `ServerService` wording remains a separate cleanup.
+The owner accepted the Pass 2 implementation-review checkpoint on 2026-07-22 after the independent
+database, functionality, and cross-consumer review found no remaining G02 correctness issue. The
+reviewed implementation is committed as Eventun `1e3b76e`; this records a clean local source
+baseline, not shared-development behavior or production deployment. Detailed Pass 2 behavior
+remains in this initiative until deployment gates justify incorporation into current-system
+knowledge. The unrelated stale G01 `ServerService` wording remains a separate cleanup.
 
 ### G03 — Add Priority Replacement And Roster Policies
 

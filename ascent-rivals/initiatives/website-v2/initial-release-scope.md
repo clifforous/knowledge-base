@@ -193,21 +193,30 @@ Not supported without additional contracts:
 Required product outcome:
 
 - prominent roster and individual pilot links;
-- a concise fact-backed team performance summary that remains secondary to individual results;
-- course strengths and recent team performance only where the implemented contracts support an approved metric;
-- member contribution context attributed at performance time;
-- exact roster and competition result tables.
+- a concise represented-performance summary that remains secondary to individual results;
+- a selected course/category comparison containing the complete current roster, including unranked
+  members, with each ranked pilot's global rank and exact result;
+- bounded recent individual results attributed to the team represented at MatchStart;
+- team gauntlet history only from qualification or accepted-result evidence owned by the team;
+- one authoritative authenticated viewer action state rather than Website inference from membership
+  mode.
 
 Candidate visualizations after the required Eventun contracts exist:
 
-- recent team placement or score trend;
+- represented-result composition that does not imply an aggregate team score;
 - course-strength small multiples based on an approved team metric;
 - bounded contributing-member bars for a selected competition or period;
 - team-versus-field comparison where the comparison population and statistic are explicit.
 
 Sequencing dependency:
 
-The current Eventun foundation does not implement fact-backed team statistics, team leaderboards, or membership-at-performance-time attribution. The [teams delivery plan](../teams-and-team-gauntlets/delivery-plan.md) assigns those reads to T03 after the shared-development cutover and T00 design checkpoint. Website V2 is sequenced after that team feature work and may assume the resulting data is available for launch planning. The exact team-statistics modules must still be reviewed against the implemented contracts; Website V2 must not approximate missing behavior by summing the current roster's lifetime pilot totals.
+The current Eventun foundation does not yet implement the approved T03 public performance reads.
+G02 supplies membership-at-performance-time attribution, and the
+[T03 contract checkpoint](../teams-and-team-gauntlets/delivery-plan.md#t03-public-read-contract-checkpoint)
+defines the reusable summary, current-roster comparison, represented-result history, and owner-aware
+gauntlet history. Website V2 is sequenced after that work and may plan against those semantics, but
+must still verify populated and unavailable presentation against the implementation. It must not
+approximate missing behavior by summing the current roster's lifetime pilot totals.
 
 Product-priority checkpoint:
 
@@ -226,7 +235,7 @@ Product-priority checkpoint:
 | Gauntlet stats and standings | Uses incremental contributions/projections and revisioned cutoff evidence | Supports refreshed gauntlet pages after the coordinated cutover |
 | Course metadata | AccelByte Cloud Save `Courses`, optionally delivered through a controlled Eventun cache | Use the approved server-side projection: configured production-ready state maps to `published`, an explicit AccelByte retirement marker maps a previously public course to `archived`, and every other or invalid state remains hidden |
 | Team metadata and current roster | Existing Eventun APIs | Supports directory, profile, roster, and management parity |
-| Historical team attribution and team statistics | Planned [T03](../teams-and-team-gauntlets/delivery-plan.md#t03--add-fact-backed-team-views) work; not implemented at this review point | Website V2 follows this work and assumes the implemented reads are available by launch; finalize presentation after contract review |
+| Historical team attribution and team statistics | G02 attribution implemented and locally verified; reusable [T03 reads](../teams-and-team-gauntlets/delivery-plan.md#t03-public-read-contract-checkpoint) approved but not implemented | Website V2 may plan against the approved semantics; validate presentation after implementation and populated-data review |
 | Course checkpoint geometry | Generated in the game; no approved website contract recorded | Optional enhancement with factual fallback |
 
 The identified-match, projection, season, historical-rehearsal, and retained-data performance work is implemented and reviewed locally. The coordinated shared-development cutover remains pending, and production remains an independent owner-scheduled release. Website implementation may design against reviewed contracts, but launch acceptance must depend on deployed behavior rather than local worktree or rehearsal evidence.

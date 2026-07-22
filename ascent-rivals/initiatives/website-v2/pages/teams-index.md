@@ -1,9 +1,12 @@
 # Ascent Rivals Teams Index Page Spec
 
 Date: 2026-04-13
-Status: Draft
+Status: Approved public directory contract; desktop/mobile visual calibration pending
+Last reviewed: 2026-07-22
 
-Membership direction confirmed: 2026-07-15. The stable public concepts are `Open`, `Request to Join`, and `Invite Only`. Exact backend enum names remain subject to the new team implementation. Token-gated membership is not part of Website V2.
+The approved T03 public-read checkpoint defines this page's data boundary. The stable public
+membership labels are `Open`, `Request to Join`, and `Invite Only`. Token-gated membership is not
+part of Website V2.
 
 ## Related
 - [[../unified-design]]
@@ -13,20 +16,24 @@ Membership direction confirmed: 2026-07-15. The stable public concepts are `Open
 - [[../tone-and-voice]]
 - [[team-profile]]
 - [[player-profile]]
+- [[ascent-rivals/initiatives/teams-and-team-gauntlets/delivery-plan|teams delivery plan]]
 - [[ascent-rivals/system/eventun/api|eventun-api]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose
 
-Define the IA and page requirements for the public team directory.
+Define the IA, public-data boundary, and page requirements for the public team directory.
 
 The teams index should help players and followers answer:
 
-- which teams exist
-- which teams are active or recruiting
-- how large each roster is
-- which team a player might want to inspect or join
-- whether the logged-in player can create a team
+- which active teams exist;
+- how each team identifies itself;
+- how many active members it has;
+- which public membership mode it uses;
+- which team profile they want to inspect.
+
+Creation eligibility and the authenticated player's current-team context are private overlays, not
+fields in the public directory collection.
 
 ## Route
 
@@ -40,287 +47,243 @@ Current app route equivalent:
 
 Final route direction:
 
-- use plural route groups in Website V2
-- allow old singular routes to retire without redirects unless later measured inbound use justifies an exact mapping
+- use plural route groups in Website V2;
+- allow old singular routes to retire without redirects unless later measured inbound use justifies
+  an exact mapping.
 
 ## Audience
 
 Primary:
 
-- players looking for a team
-- followers browsing crews
-- team managers checking team presentation
+- players looking for a team;
+- followers browsing crews;
+- team managers checking team presentation.
 
 Secondary:
 
-- sponsors
-- tournament organizers
-- press/community viewers
+- sponsors;
+- tournament organizers;
+- press/community viewers.
 
 ## Page Goals
 
-- make teams feel like first-class public entities
-- preserve fast search/filter behavior from the current app
-- show enough roster and membership context to decide whether to open a team
-- expose `Create Team` only when relevant
-- avoid turning the directory into a management table
-- leave room for future team stats without inventing unsupported aggregate data
+- make teams feel like first-class public entities;
+- preserve fast client-side search and filtering over the compact complete collection;
+- show enough identity and membership context to choose a team profile;
+- expose `Create Team` only from a separate authoritative eligibility overlay;
+- avoid turning the directory into a roster or management table;
+- avoid introducing speculative team statistics or activity claims.
 
-## Current V1 Data Availability
+## Current-System Reference
 
-### Team list
+The committed local Team Core API exposes compact active-team summaries without rosters and a
+complete roster through the per-team detail read. Shared development and production retain the
+legacy contract until coordinated cutover. See [[ascent-rivals/system/eventun/api#Committed Local Team Core API|Eventun API]].
 
-Available:
+Website V2 does not consume the legacy every-team-plus-roster shape as its target contract.
 
-- team id
-- name
-- tag
-- membership mode
-- media
-- players
-- primary and secondary colors
+## Approved T03 Public Directory Projection
 
-Source:
+Return one compact summary per active team containing only:
 
-- `GET /v1/team`
+- stable team identity;
+- public name;
+- public tag;
+- public membership mode;
+- primary and secondary colors;
+- bounded approved public media;
+- active member count.
 
-### Team player summary
+Normal browse omits disbanded teams. A future direct historical lookup may return a compact
+tombstone, but it does not enter this directory.
 
-Available per team player in the legacy reference response:
+The directory projection does not include:
 
-- player id
-- name
-- avatar URL
-- designation
-- rank
+- complete or preview rosters;
+- management capabilities;
+- pending invitations or join requests;
+- relationship/action state;
+- performance summaries or statistics;
+- membership intervals, roster revisions, audit, or correction evidence.
 
-Replacement-contract direction:
+Use the same compact public identity in global search. Do not make internal identifiers, raw enum
+values, or private metadata searchable merely because they exist in Eventun.
 
-- T01/T02 separates public title, effective capability, and competition rank;
-- directory cards do not need these roster-management fields;
-- a future roster preview uses only approved public presentation fields and never exposes capability data.
+## Membership Labels
 
-Source:
+Map the implemented Eventun values to these player-facing labels:
 
-- included in team list/detail responses
+- `Open`;
+- `Request to Join`;
+- `Invite Only`.
 
-### Membership modes
+Membership mode is descriptive. It does not authorize or predict an action for the authenticated
+viewer. Join/request/invitation decisions belong to the authoritative viewer-state response on the
+team profile.
 
-Stable public labels:
-
-- `Open`
-- `Request to Join`
-- `Invite Only`
-
-Contract note:
-
-- the new team implementation is expected to preserve roughly these three modes;
-- map its reviewed enum values to these player-facing labels rather than exposing raw backend strings;
-- show the public membership label consistently to anonymous and logged-in visitors.
-
-### Create team
-
-Available:
-
-- create team metadata
-- name
-- tag
-- membership mode
-- primary/secondary colors
-- media
-- owner id
-
-Source:
-
-- `POST /v1/team`
-
-V1 caution:
-
-- eligibility to create a team is user/session dependent
-- the directory should show the action only when the user is logged in and eligible
-
-## V1 Page Structure
+## Page Structure
 
 Default first-view priority:
 
-1. directory header and search
-2. team cards/list
-3. logged-in create-team affordance
-4. membership/recruiting filters
+1. directory header;
+2. local name/tag search and optional membership-mode filter;
+3. compact team collection;
+4. eligible create-team affordance.
 
 ## 1. Directory Header
 
 Purpose:
 
-- establish the team directory as a crew registry
+- establish the team directory as a crew registry.
 
 Content:
 
-- title such as `Teams`
-- short operational description
-- total team count if useful
-- `Create Team` action for eligible logged-in users
+- title such as `Teams`;
+- short operational description;
+- `Create Team` only when the separate authenticated eligibility response allows it.
 
-Tone examples:
-
-- `Crew registry online`
-- `Team signal acquired`
-- `No crews registered`
+Do not require a total count in the visual header. If the complete collection length is useful to
+assistive status text, derive it locally from the returned collection.
 
 Terminal Ops components:
 
-- `HeroBriefing`
-- `StatusTelemetryBar`
-- `CommandAction`
+- `HeroBriefing`;
+- `CommandAction`.
 
 ## 2. Search and Filters
 
-Purpose:
+Initial controls:
 
-- help users find teams quickly
+- local search by team name or tag;
+- membership-mode filter only if it improves the reviewed composition.
 
-V1 controls:
+The expected compact collection remains client-side for search, filtering, sorting, and display
+pagination/progressive reveal. Add server pagination or server search only after measured payload or
+interaction cost justifies changing that contract.
 
-- search by team name
-- optional search by tag
-- membership mode filter
-- active/inactive filter only if active state exists later
-
-V1 caution:
-
-- current UI supports fuzzy team-name search
-- do not require advanced filters until the data supports them
+Do not add an active/inactive filter: normal browse already contains active teams only. Recruiting,
+region, recent-activity, and competitive-focus filters require separately approved public fields.
 
 ## 3. Team Cards
 
-Purpose:
+Required card content:
 
-- give enough identity to choose a team
+- approved team avatar or bounded media fallback;
+- team name;
+- team tag;
+- active member count;
+- public membership label;
+- restrained accent derived from approved team colors;
+- canonical link to `/teams/[id]`.
 
-Card content:
-
-- team image/avatar
-- team name
-- team tag
-- member count
-- membership mode
-- color accent from team colors
-
-Optional V1:
-
-- small roster preview from first few members
-
-V2:
-
-- team trophies
-- team gauntlet standings summary
-- team medals
-- recruiting status
-- recent activity
+Do not add roster previews. Do not place management actions, pending-state indicators, statistics,
+trophies, or audit-shaped metadata on directory cards.
 
 Terminal Ops components:
 
-- `EntityCard`
-- `TeamTag`
-- `RosterPreview`
-- `StatusChip`
+- `EntityCard`;
+- `TeamTag`;
+- `StatusChip`.
 
 ## 4. Create Team CTA
 
 Visible when:
 
-- user is logged in
-- user is eligible to create a team
+- the user is authenticated; and
+- the separate authoritative session/current-player response says team creation is available.
 
 Placement:
 
-- directory header or command action area
-- not global top navigation
+- directory header or command-action area;
+- not global top navigation.
 
 Design guidance:
 
-- if the user is already on a team, do not foreground create-team actions
-- if the user is anonymous, prefer `Sign in` over a disabled create button
+- if the user is already on a team, use `My Team` context rather than foregrounding creation;
+- if the user is anonymous, ordinary `Sign In` remains in the shared shell; do not add a disabled
+  create button;
+- do not derive eligibility from absence in the public team collection.
 
-## 5. Empty and Sparse States
+## Required Collection States
 
-Required states:
+The desktop/mobile calibration must include:
 
-- no teams
-- no teams matching search
-- failed team list fetch
-- media missing
+- populated collection;
+- sparse collection;
+- no public teams available;
+- no local search matches;
+- public directory unavailable;
+- missing or invalid optional media.
 
 Tone:
 
-- `No teams registered.`
-- `No crews match this query.`
+- `No teams registered.`;
+- `No crews match this query.`;
 - `Team registry unavailable.`
 
 Guardrail:
 
-- do not make a sparse team directory feel like a dead product
-- if the list is small, cards can be larger and more identity-focused
+- a sparse directory should use deliberate spacing and stronger identity presentation rather than
+  fabricated activity or statistics.
 
 ## Auth and Permission States
 
 | State | Behavior |
 |---|---|
-| Anonymous | can browse/search teams and open public team profiles |
-| Logged-in player without team | same plus create-team CTA if eligible and join/request actions after opening a team |
-| Logged-in player on a team | same plus `My Team` context and no create-team emphasis |
-| Admin | same plus future moderation/admin affordances only if needed |
+| Anonymous | Browse/search teams and open public team profiles. |
+| Authenticated player without a team | Same public collection plus separate create eligibility when available. |
+| Authenticated player on a team | Same public collection plus `My Team` context from private session state. |
+| Admin | Same public collection; administration does not enter directory cards. |
 
 ## Responsive Behavior
 
 Desktop:
 
-- command header
-- search/filter row
-- responsive card grid
+- command header;
+- compact local controls;
+- responsive card grid.
 
 Tablet:
 
-- reduce card columns
-- keep search and membership filter reachable
+- reduce card columns;
+- keep search and any accepted membership filter reachable.
 
 Mobile:
 
-- stack filters
-- show compact team cards
-- keep login/avatar visible in top bar
-- preserve team name, tag, member count, and membership mode
+- stack or collapse local controls without imitating page tabs;
+- use compact team rows/cards;
+- preserve team name, tag, active member count, and membership label;
+- keep the shared sign-in/account control in the top bar.
 
 ## SEO and Sharing
 
 The team directory should support:
 
-- title: `Teams - Ascent Rivals`
-- description focused on public teams, crews, and competitive roster discovery
-- canonical URL
+- title: `Teams - Ascent Rivals`;
+- description focused on public teams, crews, and roster discovery;
+- canonical URL.
 
-Do not expose private invite/request state in metadata.
+Do not expose private viewer, invitation, request, or capability state in metadata.
 
-## V2 Candidate Data Needs
+## Deferred Directory Ideas
 
-These ideas are valuable but should not block V1:
+These ideas require separate product and public-field decisions and do not block the initial route:
 
-- explicit recruiting/open roster flag separate from membership mode
-- team stats aggregate
-- team gauntlet standings
-- team trophies and medals
-- team recent activity
-- sponsor relationships
-- team search by member name
-- team filters by region or competitive focus
+- explicit recruiting flag separate from membership mode;
+- region or time-zone;
+- public social/watch links;
+- featured/manual ordering;
+- search by member name;
+- team performance, trophies, medals, or recent activity on directory cards.
 
 ## Open Questions
 
-- Should anonymous users see a `Sign in to create team` CTA, or should create-team actions appear only after login?
-- Should teams be sorted alphabetically, by member count, by recent activity, or by featured/manual ordering?
-- Should `/teams` eventually include a `My Team` panel for logged-in users?
+- Should the default order be alphabetical or an explicitly authored featured order?
+- Does the reviewed composition benefit from a membership-mode filter at the expected team count?
 
 ## Next Steps
 
-- Use this spec with [[team-profile]] for the next team design pass.
-- Decide whether the directory mock should show a sparse catalog or a fuller production-like catalog.
+- Update the desktop and mobile Pencil specimens against this exact compact projection.
+- Review populated, sparse, no-result, unavailable, and missing-media states without adding roster
+  or statistics fields.
+- Revalidate compressed payload size and local search responsiveness after T03 implementation.

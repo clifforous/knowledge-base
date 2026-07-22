@@ -2,7 +2,7 @@
 
 Status: proposed
 
-Last revised: 2026-07-20
+Last revised: 2026-07-22
 
 ## Purpose
 
@@ -151,6 +151,18 @@ replacement for product source control.
 - **KB-CAP-008:** The tool MUST NOT require a task to declare itself complete. Unknown and stale
   MUST remain distinct from abandoned.
 - **KB-CAP-009:** Parallel capture MUST NOT edit a shared task index or current-system document.
+
+## Operation Transparency
+
+- **KB-OBS-001:** Every mutating operation MUST return a compact receipt identifying what durable
+  knowledge changed, why it changed, the affected document or task-entry identifiers, any accepted
+  lifecycle transition, validation outcome, and current synchronization state.
+- **KB-OBS-002:** Supported client instructions MUST tell the active agent to summarize that receipt
+  for the contributor at meaningful checkpoints. A contributor MUST NOT need to ask separately
+  whether the knowledge base changed or remember a knowledge-maintenance command.
+- **KB-OBS-003:** A receipt MUST distinguish capture, incorporation, lifecycle acceptance,
+  source-control state, verification, and deployment. Reporting one of these MUST NOT imply the
+  others.
 
 ## Incorporation, Grooming, And Hygiene
 

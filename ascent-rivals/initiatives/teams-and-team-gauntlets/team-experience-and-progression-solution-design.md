@@ -406,15 +406,45 @@ omitted together rather than exposing actions without discovery.
 
 ### Team-Filtered Leaderboard
 
-The simplest useful team leaderboard is a public view of existing player leaderboard facts filtered to active team members:
+T03 exposes this as a reusable current-roster comparison rather than a Website-specific statistic.
+It accepts team, public course, player-facing leaderboard category, and optional exact season, and
+returns the full current roster at the configured maximum of 16 members:
 
 - preserve each player's global rank where available;
 - support course and mode filters already used by the normal leaderboard;
 - return the team's full current roster with null or “unranked” values where a member has no result;
 - do not derive this by filtering an already truncated global top-N response;
+- carry a nested optional record so rank/time absence survives generated Unreal clients without a
+  zero-value convention;
+- include response-level as-of time and public course/category identity;
 - do not introduce an aggregate “best team” ranking until the metric is selected.
 
 Potential aggregate team metrics such as best member, sum of top N, or average of top N remain product ideation, not part of this contract.
+
+### Public Team And Performance Read Boundary
+
+Team Core's existing detail response remains useful for authenticated management, but it is not the
+public roster contract. T03 adds public team summaries and public roster members that omit effective
+capabilities, membership-interval ids, action generations, roster revisions, and audit evidence.
+Website V2 and the game client share these domain messages. Website-specific search results, cards,
+routes, copy, and composition remain Website view models.
+
+The reusable performance reads separate three meanings that must not be blended:
+
+| Read | Membership basis | Meaning |
+|---|---|---|
+| Performance summary | Effective membership at canonical MatchStart | Distinct represented matches, represented player-match results, individual podium finishes, individual ascensions, and latest result time |
+| Current-roster leaderboard comparison | Current active roster at read time | Each member's existing global course/category record and rank, including explicit unranked rows |
+| Represented-result history | Effective membership at canonical MatchStart | Bounded public player results earned while representing the team |
+
+The first and third reads support lifetime and exact-season scope. None is a generic team rating,
+team podium count, or sum of current members' lifetime careers. Team-format qualification and stage
+results use the owner-aware gauntlet reads instead.
+
+One private `TeamViewerState`-style read supplies the authenticated player's relationship to the
+viewed team, current-team conflict where relevant, exact pending action and version, and allowed
+transitions. It is reusable by Website V2 and T05. Public team detail never carries this state, and
+management capabilities and whole-team pending queues remain separate authorized reads.
 
 ## Game-Client Architecture
 

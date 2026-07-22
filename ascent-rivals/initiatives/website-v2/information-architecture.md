@@ -566,11 +566,11 @@ Page-local sections:
 
 - Overview
 - public membership mode: `Open`, `Request to Join`, or `Invite Only`
-- Roster
-- Individual Pilot Results
-- Team Stats, secondary and provisional until post-implementation review
-- Gauntlet Results when team-result semantics exist
-- Trophies and Medals
+- complete active Roster with explicit owner treatment
+- Represented Performance, secondary to pilot identity
+- Current-Roster Comparison, including unranked pilots
+- Recent Represented Results
+- Team Gauntlet History only when qualification or accepted-result evidence is team-owned
 - Manage, if authorized
 
 Permissioned actions:
@@ -584,17 +584,21 @@ Permissioned actions:
 Membership-mode guardrail:
 
 - show the same public membership label to anonymous and logged-in visitors;
-- authentication, current-team state, and invitations determine which action appears, not whether the team mode is disclosed;
+- one authoritative Eventun viewer state determines which action appears; the Website does not infer
+  it from membership mode, current-team state, or invitation assumptions;
 - treat the three public concepts as stable while mapping them to the reviewed backend enum after the new team implementation.
 
 Team-statistics guardrail:
 
 - team history and aggregate performance require Eventun fact-backed event-time membership attribution;
 - do not sum current roster pilot careers to approximate historical team results;
-- Website V2 follows the team feature work and may assume that data is available by launch;
-- finalize the exact team page modules only after reviewing the implemented contracts described in [[initial-release-scope]].
+- Website V2 follows the team feature work and may plan against the approved T03 public-read
+  semantics;
+- revalidate populated values, independent module failures, and cache behavior after implementation;
 - keep pilots, pilot profiles, and the roster more prominent than aggregate team claims until the team feature has been implemented and iterated on;
-- distinguish pilot results earned while representing a team from competition-defined team standings or wins.
+- distinguish pilot results earned while representing a team from competition-defined team
+  standings or wins;
+- keep personal participation distinct from a team-owned result when a pilot occupies a team slot.
 
 Management guardrail:
 
@@ -646,7 +650,7 @@ This is the initial phase-1 state matrix. It should be expanded during page-spec
 | `/courses` | compact published-course directory linking to canonical detail routes; no local search, count, archive scope, or cross-course record comparison | same public directory | no V1 admin actions unless course administration is added later |
 | `/courses/[code]` | public or explicitly archived course briefing, selected category records and leaderboard, pilot links; unreleased courses are not exposed | same plus personal placement when available | no initial admin actions unless course administration is later approved |
 | `/teams` | team directory, search/filter, membership-mode context | same plus create team when eligible and `My Team` context if useful | admin may see broader moderation affordances later |
-| `/teams/[id]` | public team briefing, roster, membership mode, and fact-backed team analytics when available | join/request/leave actions based on membership and current team state | manage roster, invites, requests, media, colors, membership mode, ownership/disband for owner/manager/admin |
+| `/teams/[id]` | public team briefing, complete active roster, membership mode, represented-performance modules, and team-owned gauntlet history when available | exactly the relationship/action state returned by Eventun, including explicit no-action states | manage roster, invites, requests, media, colors, membership mode, ownership/disband only when Eventun authorizes management |
 | `/teams/[id]/manage` | not publicly navigable | unavailable unless authorized for the selected team | metadata, media, roster roles, invitations, join requests, ownership transfer, and disbanding |
 | login | Steam login entry | redirect or show already logged-in state | same |
 | team management | login required | only visible if authorized by team role | admin override if supported |

@@ -218,3 +218,19 @@ proposals until adopted.
   deployment as approved.
 - **Affected knowledge:** [organization policy](../../ORGANIZATION.md), [agent policy](../../AGENTS.md),
   and the [Pass 3 governance ledger](../initiatives/repository-restructure/pass-3-governance-ledger.md).
+
+### KB-2026-017 — Start the self-only kb pilot before the remaining empirical cases
+
+- **Date:** 2026-07-22
+- **Status:** Adopted delivery order; implementation has not started.
+- **Changed:** From deferring all `kb` implementation until manual parallel-capture and grooming
+  cases were complete to building the bounded self-only foundation, retrieval, status, visible
+  receipts, and direct capture path first, then using that tool during those remaining cases.
+- **Why:** Three distinct live workflows already validate direct, coordinator-guided, and
+  cross-environment knowledge updates. Building the small personal surface now lets the remaining
+  cases evaluate the intended contributor experience while retaining explicit gates against
+  premature schema compatibility, template extraction, coworker onboarding, or canon work.
+- **Affected knowledge:** [federated initiative](../initiatives/federated-kb/README.md),
+  [workflow design](../initiatives/federated-kb/federated-personal-and-canonical-knowledge-workflow.md),
+  [system design](../initiatives/federated-kb/system-design.md), and the
+  [Pass 3 governance ledger](../initiatives/repository-restructure/pass-3-governance-ledger.md).

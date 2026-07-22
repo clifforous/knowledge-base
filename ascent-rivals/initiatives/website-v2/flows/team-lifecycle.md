@@ -2,6 +2,7 @@
 
 Date: 2026-04-21
 Status: Draft
+Last reviewed: 2026-07-22
 
 Scope correction (2026-07-17): Website V2 targets the greenfield Next.js/React application and supports only `open`, `request`, and `invite` membership modes. Legacy token-gated and wallet-eligibility behavior is retired and excluded.
 
@@ -226,44 +227,31 @@ Error states:
 
 ## Public Team Action-State Model
 
-The team profile should compute action state from:
+Anonymous visitors receive the public membership label and the shared `Sign In` affordance. The site
+does not promise a post-authentication membership action.
 
-- auth state
-- whether the user is already on a team
-- whether the user is on this team
-- whether the user is owner or manager
-- membership mode
-- whether the user has a pending join request
-- whether the user has a pending invite
-- the explicit allowed actions and effective capabilities returned by Eventun
+An authenticated viewer receives one authoritative relationship/action state from Eventun:
 
-Recommended public-state matrix:
+- join;
+- request to join;
+- cancel request, with the exact pending-action reference;
+- accept invitation, with the exact pending-action reference;
+- decline invitation, with the exact pending-action reference;
+- leave;
+- manage;
+- already on another team;
+- no available action.
 
-- anonymous:
-  - `Sign in to Join`
-- logged in, on another team:
-  - no join action
-  - explanatory state such as `Already on another team`
-- logged in, on this team, non-owner:
-  - `Leave Team`
-- logged in, on this team, manager/owner/admin:
-  - `Manage Team`
-- logged in, no team, `open` team:
-  - `Join Team`
-- logged in, no team, `request` team:
-  - `Request to Join`
-  - if request pending: `Cancel Request`
-- logged in, no team, `invite` team:
-  - if invite exists: notification routes to the team page, where `Accept Invite` and `Decline Invite` are shown
-  - if no invite exists: informational `Invite Only`
-
-The browser renders the action state returned for the authenticated player. It must not reproduce Eventun's membership transition or capability rules from these presentation examples.
+The browser renders that response. It must not reproduce Eventun's transition rules from membership
+mode, current roster membership, public owner/title treatment, competition rank, or locally cached
+pending state. Management capabilities and team-wide pending queues remain separate authorized
+reads.
 
 ## Open Join Flow
 
 1. Logged-in player opens team profile.
-2. Team membership mode is `open`.
-3. Player is not currently on another team.
+2. Eventun viewer state returns `join` for this team.
+3. The public page may still describe the membership mode as `Open`.
 4. Player clicks `Join Team`.
 5. Site submits join request.
 6. Backend adds the player immediately.
@@ -284,8 +272,8 @@ Error states:
 ## Request-to-Join Flow
 
 1. Logged-in player opens team profile.
-2. Team membership mode is `request`.
-3. Player is not currently on another team.
+2. Eventun viewer state returns `request to join` for this team.
+3. The public page may still describe the membership mode as `Request to Join`.
 4. Player clicks `Request to Join`.
 5. Site submits request.
 6. Backend records pending request.
@@ -304,7 +292,7 @@ Desired V1 behavior:
 ## Cancel Join Request Flow
 
 1. Logged-in player has a pending request for a team.
-2. Player reopens team profile or sees request status in a personal queue.
+2. Eventun viewer state returns `cancel request` with the exact pending-action reference.
 3. Player clicks `Cancel Request`.
 4. Site removes the pending request.
 5. Team page returns to normal `Request to Join` state.
@@ -616,6 +604,8 @@ Avoid:
 - non-owner members can leave their team
 - owners cannot leave without transfer or disband handling
 - manage route is limited to users whose Eventun action state allows management
+- public membership mode never substitutes for the authoritative viewer state
+- already-on-another-team and no-available-action states do not expose speculative controls
 - authorized managers can perform only the member actions returned by Eventun capabilities
 - owners, or administrators explicitly authorized by Eventun, can transfer ownership
 - owners, or administrators explicitly authorized by Eventun, can disband the team with confirmation

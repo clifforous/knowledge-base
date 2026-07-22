@@ -79,9 +79,13 @@ Bracket implementation is not allowed to block unrelated Website slices. When pu
 
 ### 5. Public Team Routes
 
-- review the implemented team contracts after the team feature has been exercised;
-- finalize the provisional team analytics modules against fact-backed data rather than current-roster inference;
-- implement `/teams` and `/teams/[id]` with public roster, membership-mode, history, and statistics behavior;
+- implement the approved T03 compact directory, public detail/complete roster, viewer-state,
+  represented-performance, current-roster comparison, represented-result history, and owner-aware
+  gauntlet-history reads before the Website slice consumes them;
+- implement `/teams` and `/teams/[id]` against those reads without importing capability, pending,
+  interval, revision, or audit data into public responses;
+- validate populated, sparse, unranked, independently unavailable, and no-team-result states against
+  representative implemented data;
 - keep individual pilot identity more prominent until product use supports changing the balance.
 
 ### 6. Steam Authentication and Personalized Overlays

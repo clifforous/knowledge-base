@@ -4,7 +4,7 @@ Status: in-progress
 Status detail: Approved baselines and draft specifications remain an active design and
 delivery initiative; they are not the deployed website.
 
-Last consolidated: 2026-07-21
+Last consolidated: 2026-07-22
 
 Website V2 remains initiative material because the current deployed website is described in
 [the website system document](../../system/website.md). Status statements in each document
@@ -21,10 +21,23 @@ domain behavior in Eventun and AccelByte.
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents | `not-applicable` | Close remaining contract gaps and slice-specific acceptance detail |
-| Terminal Ops visual calibration | `approved` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-21 Design Language v0.2 reference board, plus the linked Markdown baselines | `not-applicable`; design artifact | Preserve one reviewed snapshot, begin the greenfield application foundation, and later validate team and form extensions |
-| Website V2 application | `not-started` | No implementation revision is recorded | `not-deployed` | Greenfield repository foundation and first approved route slice |
+| Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents; Website team and gauntlet-result semantics are reconciled to the approved T03 public-read checkpoint | `not-applicable` | Implement and review T03, close remaining contract gaps, and add slice-specific acceptance detail |
+| Terminal Ops visual calibration | `approved` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-21 Design Language v0.2 reference board, plus the linked Markdown baselines | `not-applicable`; design artifact | Preserve one reviewed snapshot; calibrate team directory/profile and affected gauntlet annotations against the approved T03 semantics; later validate form extensions |
+| Website V2 application | `verified` | `ar-web` HEAD remains revision `614ba36cf8c2a82730bf5ff93e9539fb205135f6`; the uncommitted worktree adds shared clipped-layer polygon borders, static `/about`, `/brand`, `/events`, and `/events/[slug]` routes, a typed public event projection, migrated approved repository assets, and the static repository-route sitemap | Local 2026-07-22 formatting check, ESLint, TypeScript, and optimized production build passed. Browser review passed at `320`, `390`, `759/760`, `1024`, and `1440` CSS pixels for responsive overflow, keyboard navigation, reduced motion, settled polygon normal/hover/focus/mobile states, internal event links, all event metadata/canonicals, shared unknown-event `404`, retired `/tournaments` `404`, and console errors. Implementation remains uncommitted and `not-deployed` | Review and commit the repository-authored slice when approved; close the content gaps below; then implement `/gauntlets` only after the Eventun discovery contract is available |
 | Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
+
+### Current Repository-Authored Content Gaps
+
+- The migrated source provides team names and role labels but no approved individual biographies;
+  `/about` therefore does not add biographies.
+- The MSI Grand Prix source leaves the official-rules, livestream, Monolith Gaming, and Mezzcast
+  destinations undefined. Its queue/setup instructions and random-racer prize selection are marked
+  unfinished; those destinations, instructions, and promotional copy remain omitted.
+- The historical event source provides concise dates, summaries, winners, prizes, artwork, and most
+  recap links, but not long-form reports. The migrated historical routes do not expand those records.
+- `/brand` provides the six current repository logo variants and the existing complete-kit link. No
+  standalone downloadable font package was added because the source does not provide one complete,
+  reviewed distribution set.
 
 ## Reading Order
 
@@ -104,7 +117,11 @@ snapshot and do not maintain two nominally live copies.
   typography, spacing, geometry, shells, footers, actions, selectors, content specimens, shared
   states, focus treatment, and responsive transformations. It defines static states and motion
   intent; implementation timing and easing remain provisional until reviewed in the browser.
-- Team-page validation follows review of the implemented team contracts.
+- Team directory/profile content and data-state requirements are reconciled to the approved T03
+  public-read checkpoint. Dedicated desktop/mobile visual calibration remains open and must cover
+  populated, sparse, unranked, independently unavailable, and no-team-result states. Affected
+  gauntlet frames also require a bounded annotation pass separating field owners, racer slots,
+  personal participation, and team-owned results.
 
 ## Material Decisions
 
@@ -132,7 +149,8 @@ snapshot and do not maintain two nominally live copies.
 
 - preserve one reviewed Pencil snapshot at this checkpoint and carry the approved v0.2 baseline
   through later team, form, and in-browser motion validation without treating it as immutable;
-- close the route/API contract gaps and review the implemented team-facing contracts;
+- implement and review the approved T03 public reads, then validate the team and affected gauntlet
+  visual states against representative data;
 - implement and verify the route slices, Steam session boundary, permissions, uploads,
   accessibility, responsive behavior, caching, metadata, and release evidence;
 - complete the Eventun Extend App sponsor-administration handoff before Ascentun cutover;

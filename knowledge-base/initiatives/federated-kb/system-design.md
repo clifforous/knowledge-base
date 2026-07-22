@@ -2,7 +2,7 @@
 
 Status: proposed design baseline
 
-Last revised: 2026-07-20
+Last revised: 2026-07-22
 
 ## Purpose And Boundary
 
@@ -13,8 +13,11 @@ behavior, knowledge lifecycle, and rationale. This document owns process boundar
 components, local state, synchronization, indexing, MCP behavior, client adapters, packaging,
 and verification.
 
-Implementation remains deferred until the repository's manual-use checkpoint is complete.
-Design work may continue during that checkpoint and should record structural friction in the
+Self-only implementation may begin in bounded slices. The remaining parallel task-log and
+grooming cases are now personal dogfood gates rather than prerequisites for the executable
+foundation, retrieval, status, receipts, and direct capture path. Do not freeze those provisional
+schemas, extract the template, or begin coworker or canon rollout until the cases are complete and
+their structural friction is recorded in the
 [Pass 3 governance ledger](../repository-restructure/pass-3-governance-ledger.md).
 
 ## Architectural Decisions
@@ -260,7 +263,7 @@ identity:
 workflow:
   style: mixed
   acceptance: explicit-or-source-control
-  parallelism: often
+  parallelism: frequent
 access:
   profile: hybrid-read
 git:
@@ -312,7 +315,8 @@ non-interactive GitHub access and configured-signing checks.
 
 ### Repository manifest
 
-Each managed repository has a small tracked manifest, for example:
+Each managed repository has a small tracked root manifest named `.kb-repository.yaml`, for
+example:
 
 ~~~yaml
 schema: 1
@@ -373,6 +377,7 @@ through a relevant operation or explicit setup/doctor flow, not before the MCP h
 | `offline` | Network is unavailable or timed out. | Read local sources and permit recoverable personal capture. |
 | `authentication-error` | Remote credentials or access failed. | Read local data; retain commits; block uncertain pushes. |
 | `conflict` | Automatic Git integration encountered a textual conflict. | Preserve both histories, stop mutation, and report recovery. |
+| `indeterminate` | Repository identity and the local snapshot are valid, but local tracking data cannot determine synchronization state. | Read validated local state; block synchronization-sensitive mutation until tracking state is known. |
 | `invalid-identity` | Manifest, owner, remote, or configured role disagrees. | Read only when safe; no mutation or push. |
 | `corrupt` | Git or knowledge validation cannot establish a safe baseline. | No mutation; diagnostic/recovery only. |
 
@@ -742,19 +747,30 @@ capture, error rendering, instruction discovery, and lifecycle audit behavior wh
 
 ## Implementation Slices
 
-Detailed implementation planning should be created only when the manual-use checkpoint closes.
-The design naturally separates into these reviewable slices:
+Implementation and rollout use this evidence-gated order:
 
-1. executable foundation, configuration, manifests, status, doctor, and validation;
-2. read-only source management plus lexical search/read;
-3. personal task-log capture, Git commit/push, offline recovery, and locking;
-4. explicit incorporation, dispositions, and bounded grooming batches;
-5. setup, instruction management, and verified client adapters;
-6. peer/canon review; and
-7. component deployment and rollback truth.
+1. Build the executable foundation: configuration, repository manifests, status, doctor,
+   validation, cross-process locking, and compact operation receipts.
+2. Add read-only source management, lexical search, and complete attributed document reads.
+3. Add direct personal capture and incorporation, manual-remind Git status, and offline recovery.
+4. Dogfood those self-only paths during ordinary work before broadening the mutation model.
+5. Add a provisional one-log-per-task parallel-capture surface.
+6. Exercise one real feature with at least two parallel logs and serialized incorporation.
+7. Add bounded grooming with pending, incorporated, already-represented, abandoned, and
+   needs-owner outcomes without autonomous semantic decisions.
+8. Groom one real mixed batch, then refine and version the task-log, receipt, and grooming schemas
+   plus any affected organization rules.
+9. Extract the reusable repository template and prepare the contributor handoff only after those
+   cases pass.
+10. Host and validate the personal/template repositories, then onboard one willing coworker.
+11. Add peer/canon review and deployment-event adapters only after two personal repositories
+   provide useful evidence.
 
-The personal pilot needs slices 1 through 5. Canon and deployment work should wait until two
-personal repositories produce useful real evidence.
+Detailed planning may proceed for steps 1 through 4 now. Field-level compatibility is not promised
+for the provisional parallel and grooming schemas before step 8. Every mutating slice must expose
+the paths and identifiers changed, the reason, any lifecycle transition, validation result, and
+synchronization state so the client can keep knowledge maintenance visible without making it a
+separate contributor chore.
 
 ## Technical References
 

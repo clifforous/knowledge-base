@@ -2,7 +2,7 @@
 
 Status: proposed workflow design
 
-Last revised: 2026-07-21
+Last revised: 2026-07-22
 
 ## Document Role And Status
 
@@ -476,30 +476,37 @@ Status: complete on 2026-07-19.
 The personal repository has project/current-system/initiative/decision/source/archive boundaries,
 root governance, indexes, and mechanical validation.
 
-### Stage 2: Manual workflow validation
+### Stage 2: Self-only tool foundation and direct workflow
 
-Status: active.
+Status: approved to begin on 2026-07-22.
 
-Use the structure during ordinary product work and during `kb` requirements/design work. Observe
-retrieval, placement, index usefulness, delivery snapshots, direct updates, parallel ownership,
-and grooming without implementing the tool prematurely.
+Implement foundation, configuration, doctor/status, attributed lexical search and full reads,
+compact operation receipts, direct capture/incorporation, manual Git reminders, and offline
+recovery. Exercise the WSL-owned process from WSL and a Windows-hosted client. Continue recording
+ordinary-work observations; this approval does not finalize parallel or grooming schemas.
 
-### Stage 3: Personal tool pilot
+### Stage 3: Personal parallel-capture and grooming dogfood
 
-Implement the smallest on-demand read, capture, validation, synchronization, and incorporation
-surface for the knowledge-base owner. Exercise WSL plus Windows-client access and offline recovery.
+Add provisional task-owned capture, exercise at least two parallel logs with serialized
+incorporation, then add and exercise bounded grooming on a mixed unresolved batch. Refine schemas,
+organization policy, and tool behavior from the results.
 
-### Stage 4: One-coworker pilot
+### Stage 4: Template and handoff preparation
+
+Extract the reusable repository template and onboarding material only after Stage 3. Remove
+machine, owner, and personal workflow assumptions before asking a coworker to use it.
+
+### Stage 5: One-coworker pilot
 
 Onboard the willing Claude Code coworker on Linux/Nix. Add their dual-boot Windows installation
 only when needed. Evaluate setup time, capture quality, hook noise, and Git invisibility.
 
-### Stage 5: Canon pilot
+### Stage 6: Canon pilot
 
 Use two personal repositories to review one multi-component feature. Exercise conflict,
 disposition, adoption without deployment, partial deployment, and rollback.
 
-### Stage 6: Broader rollout
+### Stage 7: Broader rollout
 
 Package native Windows onboarding for additional Cursor users only after normal use requires no
 Git knowledge or recurring manual reminders.
