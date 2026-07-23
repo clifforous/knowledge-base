@@ -2,10 +2,10 @@
 
 Status: current
 
-Applicability: committed local-development behavior. This document does not imply
-shared-development or production deployment.
+Applicability: deployed shared-development behavior as of 2026-07-23. This document does not imply
+production deployment.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-23
 
 ## Related
 
@@ -855,8 +855,11 @@ separately, live `pg_ls_tmpdir()` bytes, and retained `pg_ls_waldir()` bytes fro
 a second read-only connection every two seconds. Relation indexes are included. It records the restored
 baseline, the incremental concurrent peak, peak snapshots by published phase,
 and committed database/public-table/largest-relation sizes. The hard ceiling is
-32 GiB, the controlled rehearsal stop is 28 GiB, and the migration backend uses
-a 14 GiB `temp_file_limit`. Rollback-only capacity checks proved 6 GiB too low
+32 GiB, the controlled rehearsal stop is 28 GiB, and the migration backend requests
+a 14 GiB `temp_file_limit`. A managed PostgreSQL target may reject that session setting with
+`42501` while retaining its effective `-1` value; the owner accepted that exact development-cutover
+case, evidence records `-1`, and the independent 28 GiB physical-storage monitor remains the
+enforced stop. Rollback-only capacity checks proved 6 GiB too low
 for source grouping at a 14.36 GB concurrent physical peak and 10 GiB too low
 for normalization at a 22.66 GB peak. The accepted fresh full-source rehearsal
 peaked at 25.04 GB during bulk event insertion and committed a 12.54 GB database.

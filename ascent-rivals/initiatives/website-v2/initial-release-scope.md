@@ -2,7 +2,7 @@
 
 Date: 2026-07-15
 Status: Approved scope baseline
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-23
 
 ## Related
 
@@ -104,8 +104,13 @@ The existing game-client reads are candidates for reuse, not a constraint that W
 
 Approved gauntlet-discovery application:
 
-- add one compact, unpaginated Eventun collection with server time, shallow public gauntlet presentation fields, normalized occurrences, and server-derived active/next/latest occurrence summaries;
+- add one compact, unpaginated Eventun collection with shallow public gauntlet presentation fields
+  and complete normalized occurrence facts, without query-time active/next/latest/count or
+  `Current`/`Upcoming`/`Past` summaries;
 - use it for `/gauntlets`, the repeated-occurrence Schedule view, the optional homepage teaser, and public gauntlet search without transferring full authoring/detail records;
+- derive temporal presentation from one SSR Website-server timestamp, advance it monotonically after
+  hydration, and recalculate locally at occurrence boundaries and visibility changes without a
+  boundary-only refetch;
 - keep personalized participation as an optional authorized overlay so the base collection remains public and cacheable;
 - make the contract domain-neutral for possible later game-client reuse, but defer game-client migration and retain current reads until their consumers are reviewed.
 

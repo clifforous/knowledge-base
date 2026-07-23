@@ -478,12 +478,74 @@ root governance, indexes, and mechanical validation.
 
 ### Stage 2: Self-only tool foundation and direct workflow
 
-Status: approved to begin on 2026-07-22.
+Status: in progress; foundation and initial read-only retrieval were locally dogfooded on
+2026-07-22.
 
 Implement foundation, configuration, doctor/status, attributed lexical search and full reads,
 compact operation receipts, direct capture/incorporation, manual Git reminders, and offline
 recovery. Exercise the WSL-owned process from WSL and a Windows-hosted client. Continue recording
 ordinary-work observations; this approval does not finalize parallel or grooming schemas.
+
+The first Arch WSL pilot configured the personal repository through a committed repository
+manifest and machine-local hybrid-read profile. `kb doctor` and `kb status` reported healthy
+repository identity, source access, manifest, origin, upstream, and cached tracking state. A Codex
+CLI client then completed real `kb_status`, `kb_search`, and `kb_read` calls from the globally
+configured stdio MCP server. The trial exposed missing MCP behavior annotations: the tools worked,
+but the client initially requested approval for every call. Revision `d1df8c2` advertises the three
+current tools as read-only, non-destructive, idempotent, and closed-world. After restarting the
+client with `writes` approval mode, the same read-only workflow ran without prompts.
+
+Revision `6d5540c` extends that local-only retrieval path with strict organization-contract task-log
+parsing, fragment-addressed raw entry reads, separately hashed entry content, entry-level FTS5
+records, incremental removal and repair, and state-aware authority filtering. Read and search
+responses now use schema 2, while the rebuildable index uses schema 6. A real stdio MCP trial
+returned a pending task entry through its stable fragment handle without also returning the parent
+task log as a duplicate search result. Incorporated entries are eligible after curated decisions;
+pending and `needs-owner` evidence require explicit inclusion, and terminal task evidence requires
+an explicit task-log role filter. Formatting, strict Clippy, diff checks, and 58 tests were reported
+passing before the revision was committed and pushed.
+
+Revision `4a3447c` completes the accepted retrieval-hardening increment. Source-wide duplicate
+task-entry ids are excluded from search and direct fragment reads until repaired. Peer and canon
+sources use cross-process refresh leases, bounded non-interactive fetch, verified explicit
+fast-forward integration, typed freshness, throttled stale fallback, and source-owner attribution
+that fails closed for dirty, ahead, diverged, detached, or indeterminate clones. Read and search
+responses use schema 3 and the rebuildable index uses schema 7. Formatting, strict Clippy, diff
+checks, 70 tests, and a disposable local-remote stdio trial were reported passing before the
+revision was committed and pushed.
+
+Revision `be5e024` adds the minimal cross-source comparison boundary without claiming semantic
+contradiction detection. After authority filtering, returned whole-document rows from distinct
+logical sources are marked `comparison-required` only when they share project, stable document id,
+and applicability but have different content hashes. The attributed rows and ranks remain separate,
+and one deterministic redacted warning asks the active agent to compare them without selecting a
+winner. Task-entry fragments are excluded because their hashes do not represent the parent
+document named by the grouping key. Search now uses response schema 4; read remains on schema 3 and
+the rebuildable index remains on schema 7. Formatting, strict Clippy, diff checks, and 74 tests were
+reported passing before the revision was committed and pushed.
+
+Revision `ac5dba3` adds direct task-owned personal capture under the manual-remind profile.
+`kb_begin_work` creates or resumes a log only inside an existing indexed project, and
+`kb_capture` appends validated pending entries through stable work and entry handles. The private
+pilot requires a caller-supplied task id. Cross-process locking is keyed by the canonical
+repository rather than a configurable source alias, no-change retries revalidate the source
+snapshot, and only frontmatter activity metadata may be rewritten outside the appended entry.
+Durable post-replacement outcomes remain visible through recoverable receipts when directory
+sync, post-write validation, or derived-index refresh cannot be confirmed; validation failures
+are not reported as passed. The tools do not stage, commit, contact a remote, or prompt for Git
+credentials. Formatting, strict Clippy, diff checks, 87 tests, and a real
+begin/capture/read/search stdio trial were reported passing before the revision was committed and
+pushed.
+
+These retrieval and index schema numbers are private-incubation checkpoints rather than a public
+compatibility promise. Before extracting the reusable template or onboarding a coworker, review
+whether superseded early schemas should be collapsed into one deliberate baseline. No
+consolidation has been approved or performed yet.
+
+This checkpoint proves the WSL personal retrieval and local durable capture path without claiming
+native Windows, semantic contradiction detection, incorporation, automatic Git mutation, or
+grooming. Client approval policy remains authoritative even when a server supplies accurate tool
+annotations.
 
 ### Stage 3: Personal parallel-capture and grooming dogfood
 
@@ -820,6 +882,73 @@ GStack is useful mainly for tool-independent policy and client-local adapter dis
 specialist role pack and prescribed development process are intentionally excluded because
 contributors use different workflows.
 
+### LocalRecall
+
+[LocalRecall](https://github.com/mudler/LocalRecall) is a useful implementation contrast for local
+agent retrieval, but it is not a candidate dependency. Its strongest applicable patterns reinforce
+choices already present in `kb`:
+
+- preserve the complete raw source independently of derived search chunks;
+- keep source or collection scope explicit in retrieval metadata;
+- rebuild derived search state from durable source material rather than treating the index as the
+  knowledge authority;
+- configure refresh cadence per external source; and
+- expose only the MCP tools appropriate to a client's selected capability profile.
+
+The server daemon, background polling, Web UI, REST service, vector/embedding engines, PostgreSQL,
+Docker stack, copied-asset source of truth, broad file ingestion, and mutation-oriented collection
+API are outside `kb`'s intended boundary. Its Git importer also concatenates repository files into
+one derived text artifact, which loses the per-file revision, role, applicability, and authority
+boundaries required here. `kb` should retain on-demand bounded refresh through the installed Git
+client and keep human-readable repositories authoritative.
+
+### Book-to-Skill
+
+[Book-to-Skill](https://github.com/virgiliojr94/book-to-skill) is a useful contrast for compiling a
+large source collection into a small agent-facing routing surface. Its applicable patterns are:
+
+- separate deterministic extraction and source metadata from later agent-authored synthesis;
+- front-load a compact topic index while loading detailed subject files only when requested;
+- pay discovery and structuring cost at an explicit compilation checkpoint rather than repeatedly
+  rediscovering a large corpus during ordinary work;
+- offer an analyze-only preview and corpus/token estimate before an expensive synthesis pass; and
+- validate generated client artifacts through host-specific compatibility lenses instead of
+  assuming every agent host interprets skill metadata and tool names identically.
+
+These ideas reinforce bounded retrieval and may inform future optional client instruction packs or
+explicit Notion/canon consolidation previews. They do not justify compiling the knowledge
+repository itself into generated skills. Book-to-Skill's documented fold-in procedure semantically
+matches and rewrites generated summaries, indexes, glossaries, and cheatsheets; it does not specify
+the expected-document hashes, per-claim provenance, authority/applicability boundaries, explicit
+dispositions, or atomic conflict handling required for `kb` incorporation. Any compiled client view
+should therefore remain rebuildable and source-attributed, while the human-readable Markdown
+repositories remain authoritative. Core `kb` operations must also remain model-free; an optional
+active-agent synthesis pass is explicit work, not background maintenance.
+
+### Buzz
+
+[Buzz](https://github.com/block/buzz) is a useful collaboration contrast rather than a candidate
+dependency or platform. Its applicable idea is to represent human actions, agent actions,
+approvals, Git activity, and supporting evidence as attributed records with stable identities,
+then derive search and project memory without erasing the underlying event boundaries. That
+reinforces several `kb` choices:
+
+- task entries and operation receipts should use the same attribution and evidence vocabulary
+  regardless of whether a human or agent initiated the work;
+- capture, acceptance, verification, source-control, and deployment should remain separate
+  record types rather than being inferred from one another;
+- stable record ids and explicit parent relationships make parallel activity replayable and
+  allow an accepted outcome to cite the evidence that produced it; and
+- search should return source records and identifiers that an active agent can cite, not an
+  unattributed synthesized answer.
+
+Buzz deliberately makes an always-on relay and signed event log the workspace source of truth.
+That does not fit `kb`, where contributor-owned human-readable Markdown repositories remain
+authoritative and SQLite remains rebuildable local state. Its chat workspace, Nostr identity,
+cryptographic signing, workflow engine, Git forge, Postgres/Redis services, and unified
+communication history are also outside scope. `kb` should borrow the event-to-evidence discipline,
+not the collaboration platform.
+
 ### Zettelkasten
 
 Stable addresses, small referenceable decisions, evidence links, and curated structure notes are
@@ -845,6 +974,18 @@ loop, but not action lists, calendars, or an instruction to capture everything.
 - [GBrain agent-repository versus brain-repository guide](https://github.com/garrytan/gbrain/blob/master/docs/guides/repo-architecture.md)
 - [GStack repository](https://github.com/garrytan/gstack)
 - [GStack skill guides](https://github.com/garrytan/gstack/blob/main/docs/skills.md)
+- [LocalRecall repository](https://github.com/mudler/LocalRecall)
+- [LocalRecall raw-file and derived-index persistence](https://github.com/mudler/LocalRecall/blob/main/rag/persistency.go)
+- [LocalRecall external-source refresh manager](https://github.com/mudler/LocalRecall/blob/main/rag/source_manager.go)
+- [LocalRecall Git source importer](https://github.com/mudler/LocalRecall/blob/main/rag/sources/git.go)
+- [Book-to-Skill repository](https://github.com/virgiliojr94/book-to-skill)
+- [Book-to-Skill architecture](https://github.com/virgiliojr94/book-to-skill/blob/master/docs/ARCHITECTURE.md)
+- [Book-to-Skill generation and fold-in workflow](https://github.com/virgiliojr94/book-to-skill/blob/master/SKILL.md)
+- [Book-to-Skill host-lens validator](https://github.com/virgiliojr94/book-to-skill/blob/master/tools/validate_skill.py)
+- [Buzz repository](https://github.com/block/buzz)
+- [Buzz architecture](https://github.com/block/buzz/blob/main/ARCHITECTURE.md)
+- [Buzz agent and MCP vision](https://github.com/block/buzz/blob/main/VISION_AGENT.md)
+- [Buzz project and branch-record vision](https://github.com/block/buzz/blob/main/VISION_PROJECTS.md)
 - [Zettelkasten Method introduction](https://zettelkasten.de/introduction/)
 - [Forte Labs PARA method](https://fortelabs.com/blog/para/)
 - [Forte Labs Progressive Summarization](https://fortelabs.com/blog/progressive-summarization-a-practical-technique-for-designing-discoverable-notes/)

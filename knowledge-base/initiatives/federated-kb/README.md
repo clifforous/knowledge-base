@@ -4,7 +4,7 @@ Status: in-progress
 Status detail: The self-only personal tool pilot is approved to begin. Parallel task-log and
 grooming behavior remain provisional dogfood gates before template extraction and coworker use.
 
-Last consolidated: 2026-07-22
+Last consolidated: 2026-07-23
 
 ## Outcome And Boundary
 
@@ -31,9 +31,9 @@ service, autonomously consume model tokens, replace Perforce, or add project-man
 |---|---|---|---|---|
 | Manual repository workflow | `implemented` | [Organization policy](../../../ORGANIZATION.md), [Pass 3 ledger](../repository-restructure/pass-3-governance-ledger.md), [coordinated feature use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-coordinator-guided-feature-delivery), [cross-chat design use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-iterative-design-coordination-across-chats-and-a-live-artifact), and [direct implementation use case](federated-personal-and-canonical-knowledge-workflow.md#observed-use-case-analysis-gated-direct-feature-implementation) | In use in Cliff's personal repository; the coordinated Eventun/teams, Windows-originated Website V2 design, and direct Ascent Rivals implementation cases are recorded | Exercise the remaining parallel task-log and grooming cases during personal `kb` dogfood |
 | Requirements and workflow design | `designing` | [Requirements](requirements.md) and [workflow design](federated-personal-and-canonical-knowledge-workflow.md) | `not-applicable` | Owner review and further ordinary-work observations |
-| Tool system design | `approved` | [System design](system-design.md) and adopted KBTD register | Rust toolchain verified in Arch WSL; implementation and client behavior remain unproven | Create the separate implementation repository and complete the first self-only vertical slice |
+| Tool system design | `approved` | [System design](system-design.md) and adopted KBTD register | The Arch WSL personal pilot has verified configuration, repository identity, attributed retrieval, and Codex MCP approval behavior; remaining retrieval and mutation behavior is unproven | Refine the design from personal dogfood while completing the accepted self-only slices |
 | Reusable repository template | `not-started` | No template repository exists | `not-applicable` | Complete personal parallel-capture and grooming dogfood, then remove personal assumptions |
-| Personal `kb` pilot implementation | `implementing` | Separate `kb` repository revision `244af1f` implements configuration, repository identity, local-only status/doctor, MCP `kb_status`, and the operation-receipt contract | Arch WSL: formatting, clippy with warnings denied, 21 tests, and real stdio MCP framing verified; not deployed | Implement and verify attributed read/search, then continue through the accepted self-only slices |
+| Personal `kb` pilot implementation | `implementing` | Separate `kb` repository revision `ac5dba3` implements configuration, repository identity, status/doctor, attributed retrieval, rebuildable SQLite/FTS5 indexing, operation receipts, bounded lazy peer/canon refresh, mechanical cross-source comparison, and direct task-owned personal capture | Arch WSL: 87 reported tests plus formatting, strict Clippy, and diff checks; real stdio trials verified retrieval, refresh, source-owner safety, no-prompt annotated reads, and begin/capture/read/search behavior; capture uses caller-supplied task ids, repository-keyed locking, existing project boundaries, recoverable post-write receipts, and manual-remind without Git or network mutation | Install and dogfood capture in existing work, then implement expected-hash personal incorporation |
 
 ## Documents
 

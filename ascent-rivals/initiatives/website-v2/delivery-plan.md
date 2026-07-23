@@ -74,6 +74,9 @@ Bracket implementation is not allowed to block unrelated Website slices. When pu
 
 - implement `/gauntlets`, `/gauntlets/[id]`, `/players`, `/players/[id]`, `/courses`, `/courses/[code]`, and grouped global search;
 - integrate the compact public discovery contracts and reviewed production-cut-over Eventun/AccelByte reads;
+- consume complete gauntlet occurrence facts and derive time-relative presentation locally from the
+  SSR presentation timestamp; occurrence boundaries and tab visibility changes recalculate cached
+  facts without a boundary-only network request;
 - implement exact tables, bounded visualizations, client-side collection search/filter/sort/display pagination, and public cache behavior;
 - verify published/archived/hidden visibility and missing-versus-zero semantics before exposing production data.
 

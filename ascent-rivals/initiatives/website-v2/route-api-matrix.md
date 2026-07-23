@@ -2,7 +2,7 @@
 
 Date: 2026-07-17
 Status: Initial route groups, integration boundaries, and shared support contracts approved; implementation contract gaps remain tracked by route group
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-23
 
 ## Related
 
@@ -76,8 +76,8 @@ Do not add independent homepage leaderboard, telemetry, system-log, or multi-ent
 
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
-| `/gauntlets` | Eventun compact public gauntlet discovery collection | Cached server read with occurrence-boundary-aware freshness; derive no timing state in the browser beyond display countdowns | Client-side scope, search, filter, sort, and display pagination/progressive reveal over the complete shallow collection | Optional participation summaries compose separately and must not make the public collection private | New/revised domain-neutral discovery contract required; response shape approved in [[ascent-rivals/initiatives/website-v2/pages/gauntlets-index]] |
-| `/gauntlets/[id]` | Eventun public gauntlet detail/configuration, schedule/occurrences, media, sponsor relationships, and published competition structure | Cache the relatively stable public entity/detail separately from short-cache standings/results; omit prize/reward data and unavailable optional modules independently | Section navigation, local presentation filters, explicit standings refresh, and bounded visualization only | Personal rank/qualification/participation and ordinary edit/delete permissions compose request-time; admin-only bracket/runtime mutation remains outside Website V2 | Existing detail reads are candidates; final detail projection and public published-bracket contract require implementation review |
+| `/gauntlets` | Eventun `GET /v1/public/gauntlet/discovery`, using identity and complete occurrence facts; accept the preceding shared-development response and committed `0e4d656` replacement while ignoring transport time and redundant presentation fields | Cache only the normalized factual collection with ordinary source-data TTL/invalidation; after the cached read resolves, obtain one fresh Website-server timestamp outside the shared cache and derive the initial presentation snapshot | Hydrate from the exact server presentation timestamp, advance time monotonically with suspension recovery, and recalculate Current/Upcoming/Past, active/next/latest, ordering, scope, and Schedule locally at the nearest boundary, bounded fallback, visibility recovery, and replacement data; never refetch only because time passed | Optional participation summaries compose separately and must not make the public collection private | Eventun removal is committed as `0e4d656` but not deployed; the compatible Website consumer is reviewed, verified, and committed as `ar-web` `7d1d00c` |
+| `/gauntlets/[id]` | A compact domain-neutral Eventun public detail projection for stable identity, approved media, normalized scoring configuration, occurrence facts, qualifiers, and stage/circuit structure; current/exact fields, factual StageRuns, standings/results, and optional sponsor display remain independent reads | Resolve canonical existence before streaming; cache stable detail separately from short-cache field, StageRun, standings, and result modules; omit prize/reward data and unavailable optional modules independently | Derive schedule-relative presentation from occurrence facts and the Website clock; use factual StageRun status only; expose explicit standings/result refresh and bounded local presentation | Personal rank/qualification/participation and ordinary edit/delete permissions compose request-time; admin-only bracket/runtime mutation remains outside Website V2 | Direction C approved at the 2026-07-23 read-only checkpoint; Eventun G03 commit `cb79df3` clears the overlap gate, while detail implementation remains pending |
 | `/gauntlets/create` | Eventun player-facing core gauntlet mutation, media-purpose lookup, signed upload, scoped sponsor lookup | Authenticate server-side; obtain form options and signed upload intent; submit one authoritative create mutation; invalidate collection/entity tags after success | Form state, client validation, direct signed media transfer, retry, and unsaved-change handling | Route requires `gauntlet_creator` or administrator according to Eventun; ordinary players cannot render protected form data | Existing mutation/upload contracts require final post-team field and failure-model review |
 | `/gauntlets/[id]/edit` | Eventun authorized full core-edit record, mutation, delete, media, and scoped sponsor reads | Enforce creator ownership/role or administrator access before prefill; recheck in Eventun; invalidate detail/collection/dependent tags after success | Prefilled form, direct signed uploads, preservation of existing ids/media/relationships, conflict and retry handling | Owning creator with current role or administrator | Existing contracts require optimistic-concurrency and post-team field review; bracket graph mutation excluded |
 
@@ -88,32 +88,99 @@ Do not force every gauntlet module into one cache and refresh lifecycle.
 Use these logical read classes even if implementation later combines compatible operations internally:
 
 1. Public detail/configuration
-   - identity, title/subtitle/ticker, colors, region, entry requirement, media, sponsor display, qualifiers, stages/circuits, and normalized occurrence schedule;
-   - tagged entity cache with schedule-aware freshness where timing affects presentation.
+   - identity, title/subtitle/ticker, colors, region, approved media, bounded scoring model,
+     qualifiers, stages/circuits, and normalized occurrence schedule;
+   - do not include current published field-owner count or racer-slot count; obtain current values
+     from the current-field projection and historical values from the exact StageRun-field
+     projection;
+   - tagged entity cache with ordinary source-data TTL and mutation invalidation; derive
+     time-relative presentation from cached occurrences rather than refetching at a boundary.
 2. Standings and accepted results
-   - gauntlet/stage/qualifier standings and accepted result summaries using an explicit player-or-
-     team owner variant;
+   - existing overall and qualifier standings only for a supported player-owned qualification
+     model and a recognized bounded public scoring metric;
+   - team-owned qualification requires an owner-aware public standings projection; omit the module
+     when that projection or a supported scoring configuration is unavailable;
+   - accepted result summaries use an explicit player-or-team owner variant;
    - exact StageRun identity selected by the public timeline rather than an empty or browser-inferred
      run id;
+   - StageRun status is a factual bounded projection such as pending/not-started, in progress,
+     completed, cancelled, failed, or deferred; it never derives `Upcoming` or `Open` from the
+     current clock;
    - short public cache and explicit refresh where useful.
-3. Published bracket and public match state
+3. Optional sponsor display
+   - a relationship-scoped public sponsor identity projection may be added after the core detail
+     route;
+   - its absence does not block the primary detail implementation or canonical page existence;
+   - never consume the public sponsor registry, relationship tier, or billboard-placement data.
+4. Published bracket and public match state
    - published graph, seeds/byes only when public, match state, and accepted results;
    - new contract tied to the bracket implementation; no mutation controls or repair evidence.
-4. Private player overlay
+5. Private player overlay
    - personal participation, qualification, placement, invitation/eligibility facts only when approved, and permissioned core actions;
    - request-time player-authenticated read, never shared cached.
 
 An unavailable standings, bracket, sponsor, or personal module must fail independently where the remaining public detail is still meaningful.
 
+### Approved Public Detail Contract Direction
+
+Add a compact domain-neutral `GET /v1/public/gauntlet/{gauntlet_id}` read rather than consuming the
+legacy `GET /v1/gauntlet/{gauntlet_id}` response. The primary projection contains:
+
+- stable public identity, title/subtitle/ticker, region, validated optional colors, and bounded
+  approved gauntlet media;
+- complete qualifier and stage occurrence facts with exact identity, deterministic display order,
+  start/end timestamps, and explicit timing basis;
+- stage race mode, visitor-facing entry category, and ordered circuit rows with course-code
+  fallback plus presence-aware positive lap/heat settings;
+- a presence-aware qualification model with explicit player/team ownership and a bounded public
+  scoring-metric enum. The initial enum may support only deliberately verified metrics; unknown or
+  unsupported source configuration remains unspecified and prevents standings consumption.
+
+The primary projection excludes creator identity, generic participant count, field-owner/slot
+capacity, raw authoring/admission/runtime configuration, sponsor relationships, prize/reward data,
+and arbitrary media metadata.
+
+Current field composition and counts come from
+`GET /v1/public/gauntlet/{gauntlet_id}/stage/{stage}/field`. Historical field composition and
+counts come from the exact StageRun-field read. The StageRun collection retains scheduled start,
+presence-aware actual start/end, and explicit result availability, but replaces clock-derived
+`UPCOMING`/`OPEN` lifecycle values with a bounded status mapped only from persisted runtime facts.
+Website V2 derives Current/Upcoming/Past and other schedule-relative emphasis from occurrence facts
+and its own request/hydration clock.
+
+The new detail RPC and every existing specific public-gauntlet route require dispatch tests at the
+generated gateway boundary. Tests must prove that the parameterized `/{gauntlet_id}` route cannot
+capture `/v1/public/gauntlet/discovery`, current-field, exact StageRun-field, StageRun-list, or
+exact-result routes, and must assert the intended operation for both valid specific paths and an
+ordinary detail UUID.
+
+Malformed identifiers remain sanitized `InvalidArgument`; an absent public gauntlet is `NotFound`;
+infrastructure failures retain sanitized `Internal` or `Unavailable`. The legacy detail handler's
+conversion of every database error to `NotFound` is tracked as a separate cleanup and is not a
+reason to consume that endpoint.
+
+Eventun G03 field/runtime work was reviewed and committed as `cb79df3`. The public-detail contract
+may now use that clean baseline. Its route-order tests and generated contracts still belong to the
+detail slice, while the unsafe legacy detail error mapping remains a separate cleanup.
+
 ### Gauntlet Contract Gaps
 
-- implement the compact domain-neutral discovery collection approved in [[ascent-rivals/initiatives/website-v2/pages/gauntlets-index]];
-- replace generic participant count with occurrence-scoped field-owner composition, optional
-  published-owner count, and optional racer-slot count; never conflate owners, slots, and occupants;
-- confirm whether the existing public detail operation can return the approved normalized qualifier/stage/occurrence presentation without exposing authoring-only fields;
-- add a narrow public field/result projection with typed player/team owners; do not expose the
-  evidence-rich runtime field response or label a represented team's placement as the occupant's
-  individual finish;
+- verify both the preceding and `0e4d656` compact discovery response generations against matching
+  development services and representative media; Website V2 accepts both and ignores transport
+  time plus redundant snapshot-derived timing fields;
+- coordinate development adoption of the committed Eventun field removal only after the compatible
+  Website consumer revision passes review;
+- implement the approved compact public detail projection after the Eventun worktree ownership
+  handoff; do not revise or normalize the broad legacy response into the Website;
+- add the factual StageRun status replacement and dispatch-order coverage in the same reviewed
+  contract slice;
+- constrain legacy overall/qualifier standings to recognized player-owned qualification models,
+  and add a separate owner-aware public projection before showing team-owned qualification;
+- keep current and historical field capacity in their respective field projections; never conflate
+  owners, slots, occupants, admissions, or generic participants;
+- retain typed player/team accepted results; do not label a represented team's placement as the
+  occupant's individual finish;
+- treat relationship-scoped sponsor display as an optional follow-on after core detail;
 - define the public published-bracket graph and match-state read when bracket contracts ship;
 - verify a bounded personal-overlay read instead of making the browser join several player-gauntlet calls;
 - review post-team allocation, field-publication, and stage fields before freezing create/edit projections;
@@ -289,7 +356,9 @@ full interaction target.
 Return one full shallow collection for each initial group:
 
 1. Gauntlets
-   - stable id, title, ticker/subtitle where approved, canonical route, one optional small image, concise server-derived timing/lifecycle context, and public searchable labels;
+   - stable id, title, ticker/subtitle where approved, canonical route, one optional small image,
+     complete normalized occurrence facts sufficient for locally derived timing context, and public
+     searchable labels;
    - include every public gauntlet regardless of whether it is current, upcoming, or past.
 2. Players
    - stable id, display name, avatar, public team name/tag or `Independent`, canonical route, and public searchable labels;
@@ -407,7 +476,8 @@ Website V2 does not implement `/sponsors`, `/sponsors/[id]`, sponsor CRUD, or sp
 
 The Website route boundary retains only:
 
-- approved sponsor display embedded in or composed for one public gauntlet detail response;
+- optional approved sponsor display composed from a relationship-scoped public projection for one
+  gauntlet; it is not part of or a prerequisite for the primary detail response;
 - a narrow existing-sponsor option projection inside authorized gauntlet authoring;
 - direct gauntlet-owned advertising upload, which remains independent of sponsor-owned media.
 

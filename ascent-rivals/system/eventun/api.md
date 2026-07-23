@@ -2,11 +2,10 @@
 
 Status: current
 
-Applicability: committed local-development behavior unless a section explicitly identifies a
-deployed AccelByte contract. This document does not imply shared-development or production
-deployment.
+Applicability: current behavior deployed to shared development as of 2026-07-23 unless a section
+explicitly narrows its applicability. This document does not imply production deployment.
 
-Last consolidated: 2026-07-21
+Last consolidated: 2026-07-23
 
 ## Related
 - [[../overview]]
@@ -37,7 +36,13 @@ Supports product-facing interaction flows:
 ### Match-ingest domain
 Accepts complete-match telemetry from both player/local producers and dedicated servers through the single shared `ClientService.IngestMatch` operation. Replay association uses the separate shared `ClientService.CreateMatchArtifact` operation. Eventun derives client versus server source from the verified player or subjectless Server-authorized actor; producers do not select their own trust classification.
 
-ServerService owns four dedicated-server gauntlet runtime operations: stage-run claim, admission, match acceptance, and completion. Dedicated servers obtain player/team presentation context, sponsors, gauntlet lists and details, stats, leaderboards, and calendars through ten existing ClientService reads; Eventun authorizes the subjectless caller with Server `READ` on those methods instead of duplicating the APIs under ServerService. The same subjectless boundary also permits Ascentun to call `Team` and `Teams`, for twelve shared reads in total; those two website reads are not added to the generated GameServer subset.
+ServerService owns five dedicated-server gauntlet runtime operations: stage-run claim, admission,
+roster lock, match acceptance, and completion. Dedicated servers obtain presentation and competition
+context through selected ClientService reads rather than duplicate APIs under ServerService. The
+ClientService subjectless boundary contains twenty-nine Server `READ` operations and the two Server
+`CREATE` ingest/artifact operations. The twelve T03 public team, gauntlet, performance, and history
+reads are available to authorized confidential consumers but are not added to the generated
+GameServer subset.
 
 Gauntlet stage run match acceptance depends on trusted server events being present before Eventun derives `match_summary(session_id, match_id)`.
 
@@ -59,19 +64,19 @@ The implemented boundary is:
 
 | Surface | Transport authorization | Intended principal |
 | --- | --- | --- |
-| ClientService | Valid AccelByte access token for the configured game namespace. Twelve shared reads accept either a non-empty player `sub` or a subjectless client-credentials token with Server `READ`. `IngestMatch` and `CreateMatchArtifact` accept either a player subject or a subjectless token with Server `CREATE`. The other 59 methods require the player subject. | Players, plus authorized confidential clients for the fourteen shared operations |
+| ClientService | Valid AccelByte access token for the configured game namespace. Twenty-nine shared reads accept either a non-empty player `sub` or a subjectless client-credentials token with Server `READ`. `IngestMatch` and `CreateMatchArtifact` accept either a player subject or a subjectless token with Server `CREATE`. The other 56 methods require the player subject. | Players, plus authorized confidential clients for the 31 shared operations |
 | ServerService | Subjectless client-credentials token plus `CUSTOM:ADMIN:NAMESPACE:{namespace}:EVENTUN:SERVER` with the method's semantic action | Dedicated-server confidential IAM clients |
 | AdminService | `CUSTOM:ADMIN:NAMESPACE:{namespace}:EVENTUN` with the method's semantic action | Studio Admin users and explicitly trusted confidential clients |
 
 Shared Cloud validation proved that a blanket Eventun player permission can be granted through the default user role override when Eventun's confidential client has IAM Roles Read and Basic Namespace Read. It is not part of the implemented boundary: granting the same permission to every player expresses no authorization distinction, duplicates player-token authentication, and adds role-override configuration, lookup, and cache dependencies to every ClientService request. Server and Admin custom permissions remain because they distinguish trusted principals from ordinary authenticated players and unrelated service clients.
 
-ClientService first validates token authenticity, expiry, revocation, and configured namespace through the AccelByte SDK without requesting a blanket Eventun player permission, requires either the token namespace or Extend target namespace to match `AB_NAMESPACE`, and requires a non-empty `client_id`. A nonblank `sub` follows normal player behavior. An exactly subjectless token is accepted on `Player`, `Sponsors`, `Gauntlets`, `Gauntlet`, `GauntletStats`, `PlayerGauntletStats`, `GauntletLeaderboards`, `GauntletPlayerLeaderboards`, `GauntletCalendar`, `GauntletCalendarCompleted`, `Team`, and `Teams` after Server `READ` validation, and on `IngestMatch` and `CreateMatchArtifact` after Server `CREATE` validation. A whitespace-only subject is neither a player nor a service principal and is rejected. ServerService and AdminService methods declare a coarse Eventun resource and one semantic `CREATE`, `READ`, `UPDATE`, or `DELETE` action; missing, empty, or unknown permission metadata fails closed as a server configuration error. ServerService additionally rejects every token carrying a `sub`, even if that user can satisfy the Server permission, so only a subjectless service principal reaches product work.
+ClientService first validates token authenticity, expiry, revocation, and configured namespace through the AccelByte SDK without requesting a blanket Eventun player permission, requires either the token namespace or Extend target namespace to match `AB_NAMESPACE`, and requires a non-empty `client_id`. A nonblank `sub` follows normal player behavior. An exactly subjectless token is accepted on the established player/sponsor/gauntlet/calendar and legacy team reads; the legacy Ascentun `Courses`, `Players`, `PlayerCareer`, `GauntletStandings`, and `GauntletQualifierStandings` reads; the T03 public team, gauntlet, performance, leaderboard-comparison, represented-result, and player/team gauntlet-history reads; and on `IngestMatch` and `CreateMatchArtifact` after Server `CREATE` validation. Read calls require Server `READ`. `TeamViewerState` remains subject-bearing. A whitespace-only subject is neither a player nor a service principal and is rejected. ServerService and AdminService methods declare a coarse Eventun resource and one semantic `CREATE`, `READ`, `UPDATE`, or `DELETE` action; missing, empty, or unknown permission metadata fails closed as a server configuration error. ServerService additionally rejects every token carrying a `sub`, even if that user can satisfy the Server permission, so only a subjectless service principal reaches product work.
 
 - Bearer metadata and the Admin Portal `access_token` cookie are supported; Authorization metadata takes precedence when both are present.
 - Successful validation propagates claims, raw access token, non-empty client id, and optional player subject through one request context for unary and stream handlers.
 - The Admin resource is authoritative for AdminService. AccelByte role-admin-status lookup and Eventun-local `player_role = admin` are not network authorization paths.
-- ClientService requires a player subject at the transport boundary except for the exact twelve shared reads authorized with Server `READ` and the two shared writes authorized with Server `CREATE`. Self, ownership, manager, creator, and other domain checks remain authoritative for player calls after authentication; non-admin domain roles such as `gauntlet_creator` remain in force.
-- The dedicated-server confidential client needs the Server resource with `CREATE`, `READ`, and `UPDATE`; it needs no Eventun Admin-resource grant. Shared match ingestion/artifact creation and stage-run claim use `CREATE`, the ten dedicated-server query operations use `READ`, and admission, match acceptance, and completion use `UPDATE`. The Ascentun confidential client needs only Server `READ` for the additional subjectless `Team` and `Teams` calls.
+- ClientService requires a player subject at the transport boundary except for the exact twenty-nine shared reads authorized with Server `READ` and the two shared writes authorized with Server `CREATE`. Self, ownership, manager, creator, and other domain checks remain authoritative for player calls after authentication; non-admin domain roles such as `gauntlet_creator` remain in force.
+- The dedicated-server confidential client needs the Server resource with `CREATE`, `READ`, and `UPDATE`; it needs no Eventun Admin-resource grant. Shared match ingestion/artifact creation and stage-run claim use `CREATE`, the ten dedicated-server query operations use `READ`, and admission, match acceptance, and completion use `UPDATE`. The Ascentun confidential client needs only Server `READ` for the documented legacy and current public reads.
 
 ## Integration Boundary
 Eventun orchestrates competition flow and delegates accounting transition execution to [[../accountun]].
@@ -124,12 +129,11 @@ The unfinished server-side projection and fail-closed visibility behavior remain
   one twenty-second bound, and keeps the database pool open through reward finalization. A timeout
   does not close the pool underneath unfinished finalization.
 
-## Committed Local Team Core API
+## Shared-Development Team Core API
 
-Applicability: committed Eventun local-development behavior through `3e1606c`. Team Core was
-committed as `c4260f3`, and closed-membership correction was accepted and committed as `3e1606c`.
-The contract is not active in shared development or production; those environments retain the
-legacy contract until the coordinated Eventun and Ascentun cutover.
+Applicability: deployed shared-development behavior. Team Core was committed as `c4260f3`, and
+closed-membership correction was accepted and committed as `3e1606c`. Production retains the legacy
+contract until its separately scheduled coordinated cutover.
 
 The breaking artifact replaces legacy delete/abdicate, numeric designation/rank authorization,
 and split pending-request operations with explicit team ownership and tombstones, membership
@@ -159,19 +163,47 @@ a custom player permission. `TEAM_MAX_ACTIVE_MEMBERS` defaults to 16 and is vali
 normal service configuration. The complete product and migration contract remains in the
 [team experience design](../../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md).
 
+## Shared-Development Public Team And Gauntlet Reads
+
+Applicability: Eventun commit `a96d6b4`; deployed to shared development and not production.
+
+`PublicTeams` and `PublicTeam` expose domain-neutral active-team summaries and bounded complete
+public rosters. `TeamViewerState` remains authenticated and derives relationship, current-team
+conflict, one exact effective action, capacity, membership mode, and allowed transitions inside
+Eventun. Twelve public-safe reads accept the explicit subjectless Server `READ` policy; management,
+authoring, admission, roster-lock, repair, and audit responses receive no broader authorization.
+
+`PublicGauntletDiscovery`, separate current-head and exact-StageRun field reads, the StageRun
+timeline, and exact-run results distinguish mutable current presentation from immutable run-bound
+history. Public results keep owner ordering separate from participant attribution. StageRuns freeze
+scheduled start and retain presence-aware factual start/end times; discovery uses authoritative
+run-bound capacity and omits ambiguous historical capacity. Public media is restricted to the
+approved presentation allowlists.
+
+Fact-backed team performance and represented-result history use accepted server compact facts and
+effective membership at MatchStart without filtering on the informational canonical flag. The public
+surface also exposes current-roster global leaderboard comparison and bounded player/team gauntlet
+history while keeping competitive rank, selection rank, player-owned results, and represented-team
+results distinct. Historical course codes remain readable without an active or present catalog row.
+
 ## API Compatibility
+- Eventun and its first-party consumers normally adopt breaking API changes as one coordinated
+  deployment unit. Generated clients are updated with the service, and stale first-party contracts
+  are replaced rather than supported through runtime capability handshakes, version matrices,
+  duplicate fields, or parallel endpoint generations. A compatibility period requires an explicit
+  exception for a genuinely independent consumer or rollout constraint.
 - Eventun consumers use generated HTTP gateway APIs rather than direct protobuf/gRPC transport.
 - Removed protobuf fields do not need `reserved` declarations unless Eventun later exposes direct protobuf/gRPC clients.
 - Treat protobuf definitions as the source for generated gateway shapes, not as a long-lived wire contract for external direct protobuf callers.
-- Current committed code registers 73 ClientService RPCs, 67 AdminService RPCs, and 4 ServerService RPCs, producing 144 merged HTTP operations across 125 paths and 331 definitions. The twelve subjectless reads and two shared writes are existing Client operations with alternate effective Server policies, not additional RPC declarations. The three qualification-cutoff operations and four season mutations are Admin-only; season listing is public through ClientService.
+- Current committed code registers 87 ClientService RPCs, 74 AdminService RPCs, and 5 ServerService RPCs. The twenty-nine subjectless reads and two shared writes are Client operations with alternate effective Server policies, not additional RPC declarations. Qualification and field operations plus season mutations remain on their approved privileged surfaces; season listing is public through ClientService.
 - The retired token catalog, manual token registration/sync, team gate-token methods, and their generated gateway operations have been removed. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
-- Mandatory unary and stream auth interceptors require a non-empty JWT `client_id` and place claims, access token, client id, and player subject when present in request context. ClientService authenticates without a blanket Eventun permission; its twelve shared reads apply Server `READ` and its two shared writes apply Server `CREATE` only for subjectless callers, while the other Client methods require a player subject. ServerService and AdminService validate their annotated Eventun permissions. Stream handlers receive the enriched context through the wrapped `grpc.ServerStream`, and event ingestion rejects a missing client identity instead of persisting a zero UUID.
+- Mandatory unary and stream auth interceptors require a non-empty JWT `client_id` and place claims, access token, client id, and player subject when present in request context. ClientService authenticates without a blanket Eventun permission; its twenty-nine shared reads apply Server `READ` and its two shared writes apply Server `CREATE` only for subjectless callers, while the other Client methods require a player subject. ServerService and AdminService validate their annotated Eventun permissions. Stream handlers receive the enriched context through the wrapped `grpc.ServerStream`, and event ingestion rejects a missing client identity instead of persisting a zero UUID.
 - Eventun uses only the coarse Server and Admin custom resources above; it does not define Client, endpoint-, or domain-specific IAM permissions. Client authorization below the transport boundary remains in Eventun's domain rules.
 - API actions acquire a database connection only for the query, batch, or explicit transaction
   that needs it; handler execution and external dependency latency do not own a whole-RPC
   connection.
-- Eventun continues serving the complete merged Swagger v2 document for the Extend contract and Admin UI. The four dedicated-server gauntlet runtime methods live only on ServerService. The twelve subjectless reads and two shared writes remain single ClientService operations usable by their documented player and authorized service principals.
-- Unreal Client is a byte-for-byte copy of the 73-operation Client specification with 173 definitions. Models is the deterministic full Client+Server union at 77 operations with 181 definitions; conflicting duplicate paths, definitions, or top-level metadata fail generation. GameServer reuses that union's metadata and definitions but still selects only the ten dedicated-server Client reads, the two shared Client writes, and all four Server operations, producing 16 operations with 181 definitions. No Admin or merged specification is an Unreal input.
+- Eventun continues serving the complete merged Swagger v2 document for the Extend contract and Admin UI. The five dedicated-server gauntlet runtime methods live only on ServerService. The twenty-nine subjectless reads and two shared writes remain single ClientService operations usable by their documented player and authorized service principals.
+- Unreal Client is a byte-for-byte copy of the 87-operation Client specification. Models is the deterministic full Client+Server union at 92 operations; conflicting duplicate paths, definitions, or top-level metadata fail generation. GameServer reuses that union's metadata and definitions but selects only its approved 17-operation runtime subset. No Admin or merged specification is an Unreal input.
 - `ListSeasons` defaults to all past/current/upcoming regular seasons. `include_off_seasons = true` includes both kinds, ordered by `starts_at` then UUID. Admin create, full-replacement update, conditional title-only update, and delete route catalog mutation through the schedule-locking database functions. A semantic full replacement racing title-only mutation intentionally uses last-writer-wins for title; a failed title-only condition maps to NotFound if the row disappeared and Aborted if its semantics changed. Match History exposes only optional `season_id`, while clients resolve current title and kind through `ListSeasons`. The Extend editor accepts and round-trips explicitly labelled UTC timestamps.
 - See [[ascent-rivals/sources/analysis/eventun-foundation-api-simplification-review|eventun-foundation-api-simplification-review]] for the recommended bounded foundation slice.
 
@@ -228,7 +260,9 @@ normal service configuration. The complete product and migration contract remain
 - Identified ingest transactionally derives one current narrow match/heat/player/progression fact graph and applies idempotent record, career, and gauntlet serving projections before commit. Career and leaderboard/rank reads use ordinary projections; lifetime and seasonal leaderboard responses assemble all course/category groups set-wise and evaluate mutable `player_view` presentation once per request. Match History starts from source/player-selective server facts, performs keyed match/artifact lookup, orders by MatchStart, and preserves SessionStart version and replay association selected at the complete time/batch/sequence/event boundary. Gauntlet list/detail/stats/standings use ordinary projections and bounded views/functions. Time-trial history selects current candidates from facts, then fetches exact bounded PlayerHeatStart/End raw detail so the reported PlayerHeatEnd best-lap value remains authoritative. Full `match_summary` and current-match post-match insight baselines/metrics remain session/match-scoped raw reads for bot rows, loadouts, complete heat/standing presentation, and metrics absent from compact facts. Detailed post-match self-history selects current canonical server Ascent/placed candidates from facts, applies the ascension cutoff and per-heat limit, then fetches raw PlayerHeatStart/End detail only for those exact selected batch/event identities. Player discovery's one-day fallback, gauntlet runtime phase/match validation, most-recent-gauntlet lookup, replay purge, and fact repair/derivation are the other deliberate raw/legacy consumers. All twelve native materialized views, their refresh procedure, and the pg_cron schedule are retired.
 - Accepted local Eventun commit `6343438` adds explicit-team field preview/publish/replace, player field read, and server roster-lock operations. Claim returns the bound field and concrete slots; admission switches to field eligibility/reconnect semantics; match acceptance and completion retain exact roster, slot, player, membership, and team-result evidence.
 - Stage standings now require one completed `stage_run_id` and return that identity in the envelope and rows. Player-event timelines select one deterministic latest completed run, preventing replay results from blending.
-- These G01 contracts are implementation-reviewed but not deployed. Dedicated-server provisional occupancy, disconnect release, roster-lock timing, and fail-closed start integration remain outstanding.
+- These G01 contracts and the dedicated-server provisional occupancy, disconnect release,
+  roster-lock timing, and fail-closed start integration are deployed to shared development. Combined
+  player-connected runtime smoke and soak remain outstanding; production deployment is separate.
 
 ## Open Questions
 - Which admin controls should ship first for live gauntlet operations?

@@ -4,7 +4,7 @@ Status: in-progress
 Status detail: Approved baselines and draft specifications remain an active design and
 delivery initiative; they are not the deployed website.
 
-Last consolidated: 2026-07-22
+Last consolidated: 2026-07-23
 
 Website V2 remains initiative material because the current deployed website is described in
 [the website system document](../../system/website.md). Status statements in each document
@@ -21,9 +21,11 @@ domain behavior in Eventun and AccelByte.
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents; Website team and gauntlet-result semantics are reconciled to the approved T03 public-read checkpoint | `not-applicable` | Implement and review T03, close remaining contract gaps, and add slice-specific acceptance detail |
+| Product, route, and delivery baseline | `approved` | Linked scope, architecture, route/API, non-functional, page, and flow documents; Website team and gauntlet-result semantics are reconciled to the deployed-development T03 public reads and reviewed occurrence-fact source corrections | `not-applicable` | Coordinate development adoption, close remaining contract gaps, and add slice-specific acceptance detail |
 | Terminal Ops visual calibration | `approved` | Cliff's live external Pencil workfile, reviewed through the completed 2026-07-21 Design Language v0.2 reference board, plus the linked Markdown baselines | `not-applicable`; design artifact | Preserve one reviewed snapshot; calibrate team directory/profile and affected gauntlet annotations against the approved T03 semantics; later validate form extensions |
-| Website V2 application | `verified` | `ar-web` HEAD remains revision `614ba36cf8c2a82730bf5ff93e9539fb205135f6`; the uncommitted worktree adds shared clipped-layer polygon borders, static `/about`, `/brand`, `/events`, and `/events/[slug]` routes, a typed public event projection, migrated approved repository assets, and the static repository-route sitemap | Local 2026-07-22 formatting check, ESLint, TypeScript, and optimized production build passed. Browser review passed at `320`, `390`, `759/760`, `1024`, and `1440` CSS pixels for responsive overflow, keyboard navigation, reduced motion, settled polygon normal/hover/focus/mobile states, internal event links, all event metadata/canonicals, shared unknown-event `404`, retired `/tournaments` `404`, and console errors. Implementation remains uncommitted and `not-deployed` | Review and commit the repository-authored slice when approved; close the content gaps below; then implement `/gauntlets` only after the Eventun discovery contract is available |
+| Website V2 foundation and repository-authored routes | `verified` | `ar-web` revision `da73e6964c2e85684b339fe616a063973a1a2f12` contains the greenfield shell, shared clipped-layer polygon borders, static `/about`, `/brand`, `/events`, and `/events/[slug]` routes, typed event content, and migrated approved repository assets | Local 2026-07-22 formatting, ESLint, TypeScript, optimized production build, responsive browser, keyboard, reduced-motion, polygon-state, route, metadata, canonical, shared `404`, and console verification is recorded by the completed implementation pass. The revision is committed and `not-deployed` | Close the repository-authored content gaps below and retain this verified baseline through later slices |
+| Website V2 gauntlet discovery slice | `verified` | Committed `ar-web` revision `7d1d00c` accepts the preceding and `0e4d656` discovery shapes, caches only normalized occurrence facts, ignores Eventun response time, derives SSR from one fresh Website-server timestamp, hydrates from that exact timestamp, advances locally with a monotonic clock plus wall-clock suspension fallback, retains a nondecreasing floor across visibility and replacement data, and keeps all prior occurrence semantics | Local 2026-07-23 formatting, ESLint, TypeScript, nineteen focused Node tests, optimized production build, strict Knowledge Base validation, and diff checks passed. Windows Edge headless verification rendered Upcoming, Current, and Past from one cached malformed-old-response fixture with token/discovery counters fixed at `1/1`, no hydration/console failures, and CDP freeze/reactivation recovery from Upcoming to Current with the page visible afterward and counters still `1/1`. Independent implementation review found no blocking defect. The unchanged CSS retains the 2026-07-22 full `320`, `390`, `759/760`, `1024`, and `1440` review; the stripped WSL Chromium runtime remains unavailable because required browser libraries are absent. The expected unavailable UI still streams HTTP `200` after shell commitment. The revision is committed and `not-deployed` | Separately address the remaining streamed-5xx, development-service, representative-media, and coordinated deployment gates |
+| Website V2 gauntlet detail contract | `approved-pre-implementation` | The 2026-07-23 read-only checkpoint selects a compact domain-neutral `GET /v1/public/gauntlet/{gauntlet_id}` projection plus independent field, factual StageRun, standings/result, and optional sponsor modules; [[route-api-matrix]] and [[pages/gauntlet-detail]] record the exact boundary. Eventun G03 is committed as `cb79df3`, clearing the overlapping-worktree gate; the owner selected the Eventun projection as T03D alongside G04 | Design/API review only. No detail implementation, verification, deployment, or environment change is implied | Implement and review T03D before beginning the Website detail route |
 | Production cutover | `not-started` | Delivery sequence only; no release or runbook exists | `not-deployed` | Implementation, environment verification, cutover plan, and rollback choice |
 
 ### Current Repository-Authored Content Gaps
@@ -38,6 +40,43 @@ domain behavior in Eventun and AccelByte.
 - `/brand` provides the six current repository logo variants and the existing complete-kit link. No
   standalone downloadable font package was added because the source does not provide one complete,
   reviewed distribution set.
+
+### Current Gauntlet Slice Gates
+
+- Eventun source commit `0e4d656` removes query-time `timing_state`, `active_occurrence`,
+  `next_occurrence`, `latest_ended_occurrence`, and
+  `additional_scheduled_occurrence_count`. It is not deployed; shared development may still return
+  the preceding response. Website V2 accepts both response generations, ignores the redundant
+  fields when present, and derives presentation from cached occurrence facts and a fresh
+  Website-server timestamp.
+- No real AccelByte/Eventun development credentials or endpoint values were placed in the repository,
+  and the local pass used a contract double. Provision the confidential Website client with Eventun
+  Server `READ`, configure the matching Vercel development environment, and repeat integration
+  verification before deployment.
+- Next.js 16 Cache Components requires request-backed query and integration work below Suspense. The
+  partial-prerender shell commits HTTP `200` before an Eventun failure resolves; the reviewed unavailable
+  body is deliberate, but it does not yet meet the approved essential-route 5xx response requirement.
+- Directory and Schedule entries use their approved canonical `/gauntlets/[id]` links. Gauntlet detail
+  remains outside this slice, so those destinations intentionally use the shared non-revealing `404`
+  until the separate detail pass and remain a production navigation gate.
+- Bounded allowlisted media, missing media, and responsive crops were exercised with a contract fixture.
+  Representative real gauntlet uploads and their media-purpose selection still require development-
+  environment review.
+- The 2026-07-23 stripped WSL Chromium harness loads the self-hosted display/mono fonts but renders
+  them at zero height and crashes its renderer when the shell switches at `760` CSS pixels. A
+  test-only body-font substitution allowed the new 390px temporal and overflow checks; rerun
+  `760`, `1024`, and `1440` in a healthy browser before accepting new desktop visual evidence.
+- The accepted gauntlet-detail direction deliberately excludes field-owner and racer-slot capacity
+  from the stable primary detail response. Current capacity comes from the current-field projection;
+  historical capacity comes from the exact StageRun-field projection.
+- Existing overall and qualifier standings are valid only for supported player-owned qualification
+  models with a recognized public scoring metric. Team-owned qualification requires an owner-aware
+  public projection; unsupported or unknown scoring configurations omit standings rather than being
+  interpreted in the Website.
+- Eventun G03 field/runtime work was reviewed and committed as `cb79df3`, clearing the source-
+  ownership prerequisite for the public-detail implementation. The unsafe legacy detail error
+  mapping remains a separate cleanup; the new public projection must implement its own sanitized
+  status boundary rather than consume or broaden the legacy handler.
 
 ## Reading Order
 

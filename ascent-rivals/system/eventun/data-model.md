@@ -27,6 +27,14 @@ Captures session, match, heat, and player lifecycle events as a durable telemetr
 
 The foundation implementation accepts one complete-match envelope through a shared ingest operation, with a stable batch id, stable event ids, producer sequence, canonical hashing, idempotent acceptance, one logical source-tagged event relation, and physical client/server plus event-type partitions. Automatic sender retry remains separate. Telemetry payloads do not carry schema versions; retained rows and affected derived state are rewritten when a payload shape changes.
 
+Eventun does not use per-table schema versions or maintain a runtime compatibility matrix for
+first-party deployments. Current mutable data is migrated to the current schema and Eventun, its
+generated clients, the game client, and websites move together. A retained version is appropriate
+only where immutable events, sealed snapshots, or derived evidence must preserve the exact
+interpretation that produced historical results. Existing projection schema/projector values are
+rebuild and sealed-evidence provenance; they must not become a general client negotiation protocol
+or a reason to keep parallel mutable shapes.
+
 The revised derived model has three layers:
 
 1. immutable identified raw telemetry in source/event-type partitions;
@@ -110,16 +118,17 @@ Current team model:
 
 Team `rank` is current roster metadata. It can support future team-member priority rules, but Eventun does not currently materialize ranked team-stage candidate lists.
 
-The shared-development baseline still uses nonhistorical `team_player` membership, where leaving
-deletes the row. It therefore cannot reliably attribute historical team contribution or
-qualification. The accepted local replacement is recorded below; shared development retains this
-legacy shape until the coordinated Eventun and Ascentun cutover.
+The production baseline still uses nonhistorical `team_player` membership, where leaving deletes the
+row. It therefore cannot reliably attribute historical team contribution or qualification. Shared
+development now uses the replacement recorded below; production retains the legacy shape until its
+coordinated cutover.
 
-#### Committed Local Team Core Model
+#### Shared-Development Team Core Model
 
-Applicability: committed Eventun local-development behavior through `3e1606c`; it is not active in
-shared development or production. Team Core was committed as `c4260f3`, and closed-membership
-correction was accepted and committed as `3e1606c`; coordinated deployment remains unfinished.
+Applicability: deployed shared-development behavior through `a96d6b4`; it is not deployed to
+production. Team Core was committed as `c4260f3`, closed-membership correction as `3e1606c`, frozen
+team qualification as `1e3b76e`, and reusable public team/gauntlet reads as `efcedcd`. Fact-backed
+public team performance and history reads were committed as `a96d6b4`.
 
 The replacement model uses an Eventun-generated team UUID, explicit owner and active/disbanded
 lifecycle, reusable name/tag only after disband, immutable half-open membership intervals, current
@@ -139,10 +148,9 @@ intervals remain under ordinary join/end operations. Corrected old rows stay add
 ineffective for future live attribution and overlap checks; exact correction retries return
 retained state, while changed reuse of a correction UUID returns `Aborted`.
 
-The pending foundation delta discards approved pre-alpha team state only after its guarded
-historical acceptance marker. The historical runner proves the exact marked replacement DDL in an
-isolated schema before reconstruction. A focused authentic-baseline runner rehearsal remains a
-pre-deployment gate, not an implementation-acceptance gate. See the
+The foundation delta discarded approved pre-alpha team state in shared development only after its
+guarded historical acceptance marker. Production must repeat that frozen historical transition
+before any separately ordered post-development delta. See the
 [team experience design](../../initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design.md)
 for the complete contract.
 
@@ -167,6 +175,8 @@ Competition structure can bind to runtime data through match/session context, bu
 - stage circuit `match_id` values are exact zero-based ordered positions within the stage/session context: an authored circuit must be contiguous `0..N-1`, and its frozen run rules preserve those same positional identities
 - `gauntlet_stage_run` is the durable Eventun record for running one stage shard
 - `gauntlet_stage_run.session_id` is the AccelByte session id, not another Eventun id
+- `gauntlet_stage_run.scheduled_start_at` freezes authored schedule at run creation, while nullable
+  `started_at` and `ended_at` retain factual public lifecycle evidence
 - `gauntlet_stage_run_admission` stores sparse on-demand evaluated join decisions for audit/cache use
 - `gauntlet_stage_run_match` stores accepted match ids for a stage run; configured match plans remain in `gauntlet_stage_circuit`
 - `gauntlet_stage_run_match_result` stores per-player accepted result rows for each accepted stage-run match
@@ -193,10 +203,15 @@ Qualification cutoff publication is explicit operator state, not a wall-clock si
 
 Accepted local Eventun commit `6343438` adds the explicit-team G01 foundation: immutable opening-stage
 fields, one team-owned slot per field owner, current-membership admission, an authoritative complete
-roster lock, StageRun-scoped match and placement identity, and direct one-slot team results. This code
-is not deployed, and the dedicated server does not yet own the provisional occupancy and roster-lock
-workflow. Team qualification, multiple slots per owner, mixed/player owners, priority replacement,
-and bracket graphs remain future work.
+roster lock, StageRun-scoped match and placement identity, and direct one-slot team results. Commit
+`1e3b76e` adds frozen team qualification and qualified-field publication using immutable membership,
+score, contributor, cutoff, and field evidence. Commit `efcedcd` adds narrow public current-field,
+run-bound field, StageRun timeline, result, team-summary, roster, and viewer-state read models. Commit
+`a96d6b4` adds normalized fact-backed team performance, roster comparison, represented-result, and
+player/team gauntlet-history reads plus team-, team-result-, and player-placement-leading history
+indexes. These commits and the dedicated-server consumer are deployed to shared development.
+Multiple slots per owner, mixed/player owners, priority replacement, and bracket graphs remain
+future work.
 
 The retired `token_meta` catalog, `team_gate_token` relation, and `token_gated` membership mode were removed during the foundation reset. Existing gated teams transition to invite-only. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.
 

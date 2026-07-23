@@ -1,8 +1,8 @@
 # Ascent Rivals Gauntlet Detail Page Spec
 
 Date: 2026-04-13
-Status: Approved public layout baseline; bracket/result detail and implementation remain open
-Last reviewed: 2026-07-22
+Status: Approved public layout and public-detail contract direction; implementation remains open
+Last reviewed: 2026-07-23
 Design checkpoint: Active combined, sparse/upcoming, and active mobile calibrations reviewed
 Contract alignment: T03 owner/slot terminology approved; affected visual annotations remain to be
 revalidated
@@ -24,7 +24,9 @@ revalidated
 
 Define the IA and page requirements for a single gauntlet.
 
-The page should behave like an event operations console: it explains the gauntlet, shows what phase is active, exposes standings and qualification state, and keeps sponsors visible without making the page feel like an admin form.
+The page should behave like an event operations console: it explains the gauntlet, shows what phase
+is active, exposes supported standings and qualification state, and can surface approved sponsor
+identity when the optional projection exists without making the page feel like an admin form.
 
 ## Route
 
@@ -59,7 +61,9 @@ Secondary:
 
 - make qualifier and finals/stage status clear
 - keep personal logged-in status visible when relevant
-- preserve standings, stats, sponsor display, and approved non-prize admin actions from the current site
+- preserve standings only through the approved owner-aware and scoring-aware public boundary;
+  defer broad stats, sponsor display, and approved non-prize admin actions until their own
+  projections or workflows are reviewed
 - support multiple gauntlet models without making early pages feel empty
 - protect qualifier-versus-heat terminology
 
@@ -124,9 +128,53 @@ Website contract guidance:
 
 ## Current V1 Data Availability
 
+### Public-detail contract checkpoint
+
+The 2026-07-23 read-only audit rejects the broad legacy
+`GET /v1/gauntlet/{gauntletId}` response as the Website V2 public boundary. It mixes visitor-facing
+identity and structure with creator identity, raw scoring/authoring values, admission and runtime
+policy, allowed-team configuration, arbitrary media metadata, sponsor tier, and an ambiguous
+individual qualification count. Its handler also maps every database failure to `NotFound`;
+sanitized `InvalidArgument`, `NotFound`, `Internal`, and `Unavailable` behavior is required, while
+repairing the legacy mapping remains separate cleanup.
+
+The approved direction is a compact domain-neutral
+`GET /v1/public/gauntlet/{gauntlet_id}` projection containing:
+
+- stable public identity, region, validated optional colors, and approved bounded gauntlet media;
+- complete qualifier and stage occurrence facts;
+- a presence-aware qualification model with explicit player/team ownership and a bounded scoring
+  metric enum;
+- visitor-facing stage race mode and entry category plus ordered circuit rows.
+
+It explicitly excludes:
+
+- current published field-owner count and racer-slot count;
+- creator identity, generic participant count, raw authoring/admission/runtime fields, arbitrary
+  media metadata, sponsor relationships, prize/reward data, and administrative evidence.
+
+Resolve current field composition and counts from the current-field public read. Resolve historical
+composition and counts only from the exact StageRun-field read. The public StageRun timeline must
+replace clock-derived `Upcoming` and `Open` with a bounded factual status derived from persisted run
+state. Website V2 derives schedule-relative presentation from occurrence facts and its own clock.
+
+Existing overall and qualifier standings support only verified player-owned qualification models.
+The Website may request them only when the public detail projection identifies player ownership and
+a supported scoring metric. Team-owned qualification requires an owner-aware public standings
+projection; otherwise omit standings. Do not assume `Circuit Points` for an unknown or unsupported
+gauntlet configuration.
+
+Sponsor display is optional follow-on work. The core detail route ships without sponsors when no
+relationship-scoped public sponsor projection exists; it never reads the broad sponsor registry.
+
+Eventun G03 field/runtime work was reviewed and committed as `cb79df3`, so the public-detail
+implementation may proceed from that clean baseline. Generated-gateway route tests must prove that
+the parameterized detail path cannot capture `/v1/public/gauntlet/discovery` or the more specific
+field, StageRun, and result routes.
+
 ### Gauntlet detail
 
-Available:
+Legacy response fields currently available, but not approved as one public Website response:
 
 - gauntlet id
 - creator id
@@ -166,6 +214,15 @@ Sources:
 - `GET /v1/gauntlet/{gauntletId}/standings`
 - `GET /v1/gauntlet/{gauntletId}/standings/player/{playerId}`
 
+Public-use boundary:
+
+- the collection endpoint is suitable only when the public detail projection identifies a supported
+  player-owned qualification model and recognized scoring metric;
+- team-owned overall standings require an owner-aware public projection and remain omitted until
+  that contract exists;
+- an unspecified or unsupported scoring metric prevents the standings module from rendering rather
+  than defaulting to Circuit Points.
+
 ### Stage configuration
 
 Currently available on each gauntlet stage:
@@ -182,7 +239,7 @@ Each circuit match currently contains a numeric match id, `course_code`, and opt
 heat counts. Resolve `course_code` against the published AccelByte course catalogue for public
 display and retain the code as a fallback when no public display name is available.
 
-Current source:
+Legacy source:
 
 - `GET /v1/gauntlet/{gauntletId}`
 
@@ -200,6 +257,8 @@ Presentation and model dependencies:
 - Lobby bounds, overflow policy, admission priority, roster-lock rules, and raw allowed-team
   configuration are operator details unless a later public requirement gives them a clear
   player-facing meaning.
+- Published field-owner count and racer-slot count are not stable stage-configuration fields. Read
+  them from current-field or exact StageRun-field projections and preserve their distinct meanings.
 
 ### Qualifier standings
 
@@ -216,6 +275,15 @@ Sources:
 
 - `GET /v1/gauntlet/{gauntletId}/qualifier/{qualifierId}/standings`
 - `GET /v1/gauntlet/{gauntletId}/qualifier/{qualifierId}/standings/player/{playerId}`
+
+Public-use boundary:
+
+- the collection endpoint is suitable only when the public detail projection identifies a supported
+  player-owned qualification model and recognized scoring metric;
+- `best_sequence_time_seconds` is an achievement timestamp used in deterministic ordering, not a
+  race-duration value;
+- team-owned qualifier standings require an owner-aware public projection and remain omitted until
+  that contract exists.
 
 ### Gauntlet stats
 
@@ -234,6 +302,12 @@ Source:
 
 - `GET /v1/gauntlet/{gauntletId}/stats`
 
+V1 caution:
+
+- defer this broad response from the initial public detail implementation;
+- do not expose credits, raw combat/objective totals, or unsupported scoring values through the
+  public page merely because the legacy response contains them.
+
 ### Recent gauntlet match summary
 
 Available:
@@ -250,7 +324,7 @@ Source:
 
 V1 caution:
 
-- use recent match summary as a supporting module if useful
+- defer the recent match summary from the initial public detail implementation
 - do not confuse match-internal heats with gauntlet qualifiers
 
 ### Stage operations
@@ -280,7 +354,7 @@ Default first-view priority:
 2. the active or next applicable qualifier, stage, or bracket state
 3. logged-in personal status
 4. standings or results that exist for the gauntlet's actual composition
-5. sponsors and media
+5. media, plus sponsor identity only when the optional follow-on projection exists
 
 This respects the product priority that qualifiers and finals matter most while still giving the page enough identity to orient the user.
 
@@ -301,7 +375,7 @@ Content:
 - region
 - first/final event time
 - scoring summary
-- sponsor strip
+- optional sponsor strip only when the relationship-scoped follow-on projection exists
 - primary action to view active standings or qualifier
 
 Tone examples:
@@ -381,7 +455,7 @@ Content:
 - min/max competitors
 - team/group constraints where available
 - qualified player/team owner count or field-owner count only when the public projection supplies
-  that exact meaning
+  that exact meaning through the current-field or exact StageRun-field read
 - racer-slot count separately when useful
 - ordered circuit matches with a published course name or course-code fallback
 - laps and heats only as optional match runtime settings inside stages
@@ -472,7 +546,9 @@ Placement:
 
 Data boundary:
 
-- use the approved sponsor display projection embedded in or composed for the public gauntlet response;
+- use a relationship-scoped public sponsor display projection only when the optional follow-on
+  contract exists;
+- sponsor display is not a dependency of canonical detail identity or the core route;
 - do not fetch unrestricted sponsor records through public list/detail endpoints;
 - tier remains gauntlet-specific operational data that may influence in-game advertising placement;
 - direct gauntlet `Billboard` media, including tileable artwork, does not establish a named sponsor relationship and must not generate this module by itself;
@@ -550,7 +626,7 @@ Guardrail:
 
 | State | Behavior |
 |---|---|
-| Anonymous | can view briefing, qualifiers, stages/finals, standings, sponsors, and media |
+| Anonymous | can view briefing, qualifiers, stages/finals, supported standings, media, and optional approved sponsor identity |
 | Logged-in player | same plus personal rank and qualification context where supported |
 | Gauntlet creator/admin | same plus ordinary non-prize edit/delete actions; administrator-only bracket and runtime-repair tooling remains in the Eventun Extend App UI |
 
@@ -564,7 +640,6 @@ Required states:
 - no standings yet
 - no team-owned result despite member participation
 - typed result module unavailable while schedule/detail remains available
-- no sponsors
 - failed standings fetch
 - failed qualifier standings fetch
 - media missing

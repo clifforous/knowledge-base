@@ -458,6 +458,16 @@ Default search filtering follows the repository reading order:
 Ranking may use title, heading, exact stable id, subject terms, curated-index membership, and
 role. It must not collapse results from different authority or environment states into one row.
 
+The initial cross-source comparison boundary is mechanical and limited to authority-filtered
+whole-document rows actually returned by one search. When distinct logical sources share project,
+non-null stable document id, and applicability but have different content hashes, `kb` preserves
+every attributed row and rank, marks each `comparison-required`, and emits one deterministic
+redacted warning. Matching hashes, missing stable ids, different applicability or projects,
+single-source evidence, and evidence excluded by query limits remain `not-assessed`. Task-entry
+fragments are excluded because their hashes cover only an entry while their document metadata
+identifies the parent log. This boundary requests active-agent comparison; it does not infer a
+semantic contradiction, deduplicate evidence, or choose an authority winner.
+
 ### Candidate shared vocabulary
 
 A small vocabulary registry is worth evaluating but is not an initial requirement. It would map
@@ -832,6 +842,12 @@ YAML. Durable task entries, canon proposals, adoption records, and deployment ev
 Markdown with versioned YAML frontmatter rather than becoming opaque YAML databases. The Rust
 binary embeds the accepted schemas, and readable schema files plus valid/invalid fixtures live in
 the tooling repository. Unknown major versions fail closed; minor additive fields are preserved.
+
+Sequential retrieval and rebuildable-index versions created during the private pilot are
+implementation checkpoints, not a compatibility commitment to external consumers. Before the
+template and coworker handoff, review whether obsolete pilot schemas should be removed and the
+surviving contracts renumbered as one deliberate baseline. Preserve multiple versions only when a
+real supported consumer or durable migration boundary requires them.
 
 ### KBTD-003 — Read-only source refresh
 

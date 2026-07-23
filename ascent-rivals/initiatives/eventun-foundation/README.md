@@ -1,19 +1,20 @@
 # Eventun Foundation Initiative
 
 Status: in-progress
-Status detail: Local implementation, rehearsal, and populated smoke are complete. The
-runtime resource and service-boundary hardening is committed and verified for local development.
-The coordinated shared-development cutover and physical lifecycle decisions remain open;
-production release is unscheduled.
+Status detail: Local implementation, rehearsal, and populated smoke are complete. The coordinated
+shared-development database cutover completed successfully, and the Eventun, Ascentun, and game
+client changes are deployed in shared development. Development soak and combined runtime validation
+remain active. Physical lifecycle decisions remain open and production release is unscheduled.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-23
 
 ## Outcome And Boundary
 
-Finish the coordinated Eventun foundation transition without treating local implementation or
-rehearsal as shared-environment deployment. This initiative owns two active remainders:
+Finish the coordinated Eventun foundation transition without treating successful development
+deployment as production acceptance. This initiative owns three active remainders:
 
-- the coordinated shared-development cutover and validation; and
+- shared-development soak and combined runtime validation;
+- the separately scheduled production cutover and post-release transition cleanup; and
 - physical retention, archive, restore, and long-term client-confidence policy.
 
 Current ingest and season behavior is authoritative under `system/`. Production migration is a
@@ -23,10 +24,10 @@ separate owner-scheduled action and is not implied by this initiative's local ev
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Eventun identified-match, fact, projection, cutoff, and season foundation | `verified` | Accepted Eventun implementation and linked rehearsal evidence | Production-scale local rehearsal and populated smoke passed; not deployed to shared development | Coordinated shared-development cutover |
-| Game-client producer contract required by the cutover | `implemented` | Perforce shelf; changelist identity is not recorded in this knowledge base | Not in the shared-development mainline and not deployed | Copy accepted changes to main and refresh generated contracts |
-| Shared-development Eventun cutover | `approved` | [Cutover and hardening plan](development-cutover-and-runtime-hardening.md) | `not-deployed` | Game-client mainline precondition, backup, coordinated migration, and smoke |
-| Runtime resource and service-boundary hardening | `verified` | Eventun commit `9213feb`; [cutover and hardening plan](development-cutover-and-runtime-hardening.md) | Code-verified for local development; not deployed to shared development | Reconfirm during coordinated shared-development smoke |
+| Eventun identified-match, fact, projection, cutoff, and season foundation | `deployed-dev` | Accepted Eventun implementation and linked rehearsal evidence | Production-scale local rehearsal and populated smoke passed; owner reports successful shared-development migration and deployment | Development soak and combined runtime validation |
+| Game-client producer contract required by the cutover | `deployed-dev` | Accepted Perforce implementation; submitted changelist identity is not recorded in this knowledge base | Owner reports the coordinated game client is deployed in shared development | Exercise identified ingestion and artifact association during development soak |
+| Shared-development Eventun cutover | `deployed-dev` | [Cutover and hardening plan](development-cutover-and-runtime-hardening.md); exact pre-cutover-dump schema transition and complete schema verification passed after rollback corrections | Owner reports the guarded database migration completed successfully and Eventun, Ascentun, and the game client are deployed | Record combined smoke/soak outcomes and any production-delta corrections |
+| Runtime resource and service-boundary hardening | `deployed-dev` | Eventun commit `9213feb`; [cutover and hardening plan](development-cutover-and-runtime-hardening.md) | Included in the owner-reported shared-development deployment; focused runtime reconfirmation remains part of soak | Reconfirm under normal development traffic |
 | Production foundation release | `not-started` | No release revision or window selected | `not-deployed` | Shared-development soak and explicit owner-selected window |
 
 ## Documents
@@ -52,9 +53,12 @@ separate owner-scheduled action and is not implied by this initiative's local ev
 
 ## Remaining Before Closure
 
-- Wait for the accepted game-client API changes to complete their next copy to main.
-- Apply and validate the coordinated Eventun database/service transition in shared development.
-- After a development soak period, leave production release pending until the owner selects a
-  window and accepts any required rehearsal refresh.
+- Complete and record shared-development API, ingestion, team, gauntlet, and runtime smoke/soak.
+- Keep the accepted historical production delta frozen. Put any later database changes in the
+  separately ordered post-development delta so production can apply both baselines in sequence.
+- Leave production release pending until the owner selects a window and accepts any required
+  rehearsal refresh.
+- After successful production migration and observation, remove the consumed historical conversion
+  machinery and return to the normal single-delta workflow.
 - Separately decide retention tiers, storage segmentation, archive format, and restore proof
   before any destructive telemetry lifecycle change.

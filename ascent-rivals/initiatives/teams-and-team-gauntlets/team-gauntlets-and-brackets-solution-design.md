@@ -58,6 +58,8 @@ The design avoids separate “individual wildcard” and “team wildcard” sys
 - Make every bracket match and follow-on path visible after the initial field is settled.
 - Support manual authoring and repair even when automatic seeding is available.
 - Keep current Ascentun changes minimal and operational.
+- Express roster behavior through explicit domain policy, not schema/algorithm capability
+  negotiation between coordinated first-party components.
 
 ## Non-Goals
 
@@ -68,6 +70,8 @@ The design avoids separate “individual wildcard” and “team wildcard” sys
 - persistent fan state;
 - a full v2 tournament website redesign;
 - compatibility with disposable pre-alpha gauntlet rows or obsolete APIs;
+- runtime compatibility matrices or parallel field-response generations for coordinated Eventun
+  and game-client deployment;
 - automatic player registration for team slots in the first slice unless selected during question review.
 
 ## Confirmed Current State
@@ -475,16 +479,31 @@ CheckGauntletStageRunAdmission(stage_run_id, session_id, player_id)
 
 The response should contain:
 
-- allowed or denied with a typed reason;
-- matching player-owned or team-owned slot ids;
-- owner type and id;
-- eligibility basis;
-- priority value and tie-break data;
-- occupancy policy;
-- roster-lock state and version;
-- stage and session identity needed for validation.
+- the existing field admission outcome and a typed reason;
+- the versioned field admission policy;
+- the exact immutable field snapshot;
+- the applicable slot and team;
+- a presence-aware competition rank, required only by
+  `TEAM_COMPETITION_RANK`;
+- the positive competition-roster revision observed with the eligibility
+  evidence.
 
 Eventun determines entitlement and priority from frozen slot state plus current approved roster data. It does not reserve a provisional live seat for every join attempt.
+
+The field evidence is present for every field-backed evaluation, including denial, and absent for a
+legacy non-field evaluation. Pre-lock eligibility requires exact snapshot, slot, team, and positive
+roster revision. Competition rank is present for `TEAM_COMPETITION_RANK` and absent for
+`FIRST_COME`; a missing required rank is an ineligible typed result. Locked reconnect returns the
+same frozen snapshot, slot, team, and locked roster evidence and is available only to the exact
+locked player.
+
+StageRun claim binds the immutable field snapshot and its explicit admission policy. Eventun and
+the dedicated server adopt that contract together; claim does not advertise or negotiate a set of
+field schema/algorithm capabilities. `FIRST_COME` and `TEAM_COMPETITION_RANK` communicate the
+runtime behavior directly. Mutable or unbound data that cannot satisfy the current contract is
+migrated, republished, or explicitly replaced before deployment. Already-bound or sealed history
+may retain the exact provenance required to explain its result, but historical provenance does not
+create a parallel live admission path.
 
 The monotonic competition-roster revision advances for active membership join/end,
 competition-rank or explicit-roster changes, and disband. Future correction tooling must also
@@ -550,14 +569,18 @@ The first match start or another configured deadline locks the roster:
 1. Dedicated server pauses new admission decisions.
 2. It submits StageRun and session identity, a nonzero roster-lock UUID, and the complete slot map,
    marking every slot occupied by one player or as a no-show.
-3. Eventun canonicalizes the semantic payload, computes its SHA-256 hash, and validates current
-   owner membership, uniqueness, capacity, and StageRun state under locks.
+3. Every occupied entry supplies the positive competition-roster revision returned by its admission
+   read; every no-show omits that revision. Eventun canonicalizes the semantic payload, computes its
+   SHA-256 hash, and validates current owner membership, competition rank when required, exact live
+   revision, uniqueness, capacity, and StageRun state under locks.
 4. Eventun requires occupied count at least the frozen `min_lobby_size` and no more than the frozen
    `max_lobby_size` or concrete slot count. Publication's owner-count check against the competitor
    range remains a separate boundary.
 5. Eventun atomically records occupants, no-shows, exact membership intervals, team roster
    revisions, and the server-owned request hash, then starts the StageRun.
-6. An exact UUID/payload retry returns retained state; changed global UUID reuse returns `Aborted`.
+6. A first-time lock whose live revision differs returns `Aborted` atomically so the server
+   re-evaluates all proposed occupants. An exact UUID/payload retry returns retained state before
+   live revision validation; changed global UUID reuse returns `Aborted`.
 7. Dedicated server starts the race only after lock acknowledgement.
 
 There is no caller-supplied idempotency hash. The same rule applies to field publication and

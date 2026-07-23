@@ -73,12 +73,37 @@ Policy:
 
 Policy:
 
-- use the approved Eventun server time and server-derived active/next/latest occurrence summaries;
-- use short or occurrence-boundary-aware freshness so cached `Current`, `Upcoming`, and `Past` state does not remain stale across a known start or end boundary;
+- cache complete Eventun occurrence facts rather than query-time active/next/latest/count or
+  `Current`/`Upcoming`/`Past` summaries;
+- do not require, validate, normalize, or cache Eventun response time for presentation; after each
+  cached factual read resolves at a request-time boundary, obtain one fresh Website-server timestamp
+  outside the shared cache and derive the initial presentation from it;
+- serialize that request-time presentation timestamp with the occurrence facts so SSR and hydration
+  use the same instant; never capture it at build time or inside the shared factual cache;
+- advance presentation time monotonically after hydration, schedule local recalculation at the
+  nearest start/end boundary, use a bounded fallback timer for distant/platform-limited boundaries,
+  and recalculate on tab visibility changes or replacement discovery data; use nonnegative browser
+  wall-clock elapsed time when a platform monotonic clock omits suspension, ignore backward
+  wall-clock adjustments, and retain a nondecreasing presentation floor; because the browser has no
+  trusted external clock, a positive wall-clock adjustment is indistinguishable from suspension and
+  may advance presentation for the remainder of that document lifetime, while a new document
+  request begins from a fresh Website-server anchor;
+- do not invalidate or refetch solely because an occurrence boundary passed; use normal source-data
+  freshness, edited-schedule/new-gauntlet/field-change invalidation, and explicit refresh for actual
+  data changes;
+- accept both the preceding shared-development response and committed Eventun `0e4d656` replacement;
+  ignore snapshot-derived timing state, selected occurrences, additional scheduled count, and
+  transport timestamp whenever present;
 - do not upgrade schedule overlap to `Live` without an explicit runtime-state contract;
+- do not consume clock-derived StageRun `Upcoming` or `Open` values as authoritative runtime state;
+  StageRun reads expose only a bounded status mapped from persisted lifecycle facts, while the
+  Website derives schedule-relative presentation from occurrence facts and its own clock;
 - use the same cached public discovery collection for the gauntlet directory, Schedule view, homepage teaser, and public search where applicable.
 
-Exact cache duration and boundary-refresh mechanics remain implementation choices. They must be tested around an occurrence start and end rather than selected as an arbitrary long global TTL.
+Exact data TTL remains an implementation choice. Tests must cover SSR and hydration at one Website
+timestamp, Eventun timestamp independence, start/end boundary transitions without network traffic,
+overlapping active occurrences choosing the one ending soonest, background/suspension recovery,
+nondecreasing clock behavior, replacement data, and genuine source-data invalidation.
 
 ### 4. Standings and Recent Results
 

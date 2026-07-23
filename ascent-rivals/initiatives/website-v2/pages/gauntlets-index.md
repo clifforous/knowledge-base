@@ -1,8 +1,8 @@
 # Ascent Rivals Gauntlets Index Page Spec
 
 Date: 2026-04-13
-Status: Approved discovery model, compact discovery contract, and desktop/mobile visual calibration; implementation details open
-Last reviewed: 2026-07-22
+Status: Approved discovery model, compact discovery contract, and desktop/mobile visual calibration; Website occurrence-fact correction reviewed, verified, and committed
+Last reviewed: 2026-07-23
 
 ## Related
 
@@ -159,6 +159,19 @@ Each current/future occurrence includes:
 
 The occurrence contract is the correct basis for nearest-event ordering and the Schedule view.
 
+### Current Compact Discovery Read
+
+Eventun `GET /v1/public/gauntlet/discovery` returns the compact public identity and complete
+qualifier/stage occurrence collection needed by this page. Eventun source commit `0e4d656` removes
+snapshot-derived `timing_state`, `active_occurrence`, `next_occurrence`,
+`latest_ended_occurrence`, and `additional_scheduled_occurrence_count`. The response retains
+`server_time_unix_ms` only as transport/as-of metadata. This source correction is not deployed;
+shared development may still serve the preceding shape containing the five redundant fields.
+
+Website V2 accepts both response generations and ignores the redundant fields when present. It
+does not require, validate, normalize, cache, or present `server_time_unix_ms`. Presentation derives
+from occurrence start/end facts at one fresh Website-server timestamp per uncached render.
+
 ### Timing Limitation
 
 Qualifier end time is derived from its authored duration. Current stage calendar end time is estimated as two hours after the scheduled start. Schedule-derived state can therefore support `Current`, `Upcoming`, and `Past`, but it is not enough to claim that a stage is actually live, completed successfully, cancelled, or delayed.
@@ -167,10 +180,11 @@ Accepted final stage scores or a completed stage run may support stronger result
 
 ## Directory State and Ordering Contract
 
-For each unique gauntlet, derive two occurrence candidates relative to one server time:
+For each unique gauntlet, derive occurrence candidates relative to one Website presentation time:
 
-- `active_occurrence`: an occurrence where `start_time <= server_time < end_time`;
-- `next_occurrence`: the earliest occurrence whose `start_time > server_time`.
+- active occurrences satisfy `start_time <= presentation_time < end_time`;
+- the next occurrence is the earliest occurrence whose `start_time > presentation_time`;
+- the latest-ended occurrence has the greatest `end_time <= presentation_time`.
 
 If multiple occurrences are active, select the one ending soonest as the primary active occurrence and retain the others as supporting schedule context.
 
@@ -264,7 +278,9 @@ When counts appear, label them by returned meaning: `Qualified Players`, `Qualif
 Optional supporting context:
 
 - next occurrence after the primary one;
-- count such as `3 more scheduled`;
+- Website-derived count such as `3 additional occurrences`, calculated from all active/future
+  occurrences other than the selected primary occurrence; use `scheduled` only when every counted
+  occurrence is genuinely future;
 - signed-in participation, qualification, or join context when a bounded Website projection supplies it.
 
 Do not render:
@@ -353,27 +369,43 @@ Add one compact, complete Eventun discovery read rather than making Website V2 j
 
 The response provides:
 
-- authoritative server time once at the response level;
 - unique public gauntlet identity and presentation summary: id, title, subtitle/ticker, region,
   colors, and bounded card media;
 - occurrence-scoped field-owner composition plus optional published-owner and racer-slot counts;
   never one ambiguous participant count;
-- normalized qualifier and stage occurrences needed by both the unique directory and repeated-occurrence Schedule view;
-- active occurrence, if any;
-- next occurrence, if any;
-- latest ended occurrence for Past sorting;
-- additional scheduled-occurrence count;
-- public timing state limited to `Current`, `Upcoming`, or `Past`;
+- the complete normalized qualifier and stage occurrence facts needed by the unique directory,
+  repeated-occurrence Schedule view, homepage teaser, and search, including stable identity, type,
+  start, end, and applicable field/capacity context;
 - optional explicit runtime/result state when available;
 - no creator permissions, sponsor-administration fields, full authoring configuration, or other nested detail that discovery does not render.
 
-The server should derive timing state and occurrence candidates once. Do not let browser clocks independently classify the same gauntlet differently around time boundaries. The browser then performs the approved stable ordering, title search, scope filtering, and any later supported filters over the returned collection.
+The committed Eventun replacement response omits `timing_state`, `active_occurrence`,
+`next_occurrence`, `latest_ended_occurrence`, and
+`additional_scheduled_occurrence_count`; the preceding shared-development response may still
+contain them until coordinated deployment. Website V2 accepts both shapes and ignores the
+redundant fields. Eventun's `server_time_unix_ms` remains transport/as-of metadata only and does
+not enter the Website factual model or presentation clock.
 
 Keep the base collection public and cacheable. If signed-in participation context is later useful on the directory, compose it as a small authorized overlay rather than making every public summary user-specific.
 
 Initial directory presentation is client-side:
 
 - fetch the compact collection once;
+- after the cached factual read resolves at each request-time render, obtain one fresh
+  Website-server presentation timestamp outside the shared cache;
+- render the initial classification from that timestamp and pass the exact timestamp with
+  occurrence facts into the browser to avoid hydration disagreement;
+- advance presentation time monotonically after hydration, recalculate at the nearest occurrence
+  start/end boundary, use a bounded fallback timer for distant boundaries, and recalculate when the
+  tab becomes visible or replacement discovery facts arrive; use nonnegative browser wall-clock
+  elapsed time as a suspension fallback where the monotonic clock pauses, ignore backward wall-clock
+  adjustments, and never move presentation time backward; without an external trusted clock, a
+  positive browser wall-clock adjustment is indistinguishable from suspension and may advance
+  presentation for the remainder of that document lifetime, while a new document request begins
+  from a fresh Website-server anchor;
+- do not refetch or invalidate the collection merely because a temporal boundary passed; refetch
+  only for source-data freshness such as schedule edits, new gauntlets, field changes, the normal
+  data TTL, or explicit invalidation;
 - filter and search without network round trips;
 - use ordinary page controls, progressive reveal, infinite-style loading, or list virtualization as interchangeable rendering choices over the same local collection;
 - do not add server pagination until measured collection size, transfer cost, parsing cost, or memory use demonstrates a real problem.
@@ -465,7 +497,10 @@ Mobile:
 - current gauntlets sort before upcoming gauntlets;
 - upcoming gauntlets sort by next occurrence ascending;
 - Past gauntlets sort by latest ended occurrence descending;
-- browser clock differences do not independently determine list classification;
+- SSR and hydration use the same Website-server presentation timestamp, after which browser
+  presentation time advances monotonically;
+- crossing an occurrence boundary updates classification locally without a network request;
+- returning to a visible tab recalculates temporal presentation from the cached occurrence facts;
 - schedule overlap is never labeled `Live` without a trustworthy runtime or broadcast state;
 - empty Current and Upcoming bands are not rendered;
 - missing optional qualifiers or stages do not produce empty labels;
@@ -475,6 +510,8 @@ Mobile:
 - Past gauntlets remain publicly readable, searchable, and linked through the Past scope;
 - the Website does not infer private, hidden, or unpublished state from schedule timing;
 - the initial directory fetches one compact public collection and searches, filters, sorts, and incrementally presents it client-side;
+- Website V2 derives timing solely from occurrence facts and ignores the current Eventun
+  query-time active, next, latest-ended, count, and timing-state summaries;
 - ordinary directory cards never rely on raw gauntlet artwork for essential-text contrast; a full-row background requires a deliberate dimming and content-surface treatment;
 - the Schedule agenda does not use per-row background images;
 - the schedule agenda remains usable on mobile without a month grid.
@@ -482,9 +519,19 @@ Mobile:
 ## Open Implementation Questions
 
 - What runtime/result fields should distinguish scheduled overlap, an active stage run, accepted final results, cancellation, and delay?
-- How should overlapping qualifier and stage occurrences choose their one primary directory occurrence beyond the approved soonest-ending rule?
 - Which media-purpose priority and crop metadata should the Website adopt after the media-consumer audit?
+- What coordinated deployment and consumer smoke should retire the preceding shared-development
+  response after Eventun source `0e4d656` and the Website consumer correction are accepted?
 
 ## Review Checkpoint
 
-The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past` scopes, all-gauntlets-public visibility, client-side collection interaction, occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived terminology guardrails, compact Eventun discovery projection, constrained media composition, and desktop/mobile calibration are approved. Explicit runtime/result lifecycle, representative uploaded-media treatment, media-purpose priority, and implementation verification remain open.
+The unique-gauntlet directory, repeated-occurrence Schedule agenda, `Current & Upcoming` and `Past`
+scopes, all-gauntlets-public visibility, client-side collection interaction and temporal derivation,
+occurrence-based inclusion, nearest-event ordering, long-lived/playtest behavior, schedule-derived
+terminology guardrails, factual consumption of the current compact Eventun discovery projection,
+constrained media composition, and desktop/mobile calibration are approved. The Eventun
+snapshot-field removal is committed as `0e4d656`, and the compatible Website consumer correction is
+reviewed, verified, and committed as `ar-web` `7d1d00c`; coordinated development adoption remains
+open.
+Explicit runtime/result lifecycle, representative uploaded-media treatment, media-purpose priority,
+and development-environment verification also remain open.

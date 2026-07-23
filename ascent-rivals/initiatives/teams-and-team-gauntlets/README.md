@@ -1,22 +1,17 @@
 # Teams and Team Gauntlets Initiative
 
 Status: in-progress
-Status detail: T00 is approved against the committed local Eventun foundation, with Team Core
-selected as the first implementation cutoff. The Eventun implementation based on `9213feb` passed
-local verification and implementation review and is committed as `c4260f3`. The staged Ascentun
-Team Core implementation based on `a0a40ad` passed implementation review but remains uncommitted.
-The Eventun G01 field, slot, roster-lock, and result foundation passed implementation review and is
-committed as `6343438`. The unsubmitted Ascent Rivals default changelist now contains the G01
-dedicated-server integration; it passed a Development Editor build, all five focused roster
-automations, the Eventun PostgreSQL smoke, and implementation review. None of the G01 work is
-deployed. Coordinated deployment remains gated by source-control completion, the shared-development
-cutover, and combined runtime smoke.
-Eventun G02 Pass 1 closed-membership correction passed implementation review and is committed as
-`3e1606c`. G02 Pass 2 frozen team qualification passed coder verification and implementation review
-and is committed as `1e3b76e`; it is not deployed. The T03 reusable public-team and fact-backed
-performance-read contract is approved for implementation from that clean source baseline.
+Status detail: T00 through T03B and the G01 dedicated-server integration passed their local
+implementation and review gates. The coordinated shared-development database cutover completed
+successfully, and the Eventun, Ascentun, and game-client changes are deployed in shared development.
+The T03C Eventun correction is committed, its Website consumer follow-up is owned separately, and
+the corrected G03 priority replacement and roster policy implementation passed local verification
+and implementation review and is committed as `cb79df3`. The bounded T03D Website public-gauntlet
+detail projection is selected as a companion Eventun slice while G04 proceeds. Combined
+player/team/gauntlet runtime smoke and soak remain active; production deployment is not implied or
+scheduled.
 
-Last consolidated: 2026-07-22
+Last consolidated: 2026-07-23
 
 ## Outcome And Boundary
 
@@ -29,18 +24,23 @@ authorized by this initiative.
 
 | Surface | Work state | Source or artifact evidence | Runtime evidence | Next gate |
 |---|---|---|---|---|
-| Existing Eventun and Ascentun team identity/lifecycle baseline | `implemented` | [Current team and gauntlet state](../../system/team-gauntlet-current-state.md) plus linked repository evidence | Revalidated during T00; shared-development and production use are unproven | Replace through accepted Team Core behavior at the coordinated shared-development gate |
-| Eventun match, fact, cutoff, and season data foundation used by future team work | `verified` | [Foundation delivery snapshot](../eventun-foundation/README.md#delivery-snapshot) | Verified locally; shared-development deployment remains pending | Coordinated cutover |
-| Runtime resource and service-boundary hardening | `verified` | Eventun commit `9213feb`; [cutover and hardening plan](../eventun-foundation/development-cutover-and-runtime-hardening.md) | Code-verified for local development; not deployed to shared development | Reconfirm during coordinated shared-development smoke |
+| Existing Eventun and Ascentun team identity/lifecycle baseline | `superseded-dev` | [Current team and gauntlet state](../../system/team-gauntlet-current-state.md) plus linked repository evidence | Replaced by Team Core in the owner-reported shared-development deployment; production retains the old baseline | Validate Team Core under development traffic |
+| Eventun match, fact, cutoff, and season data foundation used by future team work | `deployed-dev` | [Foundation delivery snapshot](../eventun-foundation/README.md#delivery-snapshot) | Owner reports successful shared-development migration and deployment | Development soak and combined runtime validation |
+| Runtime resource and service-boundary hardening | `deployed-dev` | Eventun commit `9213feb`; [cutover and hardening plan](../eventun-foundation/development-cutover-and-runtime-hardening.md) | Included in the shared-development deployment; runtime reconfirmation remains part of soak | Reconfirm during combined smoke |
 | T00 team design refresh and delivery cutoff | `approved` | Approved solution designs and [delivery plan](delivery-plan.md) | Revalidated against the committed local foundation and retained migrated database | Narrow contract/runtime reconfirmation after shared-development cutover |
-| Eventun Team Core implementation | `verified` | Eventun commit `c4260f3`; current-system API and data-model records | Coder-reported repository, schema, Unreal-contract, race, and PostgreSQL smoke verification; independent implementation review accepted; not deployed | Focused authentic-baseline runner rehearsal before deployment, then coordinated shared-development cutover |
-| Ascentun Team Core implementation | `verified` | Staged, uncommitted Ascentun working tree based on `a0a40ad`; exact generated Swagger copy plus focused contract, authorization, action, cache, and session tests | Type check, lint, production build, focused tests, and implementation review passed locally. A fresh local PostgreSQL/Eventun smoke verified the empty compact list, missing detail, authentication boundaries, Ascentun proxies, and rendered empty directory; player-authenticated mutations remain unexecuted because no player fixture exists | Owner source-control decision, then coordinated shared-development cutover and combined runtime smoke |
-| G01 Eventun field/slot/roster/result foundation | `verified` | Eventun commit `6343438`; [delivery checkpoint](delivery-plan.md#g01-implementation-review-checkpoint) | Full repository verification, disposable PostgreSQL schema/runtime suite, and implementation review passed locally; no authentic-data reconstruction or shared-environment deployment was run | Coordinated shared-development cutover and combined runtime smoke |
-| G01 dedicated-server runtime integration | `verified` | Unsubmitted Ascent Rivals default changelist; [runtime verification checkpoint](delivery-plan.md#g01-dedicated-server-runtime-verification-checkpoint) | Development Editor build, five focused roster automations, and Eventun PostgreSQL smoke passed locally; no shared-environment deployment or player-connected combined smoke | Owner source-control decision, then coordinated shared-development cutover and combined runtime smoke |
-| G02 closed-membership-correction pass | `verified` | Eventun commit `3e1606c`; [Pass 1 checkpoint](delivery-plan.md#g02-pass-1-implementation-review-checkpoint) | Full repository verification, isolated PostgreSQL correction/identity/timestamp/migration/access-plan/race/benchmark suite, and implementation review passed locally; not deployed | Use the committed correction and serialization boundary in Pass 2 |
-| G02 frozen team qualification pass | `verified` | Eventun commit `1e3b76e`; [Pass 2 checkpoint](delivery-plan.md#g02-pass-2-implementation-review-checkpoint) | Full repository verification and isolated PostgreSQL migration, individual-rule reuse, full-population and complete contributor-tuple ranking, membership-semantic revisioning, effective field capacity, immutable cutoff/field evidence, sealed-cutoff fact repair and authoring replacement, qualified-field publication/claim, field-history deletion protection, race, access-plan, rebuild suites, and independent implementation review passed locally; not deployed | Coordinated shared-development cutover and combined runtime smoke |
-| T03 reusable public team and performance reads | `approved` | [T03 contract checkpoint](delivery-plan.md#t03-public-read-contract-checkpoint); clean Eventun baseline `1e3b76e` | `not-implemented`; no runtime evidence | Eventun pre-edit implementation checkpoint |
-| Later roster policy, mixed-owner, and bracket slices | `approved` | G03-G07 remain defined in the delivery plan | `not-deployed` | Complete the selected next implementation slice |
+| Eventun Team Core implementation | `deployed-dev` | Eventun commit `c4260f3`; current-system API and data-model records | Local verification/review accepted and included in the shared-development deployment | Player-authenticated lifecycle and concurrency smoke |
+| Ascentun Team Core implementation | `deployed-dev` | Accepted Ascentun Team Core implementation and exact generated Swagger copy | Local verification/review accepted and owner reports Ascentun deployed in shared development; player-authenticated mutation smoke remains outstanding | Combined player-authenticated Team Core smoke |
+| G01 Eventun field/slot/roster/result foundation | `deployed-dev` | Eventun commit `6343438`; [delivery checkpoint](delivery-plan.md#g01-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Combined field/admission/roster/result smoke |
+| G01 dedicated-server runtime integration | `deployed-dev` | Accepted Ascent Rivals implementation; [runtime verification checkpoint](delivery-plan.md#g01-dedicated-server-runtime-verification-checkpoint) | Local focused verification passed and owner reports the game client deployed in shared development | Player-connected combined smoke |
+| G02 closed-membership-correction pass | `deployed-dev` | Eventun commit `3e1606c`; [Pass 1 checkpoint](delivery-plan.md#g02-pass-1-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Validate correction and membership serialization under development traffic |
+| G02 frozen team qualification pass | `deployed-dev` | Eventun commit `1e3b76e`; [Pass 2 checkpoint](delivery-plan.md#g02-pass-2-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Exercise cutoff publication, qualified field, and claim flow in development |
+| T03A reusable public team and gauntlet reads | `deployed-dev` | Eventun commit `efcedcd`; [T03A checkpoint](delivery-plan.md#t03a-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Combined consumer smoke |
+| T03B fact-backed performance and history reads | `deployed-dev` | Eventun commit `a96d6b4`; [T03B checkpoint](delivery-plan.md#t03b-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Populated shared-development consumer and latency smoke |
+| T03C public gauntlet occurrence-fact correction | `implemented-review-pending` | Eventun commit `0e4d656`; compatible Website correction implemented locally from `ar-web` `481c47b`; [implementation-review checkpoint](delivery-plan.md#t03c-implementation-review-checkpoint) | Eventun verification and independent review passed; Website verification is recorded in the Website V2 snapshot. Neither correction is deployed, and shared development may continue serving the previous response | Review the Website consumer correction, then coordinate development adoption and combined consumer smoke |
+| T03D Website public-gauntlet detail projection | `approved` | [Bounded companion slice](delivery-plan.md#t03d--add-the-website-public-gauntlet-detail-projection) and the Website detail contract | `not-implemented`; G03 commit `cb79df3` cleared the overlapping-worktree gate | Implement and review the Eventun projection alongside, but separately from, G04 |
+| G03 priority replacement and roster policy | `verified` | Eventun commit `cb79df3`; [implementation-review checkpoint](delivery-plan.md#g03-implementation-review-checkpoint) | Focused policy/response/retry checks, repository verification, deterministic Unreal generation, isolated PostgreSQL schema/race verification, and independent review passed; not deployed | Implement and verify the dedicated-server occupancy/replacement consumer |
+| Later mixed-owner, bracket, fallback, and administration slices | `approved` | G04-G07 remain defined in the delivery plan | `not-deployed` | Begin G04 from committed G03 while T03D proceeds as a separate bounded companion |
+| Post-teams simplification and technical-debt cleanup | `approved` | [G08 cleanup boundary](delivery-plan.md#g08--post-teams-simplification-and-technical-debt-cleanup) and AR-2026-020 | `not-started` | Begin after the teams delivery slices are complete enough for one cross-layer audit |
 
 ## Documents
 
@@ -62,10 +62,12 @@ authorized by this initiative.
 
 ## Remaining Before Closure
 
-- Commit the accepted staged Ascentun Team Core implementation when the owner is ready.
-- Submit the reviewed G01 dedicated-server integration when the owner is ready.
-- Complete the coordinated Eventun shared-development cutover and combined runtime smoke before
-  enabling Team Core in a shared environment.
+- Complete and record the combined player-authenticated Team Core, G01 roster/runtime, G02
+  qualification, and T03 consumer smoke in shared development.
+- Soak the coordinated deployment before any production decision.
+- Keep production migration and deployment as a separate owner-scheduled gate.
 - Deliver the approved team-gauntlet slices after the Team Core deployment unit is proven.
-- After coordinated deployment, reconcile environment applicability and archive or supersede
+- Run the G08 simplification pass after the team slices, with a measured reduction in redundant
+  compatibility and validation code.
+- After production deployment, reconcile final environment applicability and archive or supersede
   completed Team Core planning.

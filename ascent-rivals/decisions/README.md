@@ -107,8 +107,7 @@ evidence and must not be presented as current truth before incorporation.
 ### AR-2026-007 — Coordinate development cutover with the game-client mainline
 
 - **Date:** 2026-07-19
-- **Status:** Active sequencing decision; the shared-development cutover remains pending and
-  production remains unscheduled.
+- **Status:** Fulfilled for shared development on 2026-07-23; production remains unscheduled.
 - **Changed:** From applying the accepted Eventun migration as soon as its local rehearsal passed
   to waiting until the coordinated game-client API changes complete their next copy to main,
   then migrating the development database and service together.
@@ -226,8 +225,8 @@ evidence and must not be presented as current truth before incorporation.
 ### AR-2026-014 — Team Core replaces the pre-alpha team model
 
 - **Date:** 2026-07-20
-- **Status:** Approved Team Core contract; an uncommitted Eventun implementation artifact is under
-  review, Ascentun work is unfinished, and no shared deployment is authorized.
+- **Status:** Approved contract deployed to shared development on 2026-07-23; production remains
+  pending.
 - **Changed:** From disposable team rows, delete-on-leave membership, numeric designation,
   nonhistorical requests/invitations, and caller-shaped identity to Eventun-generated durable team
   identity, retained active/disbanded lifecycle, half-open membership intervals, explicit owner,
@@ -248,7 +247,7 @@ evidence and must not be presented as current truth before incorporation.
 ### AR-2026-015 — Local Team Core implementation may precede shared-development cutover
 
 - **Date:** 2026-07-20
-- **Status:** Active sequencing decision; shared-development and production deployment remain
+- **Status:** Fulfilled for shared development on 2026-07-23; production deployment remains
   pending.
 - **Changed:** From treating the coordinated Eventun foundation cutover as a prerequisite for all
   team implementation to allowing local Team Core implementation and isolated verification
@@ -263,3 +262,116 @@ evidence and must not be presented as current truth before incorporation.
 - **Evidence:** The owner explicitly chose to continue local development while deferring the shared
   migration and later confirmed that Team Core implementation could start. This does not imply
   deployment, production readiness, or acceptance of an unreviewed implementation artifact.
+
+### AR-2026-016 — Azure development cutover may retain unlimited backend temporary files
+
+- **Date:** 2026-07-22
+- **Status:** Approved exception exercised by the successful shared-development cutover;
+  production remains pending.
+- **Changed:** From requiring the historical runner to install the rehearsed 14 GiB session-local
+  `temp_file_limit` on every target to accepting Azure's effective `-1` value only when PostgreSQL
+  rejects that setting with `42501`. The independent 28 GiB physical-storage monitor remains the
+  enforced cutover stop and records the unlimited effective value in evidence.
+- **Why:** Azure Database for PostgreSQL owns this superuser-scoped parameter and rejects the
+  operator session change. The first guarded invocation failed before migration work and rolled
+  back safely; the owner chose not to change Azure's server-level `-1` setting.
+- **Affected knowledge:** [Eventun cutover and hardening](../initiatives/eventun-foundation/development-cutover-and-runtime-hardening.md)
+  and [identified match ingestion](../system/eventun/identified-match-ingestion.md).
+- **Evidence:** The owner accepted the Azure-specific `-1` behavior after the guarded Step 6 error.
+  The later guarded shared-development migration completed successfully; this does not authorize
+  production.
+
+### AR-2026-017 — Freeze the historical production delta after development cutover
+
+- **Date:** 2026-07-23
+- **Status:** Active temporary migration policy until production cutover cleanup.
+- **Changed:** From appending every pending transition to `migration/migration.sql` to freezing that
+  file as the historical transition already consumed by shared development. Database changes
+  authored afterward accumulate in the separately ordered
+  `migration/post_development_cutover.sql`; production applies the historical delta first and the
+  post-development delta second.
+- **Why:** Production still starts from the older schema. Mixing later changes into the historical
+  delta could reproduce the ordering defects exposed during development or make development and
+  production execute materially different transitions.
+- **Affected knowledge:** [Eventun cutover and hardening](../initiatives/eventun-foundation/development-cutover-and-runtime-hardening.md),
+  [foundation delivery snapshot](../initiatives/eventun-foundation/README.md), and the Eventun
+  historical cutover runbook.
+- **Evidence:** The owner reported that the guarded development migration completed successfully
+  and that Eventun, Ascentun, and the game client are deployed in development. This decision records
+  sequencing only; it does not imply production approval. After successful production migration and
+  observation, both consumed transition files and the historical machinery are removed and the
+  repository returns to one `migration/migration.sql`.
+
+### AR-2026-018 — Public gauntlet timing is derived from occurrence facts
+
+- **Date:** 2026-07-23
+- **Status:** Eventun source correction is committed as `0e4d656`; the compatible Website V2
+  correction passed verification and implementation review and is committed as `7d1d00c`.
+  Coordinated deployment remains pending.
+- **Changed:** From Website V2 consuming Eventun's query-time `timing_state`, active, next,
+  latest-ended, and additional-occurrence summaries to consuming occurrence facts and deriving
+  clock-relative presentation itself. SSR uses a fresh Website-server presentation timestamp;
+  hydration shares that timestamp, then the browser advances it monotonically and recalculates at
+  boundaries and visibility changes without a boundary-only refetch. Eventun's response timestamp
+  remains transport/as-of metadata and is not the Website presentation clock.
+- **Why:** The snapshot summaries become stale as soon as cached time crosses a boundary and do not
+  represent durable Eventun state. The complete collection is already small enough for
+  deterministic local classification, including choosing the active occurrence ending soonest.
+- **Affected knowledge:** [Gauntlets index specification](../initiatives/website-v2/pages/gauntlets-index.md),
+  [Website non-functional baseline](../initiatives/website-v2/non-functional-baseline.md), and the
+  [teams/T03 delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md).
+- **Evidence:** The owner accepted Website temporal ownership after reviewing the discovery
+  response's query-time semantics. Eventun `0e4d656` removes the five presentation fields and keeps
+  response time only as transport/as-of metadata. Website revision `7d1d00c` accepts both response
+  generations, excludes Eventun time from factual cache and presentation, and derives initial state
+  from one fresh Website-server timestamp. Its verification and independent implementation review
+  found no blocking defect. Neither correction is claimed deployed.
+
+### AR-2026-019 — First-party contracts use coordinated replacement and data migration
+
+- **Date:** 2026-07-23
+- **Status:** Approved project-wide engineering policy; applied in reviewed Eventun commit
+  `cb79df3`.
+- **Changed:** From considering runtime schema/algorithm capability negotiation and retaining
+  multiple compatible first-party shapes to changing Eventun, generated contracts, the game client,
+  Ascentun, and websites as one coordinated deployment unit. Mutable state is migrated to the
+  current model. Per-table schema versions, compatibility matrices, parallel endpoints, and
+  duplicate response generations are not added by default.
+- **Why:** These components are controlled and deployed together. Maintaining combinations that
+  will not be operated adds code, tests, failure modes, and rollout ceremony without useful product
+  value. A one-time data migration is simpler and preserves one authoritative current model.
+- **Boundary:** Immutable historical events, sealed snapshots, or derived evidence may retain the
+  exact version needed to interpret or reproduce past results. External protocols and a genuinely
+  independently deployed consumer may also justify a narrow exception. Historical provenance must
+  not become a live compatibility handshake, and every exception must name the concrete need.
+- **Affected knowledge:** [Ascent Rivals overview](../system/overview.md), [Eventun API](../system/eventun/api.md),
+  [Eventun data model](../system/eventun/data-model.md), [team gauntlet design](../initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design.md),
+  and [G03 delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md).
+- **Evidence:** The owner explicitly rejected version matrices and per-table schema versions,
+  confirmed coordinated first-party deployment as the norm, and preferred data migration over
+  backward-compatibility machinery. The corrected G03 implementation removed claim-time capability
+  negotiation and algorithm generation 3, passed implementation review, and was committed as
+  `cb79df3`; deployment is not implied.
+
+### AR-2026-020 — Internal validation has one owner and simplicity is measurable
+
+- **Date:** 2026-07-23
+- **Status:** Approved engineering policy; post-teams cleanup planned as G08.
+- **Changed:** From treating repeated validation, sanity checks, fingerprints, and defensive
+  branches at every internal layer as inherently safer to validating and normalizing once at the
+  owning trust boundary, then relying on typed internal contracts. Production-code size and branch
+  count are explicit design concerns.
+- **Why:** Rechecking the same already-established fact through API, service, database adapter, SQL
+  function, and other internal layers increases lines of code, obscures the primary behavior, and
+  creates inconsistent error paths without addressing a new threat. Focused tests and one
+  authoritative invariant owner provide clearer assurance.
+- **Boundary:** External inputs, authentication and authorization, provider responses,
+  concurrency-sensitive transaction checks, durable database constraints, historically distinct
+  retained data, and irreversible operations remain independently guarded. A later check remains
+  valid when the layer is independently reachable or can observe a new failure mode.
+- **Affected knowledge:** [Ascent Rivals overview](../system/overview.md) and the
+  [post-teams G08 cleanup](../initiatives/teams-and-team-gauntlets/delivery-plan.md#g08--post-teams-simplification-and-technical-debt-cleanup).
+- **Evidence:** The owner requested a post-teams cleanup of overzealous versioning, compatibility,
+  defense-in-depth, and repeated field checks; preferred straightforward code with fewer
+  conditionals and non-expansive production LOC; and retained validation at boundaries where
+  Eventun receives data from the Website, game client, or another external actor.

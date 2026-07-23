@@ -2,19 +2,18 @@
 
 Status: in-progress
 Status detail: The production-scale local rehearsal and populated API/performance smoke are
-complete. Shared-development cutover is intentionally waiting for the next game-client main
-integration. The schema-neutral runtime-hardening correction is committed at Eventun `9213feb`
-and verified for local development. The coordinated shared-development cutover remains the
-unfinished deployment gate before enabling Team Core in a shared environment or releasing to
-production; T00 reapproval and isolated Team Core implementation work may proceed locally.
+complete. After resolving the recorded Azure prerequisites, legacy-data preflight, and
+post-rehearsal ordering defects, the guarded shared-development migration completed successfully.
+Eventun, Ascentun, and the coordinated game client are deployed in shared development. Combined
+runtime smoke and soak remain active; production is unauthorized and unscheduled.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-23
 
 ## Outcome And Boundary
 
-Move the accepted identified-match, serving-projection, season, and runtime-hardening foundation
-into the shared development environment once the coordinated game-client contract is ready, then
-validate the combined runtime before enabling Team Core there.
+Validate the accepted identified-match, serving-projection, season, runtime-hardening, and Team Core
+foundation now deployed in shared development, then preserve an ordered production transition and
+separate production release decision.
 
 This plan does not authorize a production migration or release. Physical telemetry retention,
 archive, and restore policy remain in the separate
@@ -22,35 +21,40 @@ archive, and restore policy remain in the separate
 
 ## Current Position
 
-- The identified-ingestion, compact-fact, serving-projection, qualification-cutoff, and season
-  implementations are accepted in local-development state.
+- The identified-ingestion, compact-fact, serving-projection, qualification-cutoff, season,
+  runtime-hardening, Team Core, and approved team/gauntlet implementations are deployed in shared
+  development.
 - One full production-scale local historical-and-season cutover committed successfully. A
   resettable migrated snapshot is retained, and populated API plus representative query-plan
   smoke passed.
-- No shared development or production database was changed by that rehearsal.
+- The rehearsal did not change a shared database. The later owner-operated shared-development
+  migration completed successfully.
 - The schema-neutral runtime-hardening correction is committed in Eventun at `9213feb`, including
   the follow-up review corrections. The complete ordinary verification gate,
   full Go tests, focused race tests, vet, generated-contract checks, and the linux/amd64 service
   build pass without a database rehearsal or shared-environment access.
-- Applying the accepted transition to shared development, removing the legacy runtime paths,
-  and validating the coordinated service/game-client behavior remain unfinished.
+- Early guarded attempts rolled back safely while exposing the Azure `temp_file_limit` behavior,
+  missing `btree_gist` allow-list entry, obsolete development team-stage references, StageRun
+  lifecycle ordering, and `player_view` dependency ordering. Their corrections were included in the
+  successful retry.
+- Combined service/client behavior validation, normal development traffic soak, and exact release
+  identifiers remain to be recorded.
 - The one-time conversion machinery remains temporary but must stay available until the
   production cutover succeeds.
+- `migration/migration.sql` is now frozen as the historical production transition. Any later
+  database change belongs in the separately ordered `migration/post_development_cutover.sql`, which
+  production applies only after the historical delta.
 
 ## Owner Sequencing Decision
 
-Do not migrate the shared development Eventun database or release the coordinated Eventun
-service contract until the pending game-client API changes have completed their next copy to
-main. This avoids creating a shared-development service/client mismatch and gives the combined
-foundation time to run in development before any production decision.
+The coordinated mainline, database, Eventun, Ascentun, and game-client gate was satisfied on
+2026-07-23. This progression accepts shared-development deployment only. Production remains
+unscheduled and may follow only after a deliberate soak period and an owner-selected release window.
 
-When that condition is met, update the generated contracts and apply the Eventun service and
-database transition as one coordinated development change. Production remains unscheduled and
-may follow only after a deliberate soak period and an owner-selected release window.
+## Shared-Development Cutover And Validation
 
-## Shared-Development Cutover
-
-This is the durable remainder formerly tracked as F15B.
+The database and deployment portion formerly tracked as F15B completed successfully. The smoke and
+soak acceptance portion remains active.
 
 ### Preconditions
 
@@ -113,7 +117,8 @@ as an initiative-only contract:
 - bounded best-effort post-ingest dispatch is in
   [identified match ingestion](../../system/eventun/identified-match-ingestion.md).
 
-The verification evidence below remains initiative evidence and does not imply deployment.
+The verification evidence below is distinct from the later owner-reported shared-development
+deployment. Neither implies production deployment.
 
 ### Local Verification
 
@@ -145,17 +150,16 @@ completion does not authorize it.
 - Execute the reviewed manual migration, service release, rollback checkpoints, and smoke matrix
   against the quiesced production environment using Eventun's
   [Historical Cutover Runbook](https://github.com/ikigai-github/eventun/blob/main/docs/historical-cutover-runbook.md).
+- Apply the frozen historical delta first and any separately reviewed
+  `post_development_cutover.sql` second before starting the production service.
 - Remove the consumed production delta, historical conversion command/package, transition-only
   verification artifacts, and resolved quarantine state only after successful production use.
 
 ## Dependencies
 
-- The teams T00 design checkpoint is approved against the committed local foundation and retained
-  migrated database. Reconfirm its implementation assumptions after the shared-development
-  cutover rather than repeating the design checkpoint.
-- Local T01/T02 implementation and isolated verification may proceed against the committed
-  foundation. Enabling the combined implementation in shared development remains gated by the
-  successful cutover and runtime smoke.
+- The teams T00 design checkpoint and implemented T01/T02/T03 slices now run against the migrated
+  shared-development foundation. Reconfirm their runtime assumptions during combined smoke rather
+  than repeating the design checkpoints.
 - Physical retention and archive choices are not prerequisites for teams.
 - Production release requires shared-development acceptance and an explicit owner-selected
   window.

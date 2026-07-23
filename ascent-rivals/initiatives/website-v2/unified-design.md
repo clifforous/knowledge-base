@@ -3,7 +3,7 @@
 Date: 2026-04-10
 Status: Draft
 Framework decision updated: 2026-07-15
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-23
 
 ## Related
 - [[ascent-rivals/system/overview|ascent-rivals-overview]]
@@ -413,7 +413,9 @@ All approved non-blockchain features from the current `ascentun` application sho
 - the alternate URL-backed `Schedule` view is a chronological agenda of qualifier and stage occurrences and may repeat one gauntlet for multiple windows
 - long-lived and ad hoc playtest gauntlets are current only during an actual occurrence window; between windows they sort by the next occurrence and move to Past when none exists
 - schedule overlap supports `Current`, `Upcoming`, and `Past` timing language but not `Live`; stronger runtime/completion language requires an explicit state contract
-- one compact, unpaginated Eventun discovery collection supplies shallow public identity/media, normalized occurrences, server time, and derived active/next/latest occurrence summaries for the directory, Schedule, homepage teaser, and search
+- one compact, unpaginated Eventun discovery collection supplies shallow public identity/media and
+  complete normalized occurrence facts for the directory, Schedule, homepage teaser, and search;
+  Website V2 derives active/next/latest and `Current`/`Upcoming`/`Past` presentation locally
 - gauntlet creation and editing
 - qualifier views
 - stage views
@@ -955,7 +957,7 @@ The browser integration boundary is now explicit: generated Eventun gateway clie
 
 ### Rendering and caching
 
-Use Next.js 16 Cache Components with explicit public data/component caching rather than blanket caching of mixed public and private routes. Repository-authored marketing content is static by deployment. Public entity and directory reads use domain-tagged stale-while-revalidate caching, schedule-sensitive gauntlet data uses short or occurrence-boundary-aware freshness, and standings/recent results use short caching with explicit refresh where useful. Authenticated overlays, permissions, forms, and operations remain request-time and never enter the shared public cache.
+Use Next.js 16 Cache Components with explicit public data/component caching rather than blanket caching of mixed public and private routes. Repository-authored marketing content is static by deployment. Public entity and directory reads use domain-tagged stale-while-revalidate caching. Gauntlet occurrence facts use ordinary source-data freshness and mutation invalidation; occurrence boundaries trigger local presentation recalculation rather than cache invalidation or refetch. Standings/recent results use short caching with explicit refresh where useful. Authenticated overlays, permissions, forms, and operations remain request-time and never enter the shared public cache.
 
 Successful mutations invalidate affected entity and collection tags before the canonical public page is treated as refreshed. The approved Vercel Pro deployment baseline uses two fixed Website environments paired to the matching AccelByte/Eventun environments, protected development-only previews, the Node.js runtime, and an initial single function region near the backends. Project names, measured region, hostnames, branch promotion, and DNS/cutover remain implementation setup. See [[non-functional-baseline]] and [[delivery-plan]].
 

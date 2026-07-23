@@ -2,10 +2,10 @@
 
 Status: current
 
-Applicability: committed local-development behavior. Shared-development and production deployment
-remain separate gates.
+Applicability: deployed shared-development behavior as of 2026-07-23. Production deployment remains
+a separate gate.
 
-Last consolidated: 2026-07-20
+Last consolidated: 2026-07-23
 
 ## Related
 - [[../overview]]
@@ -190,16 +190,14 @@ The AccelByte session is public in the current model:
 
 Eventun sparse admission rows are audit/cache records. They are not a participant roster and do not count as participation.
 
-Accepted local Eventun commit `6343438` makes the complete roster lock authoritative for an
+Eventun commit `6343438` makes the complete roster lock authoritative for an
 explicit-team field. Before lock, Eventun performs indexed eligibility only and does not reserve a
 seat. The dedicated server must serialize provisional occupancy and release it on a failed join or
 pre-lock disconnect. After lock, only the exact locked player may reconnect; a no-show slot cannot
-be filled. This Eventun contract is implementation-reviewed but not deployed, and the dedicated-
-server integration remains outstanding.
+be filled. This Eventun contract and its dedicated-server integration are deployed to shared
+development; player-connected smoke and soak remain outstanding.
 
 The dedicated server should call `CheckGauntletStageRunAdmission` for every human competitor join or rejoin, including pure open stages. Open stages do not require a restricted eligibility lookup, but the admission call still validates run/session/phase, applies already-completed-stage rules, and records the admission evaluation.
-
-Current implementation gap: `UHGPlayerLifecycleServerSubsystem::BeginGauntletStageAdmission` returns to the normal join path without calling Eventun when the claim reports `allow_any_human_player=true` and `requires_restricted_admission=false`. Until that fast path is removed or the contract is deliberately changed, pure unrestricted joins bypass Eventun's already-completed-stage check and sparse admission audit row.
 
 Stage admission policy fields:
 

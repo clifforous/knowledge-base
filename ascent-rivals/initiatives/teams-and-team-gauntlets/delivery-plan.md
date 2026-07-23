@@ -1,22 +1,13 @@
 # Teams And Team Gauntlets Delivery Plan
 
 Status: in-progress
-Status detail: T00 is approved against the committed local Eventun foundation. Team Core is the
-selected first implementation cutoff. The Eventun implementation based on `9213feb` passed local
-verification and implementation review and is committed as `c4260f3`; the staged Ascentun working
-tree implementation based on `a0a40ad` has passed implementation review but is not committed.
-A bounded fresh-database local smoke passed for the public Team reads, authentication boundaries,
-Ascentun proxies, and empty directory render; player-authenticated mutation smoke remains pending.
-The Eventun G01 field, slot, roster-lock, and result foundation passed implementation review and is
-committed as `6343438`. The unsubmitted Ascent Rivals default changelist implements the G01
-dedicated-server integration and passed its Development Editor build, focused roster automations,
-Eventun PostgreSQL smoke, and implementation review. Coordinated deployment remains gated by
-source-control decisions, the shared-development cutover, and combined runtime smoke.
-Eventun G02 Pass 1 closed-membership correction passed implementation review and is committed as
-`3e1606c`. G02 Pass 2 frozen team qualification passed coder verification and implementation review
-and is committed as `1e3b76e`; it is not deployed. T03 may proceed from that clean baseline.
+Status detail: T00 through T03B and the G01 dedicated-server integration passed local implementation
+and review. The coordinated shared-development database cutover completed successfully, and
+Eventun, Ascentun, and the game-client changes are deployed in shared development. Combined
+player-authenticated Team Core, field/admission/roster/result, qualification, and public-consumer
+smoke and soak remain active. Production remains a separate unscheduled gate.
 
-Last consolidated: 2026-07-22
+Last consolidated: 2026-07-23
 
 ## Outcome And Boundary
 
@@ -32,7 +23,7 @@ system state or authorize production deployment.
 | Gate | Required before |
 |---|---|
 | Committed and locally verified Eventun foundation and runtime hardening | Starting T00 design refresh and reapproval |
-| Coordinated Eventun shared-development cutover and combined runtime smoke | Deploying or enabling the combined T01/T02 implementation in shared development |
+| Coordinated Eventun shared-development cutover and combined runtime smoke | Database/deployment completed 2026-07-23; combined smoke and soak remain before production acceptance |
 | T00 selection of the initial delivery cutoff | Starting either implementation workstream |
 | Canonical team identity and membership intervals | Historical team statistics, progression attribution, or team qualification |
 | Notification payload prototype and outbox contract | Closed-team actionable notifications |
@@ -45,11 +36,10 @@ The prerequisite execution details are maintained in
 
 ## T00 — Refresh And Reapprove The Team Designs
 
-T00 was approved against the committed local foundation and retained migrated database. Local
-Eventun implementation and isolated verification may proceed before the coordinated cutover.
-Before the combined Eventun and Ascentun implementation is enabled in shared development,
-reconfirm affected contracts and runtime assumptions; do not repeat the entire design checkpoint
-solely because deployment occurred later.
+T00 was approved against the committed local foundation and retained migrated database. The
+combined Eventun, Ascentun, and game-client implementation is now enabled in shared development.
+Reconfirm affected contracts and runtime assumptions during combined smoke; do not repeat the
+entire design checkpoint solely because deployment occurred later.
 
 - Reconcile all three team designs with the implemented authentication, API generation, match
   ingestion, facts, serving projections, cutoff snapshots, seasons, repair, and migration
@@ -237,7 +227,8 @@ or URLs.
    reads.
 4. **Fact-backed performance summary.** Support lifetime and optional exact-season scope. Return
    distinct represented matches, represented player-match results, individual podium finishes,
-   individual ascensions, and latest represented-result time. Names must retain the `represented`
+   results in matches with ascension evidence, and latest represented-result time. Names must retain
+   the `represented`
    or `individual` distinction: these are performances earned by players while their membership was
    effective at MatchStart, not team-format wins, podiums, or a synthetic team rating.
 5. **Current-roster leaderboard comparison.** Accept team, public course, player-facing category,
@@ -271,6 +262,200 @@ identity, player affiliation, viewer state, and current-roster reads. Accepted f
 attribution invalidate the affected performance/history reads. Implementation must measure the
 complete directory, one 16-member detail, the full roster comparison, summary, and bounded history
 on representative migrated data before adding pagination, caches, or new aggregate projections.
+
+#### T03A Implementation Review Checkpoint
+
+The Eventun T03A implementation is committed as `efcedcd` after coder verification and independent
+implementation review. It is verified local implementation evidence, not deployed current-system
+behavior.
+T03B performance summary, roster comparison, represented-result history, and team/player gauntlet
+history remain out of this checkpoint.
+
+T03A adds these domain-neutral Client operations:
+
+- `PublicTeams`, `PublicTeam`, and player-authenticated `TeamViewerState`;
+- `PublicGauntletDiscovery`;
+- separate `PublicGauntletCurrentStageField` and exact-run
+  `PublicGauntletStageRunField` reads;
+- `PublicGauntletStageRuns` and exact-run `PublicGauntletStageRunResults`.
+
+Seven public-safe reads join the explicit subjectless Server `READ` allowlist for the Website
+confidential client. `TeamViewerState` remains subject-bearing and derives relationship, current
+team conflict, exact unexpired action identity/version, capacity, membership mode, and allowed
+transitions inside Eventun. Existing Team Core and evidence-rich field/runtime operations receive
+no broader authorization. Current `Team` and `Teams` compatibility remains until the coordinated
+consumer migration removes it.
+
+Public field reads separate the current field head from the immutable snapshot bound to an exact
+StageRun. Results require a nonzero exact run UUID plus matching gauntlet and stage. Team-owned
+results and public participant attribution are separate, and the subjectless response has no
+viewer-relative or personal-result concept. The public timeline exposes exact run identity, run
+number, frozen scheduled time, factual lifecycle, result availability, and presence-aware actual
+start/end times while omitting session, provider, failure, and evidence internals. Discovery uses an
+exact active or sole StageRun's bound field snapshot for capacity. A future stage with no run may use
+the current unbound field head; ambiguous historical/replay stages omit capacity rather than
+misreporting a replacement head.
+
+`gauntlet_stage_run.scheduled_start_at`, `started_at`, and `ended_at` are added in the canonical schema
+and the additive prefix of the one-time `migration/migration.sql` delta. The scheduled time is copied
+from authoring when the run is created, retained rows are backfilled from their referenced stage, and
+the value is immutable thereafter. The delta derives retained lifecycle evidence from roster lock,
+accepted match, and terminal update times, then fails preflight on incompatible retained state.
+Constraints enforce finite millisecond timestamps, creation/start/end ordering,
+prestart/started/terminal state coherence, and atomic status/timestamp transitions. Runtime roster
+lock, first accepted match, completion, failure, and expiry paths write the lifecycle evidence in
+their state transition. A repository-file regression passes the actual delta through the historical
+runner's `splitMigration` boundary and proves the lifecycle block remains in the additive prefix.
+
+Coder verification passed:
+
+- `./scripts/verify.sh`, including protobuf format/lint/generation, 82-operation Client contract,
+  21 subjectless/shared versus 61 player-only authorization partition, Go tests/vet, and build;
+- `./scripts/verify_schema.sh` lifecycle/relational contracts and database-backed public team,
+  viewer, current/run-field, exact-run result, frozen-schedule, run-bound discovery-capacity,
+  cancellation, and existing runtime regression smoke;
+- representative isolated access plans for 100 active teams and a 100-owner field. Observed public
+  team reads were approximately 1.1 ms directory, 0.25 ms detail, and 0.07 ms viewer state; public
+  gauntlet reads were approximately 0.11 ms discovery identity/media plus 0.58 ms discovery
+  occurrence/window/capacity resolution, 0.07 ms current field, 0.06 ms run field, 0.02 ms timeline,
+  0.01 ms owner results, and 0.02 ms participant attribution. The discovery measurements execute the
+  production media selection, occurrence windowing, StageRun authority, stage/head joins, and
+  capacity aggregation rather than a simplified surrogate;
+- deterministic generated Unreal contract composition with explicit semantic presence wrappers and
+  fully prefixed enums; no Website, Ascentun, or game-client consumer was changed;
+- strict Knowledge Base validation and `git diff --check`.
+
+No authentic reconstruction rehearsal or shared database mutation was run. T03A's next gate is the
+coordinated shared-development cutover and combined consumer smoke. T03B fact-backed performance and
+history reads may proceed as a separate implementation checkpoint against the committed T03A
+contract.
+
+#### T03B Implementation Review Checkpoint
+
+T03B passed coder verification and independent implementation review and is committed as `a96d6b4`.
+It is verified local implementation evidence, not deployed current-system behavior.
+
+Five domain-neutral Client operations are added: `PublicTeamPerformance`,
+`PublicTeamLeaderboardComparison`, `PublicTeamRepresentedResults`, `PublicTeamGauntletHistory`, and
+`PublicPlayerGauntletHistory`. All five are player-callable public reads and join the explicit
+subjectless Server `READ` allowlist. The resulting Client inventory is 87 operations: 26 shared
+operations comprising 24 reads and two writes, plus 61 player-only operations. The generated Models
+union contains 92 operations; Admin remains 74, Server remains five, and the GameServer subset
+remains 17.
+
+Performance and represented-result history read normalized server compact facts directly. They use
+all accepted facts without filtering on the informational canonical flag, exclude explicit bots,
+apply exact optional `match_fact.season_id`, and
+resolve effective non-voided membership with the half-open interval at `match_fact.started_at` in the
+same SQL statement. A result whose match starts before `left_at` remains attributed even when the
+match ends later; a match starting at `left_at` is excluded. The public ascension fields are named
+`represented_results_in_ascension_matches` and `ascension_match`, because retained evidence proves
+match participation rather than a specific player's ascension. Historical result course codes remain
+readable when the catalog row is null, missing, or inactive; presentation is explicitly unavailable
+when no catalog row exists.
+
+The current-roster comparison computes the complete global rank before joining the bounded current
+roster. It returns all 16 members, including explicit unranked records, supports lifetime or exact
+season scope, permits exact inactive-course reads, and returns `NotFound` for an unknown exact course.
+Team qualification history exposes `competitive_rank`; individual qualification history exposes
+`selection_rank`. Player history first selects the newest sealed individual snapshot for each
+gauntlet/stage and only then filters for the player, so a player removed by V2 cannot reappear from
+V1. Accepted player-owned and represented-team StageRun results remain separate typed evidence. The
+team and player gauntlet-history request bound is named `max_entries`, because qualification and
+accepted-result evidence share one ordered entry stream.
+
+No table, cache, materialized view, or background worker was added. Three supporting history indexes
+are present in the canonical schema and production delta: effective membership by team, accepted team
+result by team, and accepted placement by player. Coder verification passed:
+
+- `./scripts/verify.sh` and `./scripts/verify.sh unreal`, including deterministic protobuf, Gateway,
+  Swagger, integration-client, and Unreal generation, Go tests/vet/build, and exact generated
+  inventory checks;
+- `./scripts/verify_schema.sh`, including MatchStart join/leave boundaries, exact-season versus
+  seasonless lifetime reads, accepted noncanonical facts, explicit-bot exclusion, multiple represented
+  players in one match, absent podium evidence, null and removed course presentation, fact repair
+  visibility, all-16-member comparison, global rank outside ordinary top N, seasonal loadout records,
+  inactive and unknown course behavior, team qualification evidence, team-owned versus represented
+  and player-owned result separation, and newest sealed snapshot authority;
+- `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` of the five captured production SQL statements after
+  adding 1,200 unrelated membership and gauntlet-result histories. The gate requires the exact
+  membership/team-result/player-placement indexes and bounds execution time, shared buffers, visited
+  rows, and rows removed by filters; the existing long-retained-history and rebuild plan matrix also
+  passed;
+- wrapped cancellation/deadline mapping, strict Knowledge Base validation, and `git diff --check`.
+
+No authentic reconstruction rehearsal, retained/shared database mutation, Website, Ascentun, or
+Ascent Rivals change was run. The next gate is the coordinated shared-development cutover and
+combined consumer smoke.
+
+#### T03C — Public Gauntlet Occurrence-Fact Correction
+
+Before an established consumer freezes the T03A discovery response, remove the query-time
+`timing_state`, `active_occurrence`, `next_occurrence`, `latest_ended_occurrence`, and
+`additional_scheduled_occurrence_count` fields. Eventun continues to return the complete stable
+gauntlet identity, presentation, occurrence, type, start/end, field, and capacity facts required by
+public consumers. This is an approved breaking replacement; no compatibility alias or parallel
+version is required.
+
+Website V2 owns `Current`, `Upcoming`, `Past`, active, next, latest-ended, and additional-count
+presentation. It renders from one Website-server timestamp, hydrates from that same timestamp,
+advances it monotonically, and recalculates at the nearest occurrence boundary and on visibility
+changes. A boundary does not invalidate or refetch the Eventun collection. Normal TTL, authored
+schedule changes, new gauntlets, field changes, and explicit invalidation remain data-freshness
+reasons.
+
+The correction is schema-neutral. Update the protobuf/OpenAPI/generated contracts, Eventun response
+construction, focused semantic and authorization inventories, Website V2 runtime schema and
+derivation, and exact consumer tests. Preserve the overlap rule that the primary active occurrence
+is the active occurrence ending soonest. Do not use this correction to redesign runtime/result
+lifecycle or migrate the game client.
+
+#### T03C Implementation-Review Checkpoint
+
+The Eventun implementation passed coder verification and independent implementation review and is
+committed as `0e4d656`. It removes the five query-time
+presentation fields, reserves their protobuf names and numbers, and removes the now-unused timing
+enum and occurrence-selection message. `PublicGauntletDiscoveryResponse` retains
+`server_time_unix_ms` only as response metadata and a repeated gauntlet collection; each entry
+retains only gauntlet identity and the deterministically ordered normalized occurrence facts.
+Eventun no longer derives Current, Upcoming, Past, active, next, latest-ended, or additional-count
+presentation.
+
+For a stage with no StageRun, discovery now returns configured capacity from the current published
+field head regardless of whether the occurrence start time has passed. Exact, sole, and uniquely
+active StageRuns retain run-bound field authority, while multiple runs without one authoritative
+run continue omitting capacity. The response does not expose a capacity-basis field. Focused
+database smoke covers otherwise equivalent past and future no-run stages so configured capacity
+cannot disappear solely at an occurrence boundary.
+
+Fresh generation and exact inventories passed: merged Swagger has 147 paths, 166 operations, and
+445 definitions; Client has 79/87/257, Admin 63/74/217, and Server 5/5/36; generated GameServer has
+17 operations and 269 definitions, while Models has 92 operations and 269 definitions. Contract
+checks reject both retired supporting definitions, and the retained discovery entry and response
+properties are exact. The HTTP route, `READ` action, subjectless server permission inventory, and
+all operation counts remain unchanged.
+
+Coder verification passed:
+
+- focused protobuf-reflection, discovery lifecycle/media, generated Swagger inventory, and Unreal
+  composition tests;
+- `./scripts/verify.sh` and `./scripts/verify.sh unreal`, including deterministic protobuf,
+  Gateway, Swagger, integration-client, and Unreal generation;
+- `./scripts/verify_schema.sh`, including the production discovery access-plan query and
+  database-backed normalized occurrence/capacity smoke;
+- strict Knowledge Base validation and `git diff --check`.
+
+The Eventun work changes no canonical schema, production or post-development delta, historical
+conversion, Website V2, Ascentun, game client, shared database, or IAM state. Commit `0e4d656` is
+source evidence only and is not deployed; shared development may continue serving the previous
+response until a later coordinated deployment. The review found no blocking Eventun defect.
+
+The compatible Website consumer correction passed coder verification and independent implementation
+review and is committed as `ar-web` `7d1d00c`. It accepts both response generations, ignores Eventun
+response time and redundant presentation fields, caches only normalized occurrence facts, derives
+SSR from one fresh Website-server timestamp, and uses the same timestamp for hydration before
+monotonic browser advancement and suspension recovery. Coordinated deployment remains separate from
+the accepted Eventun and Website source evidence.
 
 ### T04 — Add Initial Team Cosmetics
 
@@ -572,10 +757,116 @@ Depends on the G01 runtime and approved team competition-rank behavior.
   still win under the current policy.
 - Lock occupancy at the approved roster boundary and perform no automatic post-lock substitution
   in the first slice.
-- Return explicit allow, replace, reject, and reason responses and verify the bounded AccelByte
-  connection-capacity buffer needed for replacement.
+- Eventun returns eligibility, typed reason, explicit admission policy, exact field snapshot,
+  applicable slot/team, presence-aware competition rank, and observed roster revision. The dedicated
+  server alone serializes provisional occupancy and derives accept, replace, or reject from that
+  evidence and its incumbent state.
+- Claim binds one current field contract and its explicit policy; it does not exchange supported
+  schema/algorithm pairs or maintain a compatibility matrix. Eventun, generated contracts, and the
+  dedicated server change as one coordinated deployment unit.
+- Qualified-team authoring defaults to `replace_lowest_prestart + team_member_rank` only when both
+  values are absent. Explicit-team authoring defaults to `reject_new + first_come`. Those are the
+  only supported pairs in this slice; other enumerated authoring policies fail closed.
+- Each occupied lock entry carries the positive roster revision returned by admission; no-shows must
+  omit it. A changed live revision returns `Aborted` without roster or lifecycle mutation. Exact
+  committed lock retries return retained state before live revision validation, even if membership,
+  rank, disband, or correction later advances the team revision.
+- Verify the bounded AccelByte connection-capacity buffer needed for replacement in the later
+  dedicated-server pass; Eventun does not change session capacity in this slice.
 - Regenerate only the required ServerService, GameServer, shared Models, and client explanation
   contracts without widening authorization by code-generation convenience.
+- Canonical schema permits first-come and team-rank field policies. The already-migrated development
+  transition lives only in `migration/post_development_cutover.sql`; production applies the frozen
+  historical migration first and this guarded delta second.
+- Migrate, republish, or explicitly replace incompatible mutable and unbound field state rather than
+  retaining a live compatibility branch. Preserve version evidence only where an immutable bound or
+  sealed historical result requires its original interpretation.
+
+#### G03 Implementation-Review Checkpoint
+
+The Eventun G03 implementation passed local verification and implementation review and is committed
+as `cb79df3`. This is accepted source evidence, not deployed behavior. No shared environment,
+product repository outside Eventun, or frozen `migration/migration.sql` was modified.
+
+The corrected protobuf contract follows AR-2026-019. Claim carries no supported-capability
+collection, schema/algorithm handshake, omission fallback, or compatibility matrix. Team-rank
+replacement uses the existing explicit and qualified field-version provenance; the explicit
+`FIRST_COME` or `TEAM_COMPETITION_RANK` policy is the live domain contract. Same-session committed
+claim retries return their retained exact field binding without a current-client compatibility
+check, including after the mutable current field head changes.
+
+Field-backed evaluations have one authoritative shape containing typed outcome, reason, policy,
+exact snapshot, applicable slot/team, conditional rank, and roster revision. It is present for every
+field-backed result, including denial and locked reconnect. The former admission summary no longer
+contains field outcome, snapshot, or slot data and is returned only for genuinely non-field
+admission.
+
+Authoring defaults the two field policy values only when both are absent. A half-specified pair is
+invalid; the two accepted complete pairs remain first-come and team-rank replacement. Roster lock
+requires the admission-observed positive revision for occupied entries, forbids it for no-shows,
+validates the exact live revision under ordered locks, and includes it in the server-owned semantic
+hash. A first-time stale lock aborts atomically. An exact committed lock retry returns retained state
+before live revision validation.
+
+Focused tests cover both complete defaults, half-specified rejection, mutually exclusive
+field/non-field response authority, missing rank, locked reconnect, exact claim retry after current
+head replacement, revision/hash validation, and exact roster-lock retry after a later revision. A
+real blocked two-session database regression proves concurrent rank/revision mutation cannot
+partially lock or start the run and that reevaluation succeeds. Canonical schema verification proves
+the guarded post-development delta converges to the canonical occupancy constraint. Its guard now
+checks only the field table and exact old constraint; it has no unrelated serving-projection
+generation dependency.
+
+Reported verification:
+
+- `go test ./internal/eventun`;
+- `./scripts/verify.sh`;
+- `./scripts/verify.sh unreal`, including deterministic generated SDK comparison;
+- `./scripts/verify_schema.sh`, including field access plans and database-backed runtime races;
+- `python tools/validate_kb.py --strict`;
+- `git diff --check` in both changed repositories.
+
+The AccelByte connection-capacity buffer and provisional occupancy/replacement execution remain for
+the later dedicated-server pass. No authentic reconstruction rehearsal was run.
+
+The owner accepted this implementation-review checkpoint after the focused follow-up confirmed all
+five requested corrections: capability negotiation and algorithm generation 3 were removed,
+committed claim retries again return retained state, field admission is separate from the non-field
+summary, half-specified policy pairs fail, and the post-development delta no longer depends on
+unrelated projection generation. The reviewed source was then committed as `cb79df3`.
+
+### T03D — Add The Website Public Gauntlet Detail Projection
+
+Implement this as a small Eventun companion slice while G04 proceeds. It is logically separate from
+mixed-owner allocation and must retain its own implementation-review checkpoint, even if one coder
+serializes the overlapping Eventun edits.
+
+- Add subjectless Server `READ` access to a compact domain-neutral
+  `GET /v1/public/gauntlet/{gauntlet_id}` projection.
+- Return stable public identity, approved bounded media, occurrence facts, qualifiers, explicit
+  player/team qualification ownership, a bounded recognized scoring metric, and visitor-facing
+  stage/circuit structure with deterministic order and course-code fallback.
+- Exclude creator identity, arbitrary authoring/runtime fields, current field-owner or racer-slot
+  capacity, generic participant count, sponsor relationships, prizes/rewards, and administrative
+  evidence. Existing current-field and exact StageRun-field reads remain authoritative for
+  capacity.
+- Replace clock-derived StageRun `UPCOMING` and `OPEN` presentation with factual bounded status
+  mapped only from persisted run lifecycle. Website presentation continues to derive
+  Current/Upcoming/Past from occurrence facts and its own clock.
+- Distinguish an unknown gauntlet (`NotFound`) from a valid gauntlet with no StageRuns. Preserve
+  sanitized `InvalidArgument`, `Internal`, and `Unavailable` mappings.
+- Add generated-gateway dispatch tests proving the parameterized detail route cannot capture
+  discovery, current-field, exact StageRun-field, StageRun-list, or exact-result routes.
+- Regenerate and verify the normal public transport contracts without adding this Website read to
+  the dedicated-server GameServer subset by convenience.
+- Reuse existing normalized tables and bounded read patterns; add no schema, projection, cache, or
+  compatibility generation unless a measured query requirement proves it necessary.
+- Do not implement Website rendering, sponsor display, private player overlays, team-owned public
+  standings, or bracket modules in this Eventun slice.
+
+The complete response boundary and Website composition rules remain in the
+[Website route/API matrix](../website-v2/route-api-matrix.md#gauntlet-detail-read-decomposition) and
+[gauntlet-detail page specification](../website-v2/pages/gauntlet-detail.md).
 
 ### G04 — Add Mixed And Expanded Allocations
 
@@ -612,6 +903,31 @@ Depends on stage-run-scoped results and approved owner-result semantics.
   void, replay, and repair with minimal interim styling.
 - Keep progression configuration and operational diagnostics in the Eventun Extend App UI.
 - Do not introduce pagination or a broader website redesign for these small operator views.
+
+### G08 — Post-Teams Simplification And Technical-Debt Cleanup
+
+Begin after the accepted teams and team-gauntlet delivery slices are complete enough to evaluate as
+one system. This is a behavior-preserving simplification pass, not another compatibility program or
+feature redesign.
+
+- Inventory schema, payload, projection, algorithm, and API version fields plus compatibility
+  branches across Eventun and its first-party consumers. Retain only immutable-history provenance or
+  a named external-protocol requirement; migrate current data and remove unused negotiation paths.
+- Trace representative API-to-database call paths and assign each input invariant to one owning
+  boundary. Remove repeated field validation, normalization, sanity checks, fallbacks, and
+  fingerprints from downstream layers that receive an already validated internal representation.
+- Preserve authentication, authorization, untrusted-input validation, transaction-time concurrency
+  checks, independently valuable database constraints, external-provider response validation, and
+  irreversible-operation guards.
+- Prefer typed validated values over repeated primitive-field conditionals. Consolidate shared
+  behavior only when it makes the primary path easier to read; do not introduce a framework merely
+  to remove duplicated lines.
+- Use existing semantic, integration, race, and database tests to prove behavior and integrity.
+  Add focused tests only for a boundary whose ownership was previously unclear.
+- Report production-code lines added and removed separately from tests and generated artifacts.
+  The intended result is fewer branches and a net reduction in maintained production code.
+- Record each retained defensive or version check with its distinct failure model. A check that
+  cannot identify one is a removal candidate.
 
 ## Explicitly Deferred
 
