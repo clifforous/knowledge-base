@@ -1107,7 +1107,7 @@ This phase adjusts the implemented V1 model toward the simpler operator model de
 - Next-phase ideation notes: `ascent-rivals/initiatives/eventun-progression/eventun-progression-next-phase-ideation-notes.md`
 - Eventun event notes: `ascent-rivals/system/eventun/events.md`
 - Eventun data model notes: `ascent-rivals/system/eventun/data-model.md`
-- Eventun API notes: `ascent-rivals/system/eventun/api.md`
+- Eventun interface notes: `ascent-rivals/system/eventun/interface-architecture.md`
 - Eventun overview: `ascent-rivals/system/eventun/overview.md`
 - Website player profile note: `ascent-rivals/initiatives/website-v2/pages/player-profile.md`
 - Ascent Rivals game code: `Source/AscentRivals/Public/Race/HGMedal.h`

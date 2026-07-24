@@ -32,7 +32,21 @@ transcript store, or product-code repository.
 - Search existing knowledge before adding a document. Prefer a concise update to the closest
   existing subject over a new fragmented note.
 - Make current-system documents self-sufficient. Separate implemented facts, known gaps, and
-  future direction.
+  future direction, and write them as reference chapters rather than implementation logs.
+- Write for a technically curious teammate without recent task context. Start with the mental
+  model, explain specialized terms, and do not sacrifice useful teaching prose merely to minimize
+  word count.
+- Keep interface architecture, domain behavior, data meaning, operations, and deployment state in
+  the chapter that owns that question. Swagger, protobuf comments, and code own exhaustive endpoint
+  and field reference.
+- Keep task IDs, delivery-slice labels, commit hashes, test counts, and routine execution history
+  out of explanatory system prose unless the identifier is required to understand or operate the
+  current system.
+- Put controlled document metadata in YAML frontmatter when substantively revising a document;
+  do not add a body preamble of maintenance dates and status labels.
+- Keep an artifact used by only one initiative inside that initiative. Reserve shared `sources/`
+  for independently useful or reused evidence, and distinguish live external artifacts from
+  preserved repository snapshots.
 - When behavior, terminology, contracts, gameplay rules, or accepted design changes, update
   the affected knowledge in the same work or record a task-owned decision/delta entry for
   later incorporation.
@@ -65,8 +79,8 @@ transcript store, or product-code repository.
 
 ## Working Rules
 
-- Use a formal, concise technical tone. Separate facts from assumptions and explain material
-  tradeoffs.
+- Use clear, approachable technical prose. Teach the mental model before compressing details, and
+  separate facts from assumptions while explaining material tradeoffs.
 - For non-trivial repository changes, plan, review the classification boundary, implement,
   and validate.
 - Reviews are read-only by default. Inspect content, links, contracts, contradictions, and

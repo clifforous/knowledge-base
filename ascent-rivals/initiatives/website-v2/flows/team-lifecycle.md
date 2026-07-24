@@ -15,7 +15,7 @@ Scope correction (2026-07-17): Website V2 targets the greenfield Next.js/React a
 - [[../tone-and-voice]]
 - [[../pages/teams-index]]
 - [[../pages/team-profile]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose

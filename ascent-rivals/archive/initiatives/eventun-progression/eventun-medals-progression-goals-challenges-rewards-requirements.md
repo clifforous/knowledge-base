@@ -532,7 +532,8 @@ These areas should be designed after the requirements are settled:
 
 ## Sources
 
-- Eventun knowledge notes: `ascent-rivals/system/eventun/overview.md`, `api.md`, `data-model.md`, `events.md`
+- Eventun knowledge notes: `ascent-rivals/system/eventun/overview.md`,
+  `interface-architecture.md`, `data-model.md`, `events.md`
 - Website and profile design notes: `ascent-rivals/initiatives/website-v2/unified-design.md`, `pages/player-profile.md`, `information-architecture.md`
 - AccelByte Challenges overview: https://docs.accelbyte.io/gaming-services/modules/online/challenges/
 - AccelByte Challenge OpenAPI spec: https://raw.githubusercontent.com/AccelByte/accelbyte-go-sdk/refs/heads/main/spec/challenge.json

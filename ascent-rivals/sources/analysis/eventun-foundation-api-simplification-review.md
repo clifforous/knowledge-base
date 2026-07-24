@@ -11,7 +11,7 @@ Reviewed repository: [Eventun](https://github.com/ikigai-github/eventun) at `34b
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/teams-solution-design]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-experience-and-progression-solution-design]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 - [[ascent-rivals/decisions/README|Ascent Rivals decision log]]
 

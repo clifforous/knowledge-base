@@ -31,7 +31,8 @@ evidence and must not be presented as current truth before incorporation.
   trust, and equal-content idempotency provide one repairable contract without duplicating
   APIs for authorization classes.
 - **Affected knowledge:** [identified match ingestion](../system/eventun/identified-match-ingestion.md),
-  [Eventun API](../system/eventun/api.md), [game client](../system/game-client.md), and
+  [Eventun interface architecture](../system/eventun/interface-architecture.md),
+  [game client](../system/game-client.md), and
   [gauntlet runtime](../system/eventun/gauntlet-stage-runtime-contract.md).
 - **Evidence:** [foundation/API review](../sources/analysis/eventun-foundation-api-simplification-review.md).
 
@@ -99,7 +100,7 @@ evidence and must not be presented as current truth before incorporation.
   membership mode to no token-gated mode; existing gated teams transition to invite-only.
 - **Why:** A provider-specific asset contract should not be embedded in the foundational team
   model. A provider-neutral asset-source design is required before reintroduction.
-- **Affected knowledge:** [Eventun API](../system/eventun/api.md),
+- **Affected knowledge:** [Eventun interface architecture](../system/eventun/interface-architecture.md),
   [data model](../system/eventun/data-model.md), [game client](../system/game-client.md), and
   [team current state](../system/team-gauntlet-current-state.md).
 - **Evidence:** [foundation/API review](../sources/analysis/eventun-foundation-api-simplification-review.md).
@@ -344,7 +345,8 @@ evidence and must not be presented as current truth before incorporation.
   exact version needed to interpret or reproduce past results. External protocols and a genuinely
   independently deployed consumer may also justify a narrow exception. Historical provenance must
   not become a live compatibility handshake, and every exception must name the concrete need.
-- **Affected knowledge:** [Ascent Rivals overview](../system/overview.md), [Eventun API](../system/eventun/api.md),
+- **Affected knowledge:** [Ascent Rivals overview](../system/overview.md),
+  [Eventun interface architecture](../system/eventun/interface-architecture.md),
   [Eventun data model](../system/eventun/data-model.md), [team gauntlet design](../initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design.md),
   and [G03 delivery plan](../initiatives/teams-and-team-gauntlets/delivery-plan.md).
 - **Evidence:** The owner explicitly rejected version matrices and per-table schema versions,

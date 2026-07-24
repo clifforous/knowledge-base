@@ -70,7 +70,7 @@ Local knowledge-base sources:
 - `ascent-rivals/system/cardano.md`
 - `ascent-rivals/system/accountun.md`
 - `ascent-rivals/system/eventun/overview.md`
-- `ascent-rivals/system/eventun/api.md`
+- `ascent-rivals/system/eventun/interface-architecture.md`
 - `ascent-rivals/system/eventun/data-model.md`
 - `ascent-rivals/system/eventun/events.md`
 - `ascent-rivals/archive/initiatives/website-v2/wallet-linking.md`

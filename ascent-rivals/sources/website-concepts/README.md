@@ -9,4 +9,6 @@ initiative. They are references, not the deployed website or the complete curren
 - `terminal-concept-marketing-landing.png`
 
 Use the [Website V2 initiative](../../initiatives/website-v2/README.md) for current design
-direction and [the website system document](../../system/website.md) for current behavior.
+direction, including its reviewed Pencil checkpoint. Use
+[the website system document](../../system/website.md) for current behavior. Initiative-specific
+working and checkpoint artifacts do not live in this shared source collection.

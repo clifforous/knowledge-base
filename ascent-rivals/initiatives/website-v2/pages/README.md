@@ -16,7 +16,7 @@ and contract details; read each status line.
 - [Team profile](team-profile.md)
 
 These specifications describe Website V2 intent. They do not override the
-[current website](../../../system/website.md) or current Eventun API.
+[current website](../../../system/website.md) or current Eventun system chapters.
 
 Website V2 has no sponsor index or detail page. The active
 [sponsor-administration handoff](../sponsor-administration-handoff.md) assigns registry and

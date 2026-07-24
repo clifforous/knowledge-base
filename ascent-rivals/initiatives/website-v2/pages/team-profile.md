@@ -19,7 +19,7 @@ Membership direction confirmed: 2026-07-15. The stable public concepts are `Open
 - [[../sponsor-administration-handoff]]
 - [[player-profile]]
 - [[gauntlet-detail]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose
@@ -84,7 +84,7 @@ Secondary:
 The following legacy operations explain the current Ascentun surface but are not the Website V2
 public contract. The committed local Team Core replacement separates compact list, team detail,
 exact membership action, and management data; coordinated deployment remains unfinished. See
-[[ascent-rivals/system/eventun/api#Committed Local Team Core API|Eventun API]].
+[[ascent-rivals/system/team-gauntlet-current-state|current team and gauntlet behavior]].
 
 ### Team detail
 

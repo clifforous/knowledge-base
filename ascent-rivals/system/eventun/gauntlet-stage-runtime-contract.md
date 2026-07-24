@@ -10,7 +10,7 @@ Last consolidated: 2026-07-23
 ## Related
 - [[../overview]]
 - [[overview]]
-- [[api]]
+- [[interface-architecture]]
 - [[data-model]]
 - [[events]]
 - [[../game-client]]

@@ -18,7 +18,7 @@ Website V2 exclusion (2026-07-15): this entire flow is deferred and must not be 
 - [[ascent-rivals/initiatives/website-v2/pages/player-profile|active player-profile specification]]
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile|active team-profile specification]]
 - [[ascent-rivals/initiatives/website-v2/pages/gauntlet-detail|active gauntlet-detail specification]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose

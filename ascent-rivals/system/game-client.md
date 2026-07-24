@@ -5,7 +5,7 @@
 - [[race-roster-rules]]
 - [[accelbyte-game-records]]
 - [[eventun/overview|eventun]]
-- [[eventun/api|eventun-api]]
+- [[eventun/interface-architecture|eventun-interface-architecture]]
 - [[eventun/data-model|eventun-data-model]]
 - [[eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]]
 - [[website]]

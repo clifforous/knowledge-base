@@ -17,7 +17,7 @@ Last reviewed: 2026-07-23
 - [[ascent-rivals/initiatives/website-v2/pages/team-profile]]
 - [[flows/gauntlet-authoring]]
 - [[ascent-rivals/initiatives/website-v2/README|Website V2 initiative index]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Goal

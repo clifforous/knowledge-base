@@ -22,7 +22,7 @@ Last reviewed: 2026-07-23
 - [[flows/authentication]]
 - [[flows/gauntlet-authoring]]
 - [[flows/team-lifecycle]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 
 ## Purpose
 

@@ -10,7 +10,7 @@ Last consolidated: 2026-07-23
 ## Related
 
 - [[overview]]
-- [[api]]
+- [[interface-architecture]]
 - [[data-model]]
 - [[events]]
 - [[ascent-rivals/initiatives/eventun-foundation/eventun-telemetry-lifecycle-plan|eventun-telemetry-lifecycle-plan]]

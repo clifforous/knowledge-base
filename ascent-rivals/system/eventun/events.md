@@ -3,7 +3,7 @@
 ## Related
 - [[../overview]]
 - [[overview]]
-- [[api]]
+- [[interface-architecture]]
 - [[data-model]]
 - [[identified-match-ingestion]]
 - [[../competition-runtime-terms]]

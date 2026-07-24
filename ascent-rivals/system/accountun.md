@@ -4,7 +4,7 @@
 - [[overview]]
 - [[midnight]]
 - [[eventun/overview|eventun]]
-- [[eventun/api|eventun-api]]
+- [[eventun/interface-architecture|eventun-interface-architecture]]
 - [[eventun/data-model|eventun-data-model]]
 - [[website]]
 

@@ -46,7 +46,7 @@ separate owner-scheduled action and is not implied by this initiative's local ev
 ## Authoritative Current System
 
 - [Identified match ingestion](../../system/eventun/identified-match-ingestion.md)
-- [Eventun API](../../system/eventun/api.md)
+- [Eventun interface architecture](../../system/eventun/interface-architecture.md)
 - [Eventun data model](../../system/eventun/data-model.md)
 - [Eventun progression](../../system/eventun/progression.md)
 - [Gauntlet stage runtime contract](../../system/eventun/gauntlet-stage-runtime-contract.md)

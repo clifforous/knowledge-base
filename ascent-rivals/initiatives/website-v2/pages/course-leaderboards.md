@@ -12,7 +12,7 @@ Last reviewed: 2026-07-21
 - [[../tone-and-voice]]
 - [[player-profile]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 - [[ascent-rivals/decisions/README#ar-2026-013--course-discovery-and-course-records-use-separate-routes|course route decision]]
 

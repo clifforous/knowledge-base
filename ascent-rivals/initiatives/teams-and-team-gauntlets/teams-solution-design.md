@@ -18,7 +18,7 @@ Web reference repository: [Ascentun](https://github.com/ikigai-github/ascentun)
 - [[ascent-rivals/decisions/README|Ascent Rivals decision log]]
 - [[ascent-rivals/system/team-gauntlet-current-state|team-gauntlet-current-state]]
 - [[ascent-rivals/system/game-client|game-client]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 - [[ascent-rivals/system/eventun/gauntlet-stage-runtime-contract|gauntlet-stage-runtime-contract]]
 - [[gauntlet-finals-and-tournament-modes-design-review]]

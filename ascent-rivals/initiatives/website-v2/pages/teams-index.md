@@ -17,7 +17,7 @@ part of Website V2.
 - [[team-profile]]
 - [[player-profile]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/delivery-plan|teams delivery plan]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose
@@ -78,7 +78,8 @@ Secondary:
 
 The committed local Team Core API exposes compact active-team summaries without rosters and a
 complete roster through the per-team detail read. Shared development and production retain the
-legacy contract until coordinated cutover. See [[ascent-rivals/system/eventun/api#Committed Local Team Core API|Eventun API]].
+legacy contract until coordinated cutover. See
+[[ascent-rivals/system/team-gauntlet-current-state|current team and gauntlet behavior]].
 
 Website V2 does not consume the legacy every-team-plus-roster shape as its target contract.
 

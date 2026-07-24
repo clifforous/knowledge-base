@@ -12,7 +12,7 @@ Status: Approved boundary; Eventun Extend App implementation required before Web
 - [[delivery-plan]]
 - [[route-api-matrix]]
 - [[pages/gauntlet-detail]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 - [[flows/gauntlet-authoring]]
 

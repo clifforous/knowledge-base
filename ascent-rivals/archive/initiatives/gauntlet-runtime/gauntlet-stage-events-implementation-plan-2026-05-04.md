@@ -48,7 +48,7 @@ Authoritative supporting docs:
 - [[gauntlet-finals-and-tournament-modes-design-review]]
 - [[ascent-rivals/system/eventun/gauntlet-stage-runtime-contract]]
 - [[ascent-rivals/system/eventun/events]]
-- [[ascent-rivals/system/eventun/api]]
+- [[ascent-rivals/system/eventun/interface-architecture]]
 - [[reconnect-state-restoration-initial-implementation-plan-2026-04-29]]
 
 ## Key Decisions

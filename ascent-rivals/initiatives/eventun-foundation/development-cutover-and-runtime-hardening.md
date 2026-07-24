@@ -109,7 +109,7 @@ Accepted runtime behavior is incorporated into the current-system documents rath
 as an initiative-only contract:
 
 - database, dependency, HTTP, scheduling, configuration, shutdown, and typed-error boundaries are
-  in [Eventun API](../../system/eventun/api.md#runtime-resource-and-failure-boundaries);
+  in [Running Eventun](../../system/eventun/operations.md#time-and-resource-bounds);
 - publication and reward prepare/external/finalize behavior is in
   [Eventun progression](../../system/eventun/progression.md);
 - ambiguous AccelByte session creation and same-identity reconciliation are in the
@@ -167,7 +167,7 @@ completion does not authorize it.
 ## Evidence And Related Knowledge
 
 - [Identified Match Ingestion](../../system/eventun/identified-match-ingestion.md)
-- [Eventun API](../../system/eventun/api.md)
+- [Eventun interface architecture](../../system/eventun/interface-architecture.md)
 - [Eventun data model](../../system/eventun/data-model.md)
 - [Insights, progression, and seasons review](../../sources/analysis/eventun-insights-progression-seasons-review.md)
 - [Teams delivery plan](../teams-and-team-gauntlets/delivery-plan.md)

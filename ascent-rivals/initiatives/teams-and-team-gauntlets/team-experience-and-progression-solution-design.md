@@ -15,7 +15,7 @@ Foundation alignment: local foundation implementation, rehearsal, and runtime ha
 - [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [[ascent-rivals/system/game-client|game-client]]
 - [[ascent-rivals/system/website|website]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 - [[ascent-rivals/sources/analysis/eventun-team-postgresql-derivation-review]]
 - [[ascent-rivals/sources/analysis/eventun-foundation-api-simplification-review]]

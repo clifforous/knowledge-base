@@ -10,7 +10,7 @@ This folder is the knowledge hub for Ascent: Rivals domain understanding.
 - [[website]]
 - [[eventun/overview|eventun]]
 - [[eventun/events|eventun-events]]
-- [[eventun/api|eventun-api]]
+- [[eventun/interface-architecture|eventun-interface-architecture]]
 - [[eventun/data-model|eventun-data-model]]
 - [[accountun]]
 - [[midnight]]

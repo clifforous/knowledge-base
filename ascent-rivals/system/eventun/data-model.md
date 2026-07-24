@@ -4,7 +4,7 @@
 - [[../overview]]
 - [[../accelbyte-game-records]]
 - [[overview]]
-- [[api]]
+- [[interface-architecture]]
 - [[identified-match-ingestion]]
 - [[../competition-runtime-terms]]
 - [[../game-client]]

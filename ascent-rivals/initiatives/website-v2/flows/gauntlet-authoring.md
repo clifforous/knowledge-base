@@ -14,7 +14,7 @@ Status: Core authoring and hosting-surface boundary approved; implementation con
 - [[../pages/gauntlet-detail]]
 - [[../sponsor-administration-handoff]]
 - [[ascent-rivals/initiatives/teams-and-team-gauntlets/team-gauntlets-and-brackets-solution-design]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Goal

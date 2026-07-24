@@ -17,7 +17,7 @@ Last reviewed: 2026-07-19
 - [[player-profile]]
 - [[course-leaderboards]]
 - [[teams-index]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/accelbyte-platform|AccelByte platform]]
 
 ## Purpose

@@ -17,9 +17,10 @@ Track authoritative source locations and provenance for durable Ascent Rivals kn
   `knowledge-base/system/local-repo-paths.md`.
 
 ## Ingest Targets
-- Repository or external-source evidence: `ascent-rivals/sources/`
+- Independently useful or cross-subject repository and external evidence:
+  `ascent-rivals/sources/`
 - Current-system synthesis: `ascent-rivals/system/`
-- Proposed designs: `ascent-rivals/initiatives/<initiative>/`
+- Proposed designs and initiative-specific artifacts: `ascent-rivals/initiatives/<initiative>/`
 - Durable decision history: `ascent-rivals/decisions/`
 
 ## Operating Rules

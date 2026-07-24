@@ -612,7 +612,9 @@ facts, status, and action semantics must remain equivalent across widths.
 
 ### Artifact and handoff boundary
 
-- The external Pencil workfile is reviewed design evidence, not generated application source.
+- The external Pencil workfile is reviewed design evidence, not generated application source. The
+  [repository snapshot](website-design-v0.2-review-snapshot.pen) preserves this reviewed checkpoint
+  and is not the live authoring file.
 - The Markdown contract controls when exploratory variables, hidden notes, and superseded study
   frames disagree with a canonical visible frame.
 - Ignore the immutable, nonvisual desktop pilot-profile root metadata value `RACE FINISH`; visible
@@ -620,8 +622,8 @@ facts, status, and action semantics must remain equivalent across widths.
 - Ignore the superseded labeled course-category study in favor of the faceted-selection study.
 - Do not export every Pencil variable into CSS. Export only the canonical token set shown on the
   reviewed v0.2 reference board.
-- Preserve one reviewed `.pen` snapshot only at an explicit checkpoint; the Windows workfile
-  remains the live artifact during iteration.
+- Preserve the reviewed snapshot only at explicit checkpoints; the Windows workfile remains the
+  live artifact during iteration.
 
 ## Rejected Patterns
 

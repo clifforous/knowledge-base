@@ -1,8 +1,10 @@
+---
+id: knowledge-base:organization
+status: current
+applicability: environment-independent
+adopted: 2026-07-19
+---
 # Knowledge Base Organization
-
-Status: current repository policy
-
-Adopted: 2026-07-19
 
 ## Purpose And Authority
 
@@ -83,7 +85,7 @@ under `ascent-rivals/`; create a separate project only for independently scoped 
 | `system/` | How does the project currently work for the stated applicability? | Cohesive domain, product, gameplay, API, architecture, terminology, and visual-system knowledge | Proof of production unless deployment evidence says so |
 | `initiatives/` | What change is proposed, approved, or in progress? | Requirements, solution designs, specifications, experiments, and useful active implementation plans | Current behavior merely because it is approved or implemented somewhere |
 | `decisions/` | Why did direction or current knowledge change? | Concise material decision history and task-owned decision/delta evidence | A second copy of current-system prose or a task manager |
-| `sources/` | What evidence or reference supports another document? | External references, repository analyses, observations, provenance, and durable design assets | Accepted current truth by itself |
+| `sources/` | What evidence or reference supports another document? | Independently reusable external references, repository analyses, observations, provenance, and durable assets | Accepted current truth by itself or the default home for an initiative-specific working artifact |
 | `archive/` | What inactive material remains useful for history, recovery, or audit? | Superseded designs and incorporated implementation history | A default retrieval source |
 | `scratch/` | What is temporary and local? | Uncommitted working notes and disposable files | A citable or indexed knowledge source |
 
@@ -100,8 +102,9 @@ Apply these questions in order:
 3. Is it a proposed or unfinished change? Put it under one named initiative.
 4. Is its lasting value the change in direction or rationale? Record it in `decisions/` and
    link the affected document.
-5. Is it evidence consumed by another document? Put it in shared `sources/` or keep it inside
-   the one initiative that uses it.
+5. Is it independently useful evidence or reused across subjects? Put it in shared `sources/`.
+   If it exists only for one initiative, keep it inside that initiative and label whether it is
+   live, external, or a preserved snapshot.
 6. Is it inactive but historically useful? Archive it with a reason and replacement.
 7. Is it temporary, a prompt, transcript, task list, build output, or routine review detail?
    Keep it in `scratch/`, the agent task, or the implementation repository; do not add it as
@@ -118,11 +121,51 @@ that old work is completed, abandoned, deployed, or safe to delete from age alon
 
 - state the current behavior before history or implementation detail;
 - be self-sufficient for normal questions;
+- read as a reference chapter, not as a chronological implementation log;
 - distinguish implemented facts, known gaps, and future direction;
 - identify applicability when it differs from the project default;
 - link evidence or decisions without requiring those files for basic comprehension;
 - replace contradicted prose instead of accumulating incompatible statements;
 - preserve rationale in decisions or sources rather than as an inline chronological diary.
+
+Use stable domain language in the main explanation. Internal task labels, delivery-slice codes,
+commit hashes, changelist numbers, test counts, and step-by-step implementation history belong in
+task logs, initiative delivery evidence, source records, or Git history. Include them in a system
+chapter only when a reader needs the identifier to understand or operate the current system.
+
+Prefer a small number of cohesive sections and tables over a long undifferentiated notes list.
+When detailed behavior already has an authoritative chapter, summarize the boundary and link that
+chapter instead of repeating its implementation history.
+
+Write for a technically curious teammate who does not have the recent task conversation in mind.
+Introduce the mental model before edge cases, explain specialized terms when they first matter, and
+use a small concrete example when it makes a boundary easier to understand. Concise means removing
+repetition and irrelevant history; it does not mean compressing every idea into the fewest words.
+
+AI friendliness comes from descriptive headings, explicit terminology, stable identifiers, and
+clear applicability—not from dense shorthand. Natural explanatory prose is preferred when it helps
+a person learn the system without making the facts ambiguous.
+
+### Subject boundaries
+
+A current-system chapter should have one primary kind of question:
+
+| Chapter kind | Owns | Does not own |
+|---|---|---|
+| Overview | Mental model, responsibilities, boundaries, and reading path | Detailed contracts or a running change history |
+| Interface architecture | How requests enter, gain identity and authority, are validated, execute, and return | Endpoint-by-endpoint reference or unrelated domain rules |
+| Domain behavior | Product and game rules, lifecycle, invariants, and interactions | Transport boilerplate or table-by-table storage notes |
+| Data model | Durable meaning, entities, relationships, facts, projections, and retention | Handler catalogs or user-flow narration |
+| Operational behavior | Runtime limits, failure handling, observability, jobs, and environment behavior | Product roadmap or implementation transcript |
+| Deployment view | What is active in each named environment and the evidence for that claim | A replacement for the conceptual system chapters |
+
+Generated Swagger, protobuf comments, code documentation, and equivalent references own exhaustive
+operation and field catalogs. The knowledge base should explain how those interfaces are designed
+and used, then link the generated reference when exact shapes matter.
+
+When information does not fit the owning chapter without changing its main question, move it to the
+chapter that owns the subject. Create a new focused chapter only when the subject will remain useful
+independently; do not create one merely to avoid editing an existing explanation.
 
 The default applicability for this personal repository is `local-development`. Stronger
 environment claims require explicit evidence. When part of a system differs by environment,
@@ -136,7 +179,7 @@ does not become active runtime behavior merely because its code exists.
 
 ## Delivery, Deployment, And Artifact State
 
-An initiative's controlled `Status:` describes the lifecycle of the initiative as a whole. It
+An initiative's controlled `status` describes the lifecycle of the initiative as a whole. It
 does not prove that every component has the same design, implementation, source-control, or
 deployment state.
 
@@ -368,6 +411,14 @@ standalone source records, and documents whose applicability or verification wil
 mechanically. Existing documents may adopt it when substantively revised; do not create a
 large mechanical rewrite solely for metadata uniformity.
 
+When controlled metadata is present, put it in YAML frontmatter before the title. Do not create a
+body preamble made only of `Date:`, `Status:`, `Last reviewed:`, or `Last consolidated:` labels.
+Dates describe actual observation, acceptance, verification, or deployment evidence; they are not
+document-maintenance bookkeeping. Initiative indexes may explain their current boundary in the
+opening paragraph after the title. Existing body-label preambles may remain until the document is
+substantively revised; convert them as part of that revision rather than through a repository-wide
+metadata-only pass.
+
 Controlled fields:
 
 | Field | Rule |
@@ -385,8 +436,8 @@ old makes a claim stale for review; it does not make the claim false. `drifted` 
 require a corrective disposition. Generic confidence scores are not a replacement for
 applicability and evidence.
 
-Human-visible `Status:` lines in initiative indexes use the controlled initiative value.
-Additional prose belongs on a separate `Status detail:` line.
+Initiative frontmatter `status` uses the controlled initiative value. The opening paragraph
+explains the real boundary in ordinary prose.
 
 ## Minimal Document Patterns
 
@@ -395,9 +446,12 @@ These are patterns, not mandatory fill-in-the-blank templates.
 ### System subject
 
 ~~~md
+---
+id: project:subject
+status: current
+applicability: local-development
+---
 # Subject
-
-Applicability: local-development
 
 ## Current State
 ## Known Gaps
@@ -407,10 +461,14 @@ Applicability: local-development
 ### Initiative index
 
 ~~~md
+---
+id: project:initiative-name
+status: proposed
+applicability: environment-independent
+---
 # Initiative
 
-Status: proposed
-Status detail: One sentence explaining the real boundary.
+One sentence explaining the real boundary.
 
 ## Outcome
 ## Active Documents
@@ -426,6 +484,10 @@ Status detail: One sentence explaining the real boundary.
 ### Source record
 
 ~~~md
+---
+id: project:source-name
+applicability: environment-independent
+---
 # Source Or Analysis
 
 Observed: YYYY-MM-DD

@@ -53,7 +53,7 @@ authorized by this initiative.
 ## Related Current System and Evidence
 
 - [Team gauntlet current state](../../system/team-gauntlet-current-state.md)
-- [Eventun API](../../system/eventun/api.md)
+- [Eventun interface architecture](../../system/eventun/interface-architecture.md)
 - [Eventun data model](../../system/eventun/data-model.md)
 - [Eventun development cutover and runtime hardening](../eventun-foundation/development-cutover-and-runtime-hardening.md)
 - [Foundation and API simplification review](../../sources/analysis/eventun-foundation-api-simplification-review.md)

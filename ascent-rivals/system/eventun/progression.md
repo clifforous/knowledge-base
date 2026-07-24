@@ -111,7 +111,7 @@ mechanics remain in [identified match ingestion](identified-match-ingestion.md) 
 ## Evidence And History
 
 - [Identified match ingestion](identified-match-ingestion.md)
-- [Eventun API](api.md)
+- [Eventun interface architecture](interface-architecture.md)
 - [Eventun data model](data-model.md)
 - [Game client](../game-client.md)
 - [Progression design archive](../../archive/initiatives/eventun-progression/README.md)

@@ -15,7 +15,7 @@ Last reviewed: 2026-07-23
 - [[gauntlet-detail]]
 - [[../sponsor-administration-handoff]]
 - [[ascent-rivals/system/competition-runtime-terms|competition-runtime-terms]]
-- [[ascent-rivals/system/eventun/api|eventun-api]]
+- [[ascent-rivals/system/eventun/interface-architecture|eventun-interface-architecture]]
 - [[ascent-rivals/system/eventun/data-model|eventun-data-model]]
 
 ## Purpose

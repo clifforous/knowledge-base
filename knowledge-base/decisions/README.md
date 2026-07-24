@@ -238,7 +238,7 @@ proposals until adopted.
 ### KB-2026-018 — Structure capture destinations and separate work titles from receipt prose
 
 - **Date:** 2026-07-23
-- **Status:** Adopted from initial personal capture dogfood; implementation pending.
+- **Status:** Implemented in the personal capture and incorporation pilot.
 - **Changed:** From one delimiter-bearing destination string and an H1 derived from the first
   change description to independently validated destination values and a stable work title
   supplied separately from operation-receipt prose.
@@ -250,3 +250,21 @@ proposals until adopted.
   [system design](../initiatives/federated-kb/system-design.md), the
   [Website capture log](../../ascent-rivals/decisions/tasks/2026/2026-07-24-website-v2-coder-20260723.md),
   and the [teams capture log](../../ascent-rivals/decisions/tasks/2026/2026-07-23-teams-coder-20260723.md).
+
+### KB-2026-019 — Durable documentation reads as a system book
+
+- **Date:** 2026-07-24
+- **Status:** Applied to repository policy and the Eventun/Website V2 pilot.
+- **Changed:** From allowing current-system and initiative entry points to accumulate maintenance
+  labels, task codes, commit hashes, test transcripts, and chronological implementation notes to
+  cohesive reference chapters with selective YAML frontmatter, concise delivery state, and
+  implementation provenance kept in task logs, evidence, or Git history.
+- **Why:** Durable knowledge must remain efficient for agents to retrieve without becoming hostile
+  to a human reader trying to understand the complete system. Stable domain behavior belongs in
+  the narrative; execution history remains available without interrupting it.
+- **Affected knowledge:** [organization policy](../../ORGANIZATION.md),
+  [agent policy](../../AGENTS.md), [Eventun](../../ascent-rivals/system/eventun/overview.md),
+  [Eventun interface architecture](../../ascent-rivals/system/eventun/interface-architecture.md),
+  [Eventun operations](../../ascent-rivals/system/eventun/operations.md),
+  and the
+  [Website V2 initiative](../../ascent-rivals/initiatives/website-v2/README.md).

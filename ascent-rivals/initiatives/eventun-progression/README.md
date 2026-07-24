@@ -18,7 +18,7 @@ boundary. Where it conflicts with the follow-on authoring plan, the follow-on pl
 ## Authoritative Current System
 
 - [Progression, challenges, and rewards](../../system/eventun/progression.md)
-- [Eventun API](../../system/eventun/api.md)
+- [Eventun interface architecture](../../system/eventun/interface-architecture.md)
 - [Eventun data model](../../system/eventun/data-model.md)
 - [Identified match ingestion](../../system/eventun/identified-match-ingestion.md)
 
