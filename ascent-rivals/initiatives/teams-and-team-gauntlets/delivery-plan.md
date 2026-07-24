@@ -445,10 +445,10 @@ Coder verification passed:
   database-backed normalized occurrence/capacity smoke;
 - strict Knowledge Base validation and `git diff --check`.
 
-The Eventun work changes no canonical schema, production or post-development delta, historical
-conversion, Website V2, Ascentun, game client, shared database, or IAM state. Commit `0e4d656` is
-source evidence only and is not deployed; shared development may continue serving the previous
-response until a later coordinated deployment. The review found no blocking Eventun defect.
+At the implementation-review checkpoint, the Eventun work changed no canonical schema, production
+or post-development delta, historical conversion, Website V2, Ascentun, game client, shared
+database, or IAM state. The review found no blocking Eventun defect. The owner subsequently reported
+that shared development deployed this correction as part of Eventun `0f2a1de` on 2026-07-23.
 
 The compatible Website consumer correction passed coder verification and independent implementation
 review and is committed as `ar-web` `7d1d00c`. It accepts both response generations, ignores Eventun
@@ -835,11 +835,16 @@ committed claim retries again return retained state, field admission is separate
 summary, half-specified policy pairs fail, and the post-development delta no longer depends on
 unrelated projection generation. The reviewed source was then committed as `cb79df3`.
 
+Subsequent deployment evidence: on 2026-07-23 the owner reported deploying Eventun through
+`0f2a1de` to shared development and successfully applying the ordered post-development delta. G03
+backend policy and its canonical occupancy constraint are therefore deployed in development. The
+dedicated-server occupancy and replacement consumer remains a separate unfinished slice.
+
 ### T03D — Add The Website Public Gauntlet Detail Projection
 
-Implement this as a small Eventun companion slice while G04 proceeds. It is logically separate from
-mixed-owner allocation and must retain its own implementation-review checkpoint, even if one coder
-serializes the overlapping Eventun edits.
+Implement this as the next small Eventun slice before G04. It is logically separate from
+mixed-owner allocation and retains its own implementation-review checkpoint. Begin G04 only after
+T03D has passed implementation review and its Eventun changes are committed.
 
 - Add subjectless Server `READ` access to a compact domain-neutral
   `GET /v1/public/gauntlet/{gauntlet_id}` projection.
@@ -853,6 +858,19 @@ serializes the overlapping Eventun edits.
 - Replace clock-derived StageRun `UPCOMING` and `OPEN` presentation with factual bounded status
   mapped only from persisted run lifecycle. Website presentation continues to derive
   Current/Upcoming/Past from occurrence facts and its own clock.
+- On the lifecycle wire, reserve numbers `1` and `2` and the names `UPCOMING` and `OPEN`; add
+  `NOT_STARTED` as number `8`. Map `pending`, `allocating`, `session_created`, and `claimed` to
+  `NOT_STARTED`; `started` to `IN_PROGRESS`; `completed` to `COMPLETED`; `aborted`/`cancelled` to
+  `CANCELLED`; `failed` to `FAILED`; and `deferred` to `DEFERRED`. Unknown persisted values remain
+  `UNSPECIFIED`; no clock or compatibility fallback participates.
+- Resolve qualification ownership deterministically: no qualifiers make the model unavailable;
+  qualifiers without team-qualification configuration are `PLAYER`; team configuration with no
+  competing individual qualification stage is `TEAM`; mixed or contradictory consumption is
+  `UNSPECIFIED`.
+- Use a detail-specific occurrence transport with the same normalized occurrence facts but no
+  capacity field. The generated gateway JSON must omit the `capacity` key entirely rather than
+  serializing an empty or null wrapper.
+- Preserve an inactive course's exact code while leaving optional catalog presentation unavailable.
 - Distinguish an unknown gauntlet (`NotFound`) from a valid gauntlet with no StageRuns. Preserve
   sanitized `InvalidArgument`, `Internal`, and `Unavailable` mappings.
 - Add generated-gateway dispatch tests proving the parameterized detail route cannot capture
@@ -867,6 +885,43 @@ serializes the overlapping Eventun edits.
 The complete response boundary and Website composition rules remain in the
 [Website route/API matrix](../website-v2/route-api-matrix.md#gauntlet-detail-read-decomposition) and
 [gauntlet-detail page specification](../website-v2/pages/gauntlet-detail.md).
+
+#### T03D Implementation-Review Checkpoint
+
+The approved Eventun slice passed local verification and implementation review and is committed as
+`0f2a1de`. No shared database or deployment was modified.
+
+- `GET /v1/public/gauntlet/{gauntlet_id}` now returns bounded identity/media, capacity-free
+  normalized occurrences, the deterministic qualification model, and ordered stage/circuit
+  presentation from one coherent PostgreSQL statement snapshot. Inactive or unavailable course
+  presentation retains the exact course code. Optional stored colors are normalized and emitted
+  only when they satisfy the existing `#RRGGBB` public rule.
+- Public StageRun lifecycle reserves wire numbers `1`/`2` and names `UPCOMING`/`OPEN`, adds
+  `NOT_STARTED = 8`, and maps only from persisted status. Unknown gauntlets are distinguished from
+  valid gauntlets with an empty StageRun collection.
+- Generated gateway tests prove the detail parameter cannot capture discovery or any specific
+  field/run/result route, and prove serialized detail occurrences contain no `capacity` key.
+- The populated production-query contract covers 150 unrelated gauntlets, 1,500 unrelated media
+  rows, 450 qualifiers, 450 stages, and 900 circuit rows. It requires the measured
+  `gauntlet_media (gauntlet_id, purpose, priority DESC, media_id)` access path; the passing run
+  executes the final coherent detail statement and measured it at 0.418 ms.
+- The index is canonical in `a0_create_init.sql` and additive in
+  `post_development_cutover.sql`. The transition requires the exact unapplied baseline, and schema
+  verification removes the canonical fixture index before applying the delta and compares the
+  resulting `pg_get_indexdef` with canonical. Frozen `migration.sql` remains unchanged.
+- Focused Go/API/authorization/database/error/route tests, `./scripts/verify.sh`,
+  `./scripts/verify.sh unreal`, `./scripts/verify_schema.sh`, strict Knowledge Base validation,
+  and `git diff --check` passed. No authentic reconstruction rehearsal was run.
+
+The owner accepted the focused implementation-review correction on 2026-07-23 after confirming the
+single-statement snapshot, public color validation, exact media-index transition, route and
+authorization behavior, and reconciled evidence. Commit `0f2a1de` is accepted local source
+evidence.
+
+Subsequent deployment evidence: on 2026-07-23 the owner reported deploying `0f2a1de` to shared
+development and successfully applying the ordered post-development delta, including the guarded
+media access index transition. The Website detail consumer remains unimplemented, and no production
+deployment is implied.
 
 ### G04 — Add Mixed And Expanded Allocations
 

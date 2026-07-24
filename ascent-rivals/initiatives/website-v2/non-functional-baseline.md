@@ -68,6 +68,14 @@ Policy:
 - keep collection responses shallow and complete according to the approved client-side filtering policy;
 - invalidate the affected entity and collection tags after successful mutations or controlled backend updates;
 - allow an unavailable optional module to fail independently rather than making a whole public page unavailable.
+- when an essential dynamic route requires an authoritative status before a Cache Components
+  partial-prerender shell can stream, resolve canonical identity and dependency availability at a
+  bounded server routing preflight; keep that classification separate from the normalized tagged
+  page cache and never expose dependency error text;
+- treat Next.js Proxy as a separate execution boundary. Do not depend on module-local or application
+  globals being shared between Proxy and rendering, and verify upstream request counts plus cache
+  behavior in the target Vercel environment before accepting a preflight-backed route for
+  deployment;
 
 ### 3. Schedule-Sensitive Gauntlet Data
 

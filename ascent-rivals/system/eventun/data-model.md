@@ -125,10 +125,11 @@ coordinated cutover.
 
 #### Shared-Development Team Core Model
 
-Applicability: deployed shared-development behavior through `a96d6b4`; it is not deployed to
+Applicability: deployed shared-development behavior through `0f2a1de`; it is not deployed to
 production. Team Core was committed as `c4260f3`, closed-membership correction as `3e1606c`, frozen
 team qualification as `1e3b76e`, and reusable public team/gauntlet reads as `efcedcd`. Fact-backed
-public team performance and history reads were committed as `a96d6b4`.
+public team performance and history reads were committed as `a96d6b4`; G03 field policy and T03D
+public-detail/index changes are deployed through `0f2a1de`.
 
 The replacement model uses an Eventun-generated team UUID, explicit owner and active/disbanded
 lifecycle, reusable name/tag only after disband, immutable half-open membership intervals, current
@@ -209,8 +210,11 @@ score, contributor, cutoff, and field evidence. Commit `efcedcd` adds narrow pub
 run-bound field, StageRun timeline, result, team-summary, roster, and viewer-state read models. Commit
 `a96d6b4` adds normalized fact-backed team performance, roster comparison, represented-result, and
 player/team gauntlet-history reads plus team-, team-result-, and player-placement-leading history
-indexes. These commits and the dedicated-server consumer are deployed to shared development.
-Multiple slots per owner, mixed/player owners, priority replacement, and bracket graphs remain
+indexes. Commit `cb79df3` adds explicit first-come or team-competition-rank field policy, typed
+field-backed admission evidence, roster-revision guarded locking, and the canonical field-occupancy
+constraint. Commit `0f2a1de` adds the public gauntlet-detail media access index. These commits and
+the ordered post-development delta are deployed to shared development. Multiple slots per owner,
+mixed/player owners, dedicated-server priority-replacement execution, and bracket graphs remain
 future work.
 
 The retired `token_meta` catalog, `team_gate_token` relation, and `token_gated` membership mode were removed during the foundation reset. Existing gated teams transition to invite-only. Token gating is unsupported until a provider-neutral asset-source contract is separately designed.

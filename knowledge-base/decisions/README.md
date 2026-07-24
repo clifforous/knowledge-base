@@ -234,3 +234,19 @@ proposals until adopted.
   [workflow design](../initiatives/federated-kb/federated-personal-and-canonical-knowledge-workflow.md),
   [system design](../initiatives/federated-kb/system-design.md), and the
   [Pass 3 governance ledger](../initiatives/repository-restructure/pass-3-governance-ledger.md).
+
+### KB-2026-018 — Structure capture destinations and separate work titles from receipt prose
+
+- **Date:** 2026-07-23
+- **Status:** Adopted from initial personal capture dogfood; implementation pending.
+- **Changed:** From one delimiter-bearing destination string and an H1 derived from the first
+  change description to independently validated destination values and a stable work title
+  supplied separately from operation-receipt prose.
+- **Why:** A live Website capture accepted semicolon-separated documents as one path-like value,
+  while its first finding produced a task title narrower than the continuing coder task. Typed
+  destinations remove ambiguous parsing, and a separate title keeps a reused task readable
+  without making later receipt descriptions part of resume identity.
+- **Affected knowledge:** [workflow design](../initiatives/federated-kb/federated-personal-and-canonical-knowledge-workflow.md),
+  [system design](../initiatives/federated-kb/system-design.md), the
+  [Website capture log](../../ascent-rivals/decisions/tasks/2026/2026-07-24-website-v2-coder-20260723.md),
+  and the [teams capture log](../../ascent-rivals/decisions/tasks/2026/2026-07-23-teams-coder-20260723.md).

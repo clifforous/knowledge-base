@@ -4,10 +4,11 @@ Status: in-progress
 Status detail: T00 through T03B and the G01 dedicated-server integration passed their local
 implementation and review gates. The coordinated shared-development database cutover completed
 successfully, and the Eventun, Ascentun, and game-client changes are deployed in shared development.
-The T03C Eventun correction is committed, its Website consumer follow-up is owned separately, and
-the corrected G03 priority replacement and roster policy implementation passed local verification
-and implementation review and is committed as `cb79df3`. The bounded T03D Website public-gauntlet
-detail projection is selected as a companion Eventun slice while G04 proceeds. Combined
+The T03C Eventun correction, corrected G03 priority replacement and roster policy, and bounded T03D
+Website public-gauntlet detail projection are deployed in shared development through Eventun commit
+`0f2a1de`. The ordered post-development database delta was applied there. The compatible Website
+consumer and dedicated-server G03 consumer remain separate unfinished work. G04 may now begin.
+Combined
 player/team/gauntlet runtime smoke and soak remain active; production deployment is not implied or
 scheduled.
 
@@ -36,10 +37,10 @@ authorized by this initiative.
 | G02 frozen team qualification pass | `deployed-dev` | Eventun commit `1e3b76e`; [Pass 2 checkpoint](delivery-plan.md#g02-pass-2-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Exercise cutoff publication, qualified field, and claim flow in development |
 | T03A reusable public team and gauntlet reads | `deployed-dev` | Eventun commit `efcedcd`; [T03A checkpoint](delivery-plan.md#t03a-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Combined consumer smoke |
 | T03B fact-backed performance and history reads | `deployed-dev` | Eventun commit `a96d6b4`; [T03B checkpoint](delivery-plan.md#t03b-implementation-review-checkpoint) | Local verification/review accepted and included in the shared-development Eventun deployment | Populated shared-development consumer and latency smoke |
-| T03C public gauntlet occurrence-fact correction | `implemented-review-pending` | Eventun commit `0e4d656`; compatible Website correction implemented locally from `ar-web` `481c47b`; [implementation-review checkpoint](delivery-plan.md#t03c-implementation-review-checkpoint) | Eventun verification and independent review passed; Website verification is recorded in the Website V2 snapshot. Neither correction is deployed, and shared development may continue serving the previous response | Review the Website consumer correction, then coordinate development adoption and combined consumer smoke |
-| T03D Website public-gauntlet detail projection | `approved` | [Bounded companion slice](delivery-plan.md#t03d--add-the-website-public-gauntlet-detail-projection) and the Website detail contract | `not-implemented`; G03 commit `cb79df3` cleared the overlapping-worktree gate | Implement and review the Eventun projection alongside, but separately from, G04 |
-| G03 priority replacement and roster policy | `verified` | Eventun commit `cb79df3`; [implementation-review checkpoint](delivery-plan.md#g03-implementation-review-checkpoint) | Focused policy/response/retry checks, repository verification, deterministic Unreal generation, isolated PostgreSQL schema/race verification, and independent review passed; not deployed | Implement and verify the dedicated-server occupancy/replacement consumer |
-| Later mixed-owner, bracket, fallback, and administration slices | `approved` | G04-G07 remain defined in the delivery plan | `not-deployed` | Begin G04 from committed G03 while T03D proceeds as a separate bounded companion |
+| T03C public gauntlet occurrence-fact correction | `partial-dev` | Eventun commit `0e4d656`; compatible Website correction implemented locally from `ar-web` `481c47b`; [implementation-review checkpoint](delivery-plan.md#t03c-implementation-review-checkpoint) | Eventun correction is deployed in shared development through `0f2a1de`; the compatible Website consumer is not deployed | Review and deploy the Website consumer, then run combined consumer smoke |
+| T03D Website public-gauntlet detail projection | `deployed-dev` | Eventun commit `0f2a1de`; [implementation-review checkpoint](delivery-plan.md#t03d-implementation-review-checkpoint) and Website detail contract | Owner reports Eventun deployment and successful application of the ordered post-development delta in shared development; Website fetching and rendering remain unimplemented | Implement the Website consumer separately; G04 may begin from the deployed Eventun baseline |
+| G03 priority replacement and roster policy | `deployed-dev` | Eventun commit `cb79df3`; [implementation-review checkpoint](delivery-plan.md#g03-implementation-review-checkpoint) | Eventun behavior and its guarded occupancy constraint are deployed in shared development through `0f2a1de`; the dedicated-server occupancy/replacement consumer is not implemented | Implement and verify the dedicated-server occupancy/replacement consumer |
+| Later mixed-owner, bracket, fallback, and administration slices | `approved` | G04-G07 remain defined in the delivery plan | `not-deployed` | Begin G04 from committed Eventun baseline `0f2a1de` |
 | Post-teams simplification and technical-debt cleanup | `approved` | [G08 cleanup boundary](delivery-plan.md#g08--post-teams-simplification-and-technical-debt-cleanup) and AR-2026-020 | `not-started` | Begin after the teams delivery slices are complete enough for one cross-layer audit |
 
 ## Documents

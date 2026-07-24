@@ -830,6 +830,47 @@ This use case satisfies the small-direct-task portion of the manual repository c
 not exercise parallel task-owned capture, serialized incorporation of competing entries, or
 grooming dispositions.
 
+### Observed Use Case: Initial MCP Task Capture
+
+Two existing coder tasks resumed after `kb` revision `ac5dba3` exposed `kb_begin_work` and
+`kb_capture`. They produced independent logs for the teams/Eventun and Website V2 workstreams. The
+teams log retained four durable contract, correction, and current-delta entries that were later
+manually incorporated and marked completed. The still-open Website task retained one pending
+runtime finding while its proposed destination changes remained uncommitted. Strict repository
+validation accepted both logs, and neither contained prompts, task lists, routine review chatter,
+or build output.
+
+This small trial supports the basic contributor experience:
+
+- stable task and parent-feature identity kept the two writers in separate files;
+- the entries were concise enough for human review while preserving rationale and evidence;
+- pending versus incorporated state correctly distinguished unfinished Website work from accepted
+  Eventun knowledge;
+- UTC-owned filenames and timestamps were mechanically consistent, even when the owner's local
+  calendar date differed; and
+- full-access Codex sessions did not prompt for the non-destructive MCP mutations, confirming that
+  approval friction remains a client permission choice rather than a server workflow requirement.
+
+It also exposed two contract issues. First, destinations were accepted as one delimited string. A
+semicolon-separated Website list passed validation because the entire value resembled one relative
+Markdown path. Capture should instead accept an array, validate every destination independently,
+reject delimiter-packed values and duplicates, and serialize one canonical human-readable form.
+Second, the initial change description became the task-log H1. That worked for the narrowly scoped
+teams task but produced a title tied to one finding for a Website coder task intended to continue.
+New logs should receive a stable work title separately from the receipt's natural change
+description; resumes should preserve the existing title.
+
+The completed teams log also required direct Markdown disposition and incorporation because
+`kb_close_work` and `kb_incorporate` do not exist. That is acceptable during the personal pilot
+when one task explicitly owns the serialized update, but it bypasses the controlled mutation and
+receipt boundary that coworkers will need. The next feature should therefore correct the capture
+contract and add expected-hash personal incorporation before lifecycle closing or general
+grooming.
+
+This trial does not yet satisfy the parallel-feature gate. The writers worked in different
+workstreams, and no two pending logs competed for one destination before serialized
+incorporation.
+
 ## Open Workflow Decisions
 
 - Grooming cadence and the least intrusive way to surface the backlog.

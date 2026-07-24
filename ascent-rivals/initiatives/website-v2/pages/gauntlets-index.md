@@ -165,8 +165,9 @@ Eventun `GET /v1/public/gauntlet/discovery` returns the compact public identity 
 qualifier/stage occurrence collection needed by this page. Eventun source commit `0e4d656` removes
 snapshot-derived `timing_state`, `active_occurrence`, `next_occurrence`,
 `latest_ended_occurrence`, and `additional_scheduled_occurrence_count`. The response retains
-`server_time_unix_ms` only as transport/as-of metadata. This source correction is not deployed;
-shared development may still serve the preceding shape containing the five redundant fields.
+`server_time_unix_ms` only as transport/as-of metadata. This source correction is deployed in
+shared development through Eventun `0f2a1de`; the compatible Website consumer remains separately
+undeployed.
 
 Website V2 accepts both response generations and ignores the redundant fields when present. It
 does not require, validate, normalize, cache, or present `server_time_unix_ms`. Presentation derives
@@ -302,7 +303,10 @@ Reuse gauntlet imagery without copying the game-client composition directly.
 - Review crops at desktop, tablet, and mobile widths. Use responsive image sizing and avoid eagerly loading every below-fold full-resolution upload.
 - Reserve stronger full-bleed atmospheric treatment for the gauntlet-detail summary or a deliberately featured module. Directory rows should remain quieter even when they use the same source asset.
 - Treat the existing media-purpose labels as selection hints until the media-consumer audit establishes a reliable Website priority and aspect-ratio contract.
-- Preserve card dimensions and information hierarchy when no usable media exists; render the terminal-native fallback without leaving a broken or visibly empty artwork region.
+- Treat approved images as decorative when the adjacent card already supplies the accessible
+  gauntlet identity. Do not overlay `Race Signal` or another visible media label.
+- Preserve card dimensions and information hierarchy when no usable media exists; render an
+  unlabeled abstract grid/signal fallback without leaving a broken or visibly empty artwork region.
 - Keep the Schedule agenda image-light. Do not extend the list-item background treatment to every occurrence row.
 
 ## 4. Schedule Agenda
@@ -318,6 +322,11 @@ Each occurrence row should include:
 - canonical gauntlet link.
 
 Keep the agenda image-light. An optional small identity thumbnail may aid repeated-gauntlet recognition, but do not use per-row background art or allow media to displace the occurrence time and type.
+
+Directory cards and Schedule rows share the gauntlet-detail occurrence-range formatter. Use the
+viewer-resolved timezone once at the end; collapse repeated local dates and meridiems only when they
+are genuinely equal; show both local dates across days; and include both years when the local range
+crosses years. A genuine year-long interval must never appear as a same-day range.
 
 Use exact competition semantics:
 
@@ -445,7 +454,7 @@ Fetch failure:
 
 Missing media:
 
-- use a consistent terminal-native gauntlet fallback;
+- use a consistent unlabeled abstract grid/signal fallback;
 - do not render broken image slots.
 
 ## Responsive Requirements
@@ -475,6 +484,9 @@ Mobile:
 - local time presentation must expose an unambiguous date, time, and timezone;
 - search and segmented controls must be keyboard accessible;
 - card actions must have explicit accessible names;
+- directional navigation retains its text label and uses a crisp shared approximately 16px icon
+  inside at least a 44px narrow-layout target; the icon is decorative, moves in the destination
+  direction on hover/focus, and remains still under reduced motion;
 - repeated schedule entries must name both the gauntlet and occurrence type;
 - motion or countdown treatment must respect reduced-motion preferences and must not be required to understand timing.
 

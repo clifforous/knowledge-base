@@ -167,10 +167,14 @@ gauntlet configuration.
 Sponsor display is optional follow-on work. The core detail route ships without sponsors when no
 relationship-scoped public sponsor projection exists; it never reads the broad sponsor registry.
 
-Eventun G03 field/runtime work was reviewed and committed as `cb79df3`, so the public-detail
-implementation may proceed from that clean baseline. Generated-gateway route tests must prove that
-the parameterized detail path cannot capture `/v1/public/gauntlet/discovery` or the more specific
-field, StageRun, and result routes.
+Eventun T03D implements the approved projection and factual StageRun lifecycle and is reviewed and
+committed as `0f2a1de`. Generated-gateway tests prove that the parameterized detail path cannot
+capture `/v1/public/gauntlet/discovery` or the more specific field, StageRun, and result routes.
+The owner reports that Eventun commit and its ordered post-development delta deployed in shared
+development. The initial Website slice implements and fixture-verifies the primary detail
+projection plus the factual StageRun timeline and is committed as `ar-web`
+`f06bc6d3f093cfabb0c77b9c8b4e951d5369d602`. Standings, current/exact fields, and accepted results
+remain typed deferrals. The Website revision is not deployed.
 
 ### Gauntlet detail
 
@@ -246,11 +250,18 @@ Legacy source:
 Presentation and model dependencies:
 
 - Eventun does not currently expose an authored stage title. A title is a planned model
-  addition; until it exists, the numeric `Stage NN` label is the primary heading and the UI
+  addition; until it exists, the numeric `Stage N` label is the primary heading and the UI
   must not reserve an empty title region.
 - Eventun currently exposes race mode on stages, not as a gauntlet-level default. Show a
-  gauntlet-level mode only if that separate optional field is deliberately added; otherwise
-  omit it rather than infer it from stages or qualifiers.
+  stage's race mode as metadata rather than promoting it into the stage heading. Show a
+  gauntlet-level mode only if that separate optional field is deliberately added; otherwise omit
+  it rather than infer it from stages or qualifiers.
+- Stage and match API identities are zero-based and receive a human-facing `+1` conversion.
+  StageRun `run_number` is already a positive one-based ordinal; validate it as positive and render
+  it unchanged.
+- Preserve each recognized occurrence timing basis. Authored qualifier durations may render as
+  ordinary ranges; stage-window estimates must be labeled as estimated. Unknown or unspecified
+  timing basis must not silently produce an exact-looking range.
 - A qualifier currently contains only its id, start time, and duration. It does not author a
   qualifier-specific race mode or participation type, so public qualifier modules omit those
   fields.
@@ -370,7 +381,7 @@ Content:
 
 - title
 - subtitle/ticker
-- banner or square media
+- best available approved hero, background, calendar, or avatar media
 - status chip
 - region
 - first/final event time
@@ -378,11 +389,39 @@ Content:
 - optional sponsor strip only when the relationship-scoped follow-on projection exists
 - primary action to view active standings or qualifier
 
+Accepted initial presentation rules:
+
+- the briefing eyebrow renders one terminal prefix plus the ticker when a ticker exists; strip any
+  source-authored leading terminal prefix first. Without a ticker, render
+  `// GAUNTLET BRIEFING`. Do not append the generic label to a ticker;
+- select detail hero media in this order: `bannerHero`, `squareHero`, `background`, `calendar`, then
+  `avatar`. Approved media remains decorative beside the adjacent textual briefing and carries no
+  repeated label or title overlay;
+- use the neutral structural border around both approved detail media and its fallback; gauntlet
+  colors may provide restrained interior lighting but never the complete perimeter;
+- missing detail media uses the same unlabeled abstract grid/signal fallback for current, upcoming,
+  and past gauntlets. Do not repeat the gauntlet title or show `Visual unavailable`;
+- place the canonical `/gauntlets` return in a dedicated utility-navigation row above the hero grid.
+  Its visible label is `GAUNTLETS`, its accessible label is `Back to gauntlets`, and it does not
+  infer a destination from browser history or referrer state;
+- gauntlet back/forward controls retain their full text label and use a shared crisp approximately
+  16px directional icon rather than punctuation. The decorative icon moves subtly in its direction
+  on hover/focus, remains still under reduced motion, and sits within at least a 44px narrow-layout
+  target;
+- wrap the gauntlet title only at whitespace for ordinary words. Use responsive type and hero-column
+  pressure relief before permitting an exceptional unbroken token to wrap; never clip or introduce
+  horizontal page overflow;
+- qualifier and stage occurrence ranges use one viewer-resolved timezone suffix. On one local day,
+  show the date once and omit a repeated meridiem when both times share it. Across local days, show
+  both dates. Omit the year unless local years differ, include both years when they do, and retain
+  the ending timezone abbreviation once across a daylight-saving boundary. A genuine year-long
+  interval must never collapse into a same-day presentation.
+
 Tone examples:
 
 - `Gauntlet Briefing`
 - `Qualifier Window Open`
-- `Final Stage Scheduled`
+- `Stage Scheduled`
 - `Event Concluded`
 
 Terminal Ops components:
@@ -474,7 +513,7 @@ V1 visual model:
 
 - use one consistent stage-panel grammar and label each stage's factual state separately;
 - show the complete ordered circuit as open match rows within the stage panel rather than as nested cards;
-- when a title exists, use a small `Stage NN` label and the title as the heading; otherwise promote `Stage NN` and collapse the unused title space;
+- when a title exists, use a small `Stage N` label and the title as the heading; otherwise promote `Stage N` and collapse the unused title space;
 - stack stage panels at natural height on mobile so different circuit lengths do not create artificial empty space;
 - bracket visualization is optional unless the stage model includes enough bracket data
 
@@ -647,7 +686,7 @@ Required states:
 Tone:
 
 - `No qualifier windows published.`
-- `No final stage scheduled.`
+- `No stage scheduled.`
 - `Standings sync pending.`
 - `No team result recorded.`
 
@@ -675,6 +714,9 @@ Mobile:
 - transform qualifier standings into an open rank list rather than horizontal-scroll the desktop table; show a bounded first page and client-side pagination
 - treat the signed-in personal-status inset as optional without leaving a gap
 - retain a short four-node qualifier sequence horizontally when it fits at 390px; stack or simplify it at narrower widths rather than forcing overflow
+- allow briefing facts, scoring copy, status labels, stage times, circuit rows, and lap/heat metadata
+  to wrap or reflow without clipped text or horizontal page overflow at the narrowest supported
+  viewport;
 - keep destructive/admin actions behind menus
 
 ## SEO and Sharing

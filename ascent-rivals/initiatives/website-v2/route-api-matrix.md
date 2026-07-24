@@ -76,8 +76,8 @@ Do not add independent homepage leaderboard, telemetry, system-log, or multi-ent
 
 | Route | Authoritative source | Server behavior | Browser behavior | Private/authorized overlay | Contract status |
 |---|---|---|---|---|---|
-| `/gauntlets` | Eventun `GET /v1/public/gauntlet/discovery`, using identity and complete occurrence facts; accept the preceding shared-development response and committed `0e4d656` replacement while ignoring transport time and redundant presentation fields | Cache only the normalized factual collection with ordinary source-data TTL/invalidation; after the cached read resolves, obtain one fresh Website-server timestamp outside the shared cache and derive the initial presentation snapshot | Hydrate from the exact server presentation timestamp, advance time monotonically with suspension recovery, and recalculate Current/Upcoming/Past, active/next/latest, ordering, scope, and Schedule locally at the nearest boundary, bounded fallback, visibility recovery, and replacement data; never refetch only because time passed | Optional participation summaries compose separately and must not make the public collection private | Eventun removal is committed as `0e4d656` but not deployed; the compatible Website consumer is reviewed, verified, and committed as `ar-web` `7d1d00c` |
-| `/gauntlets/[id]` | A compact domain-neutral Eventun public detail projection for stable identity, approved media, normalized scoring configuration, occurrence facts, qualifiers, and stage/circuit structure; current/exact fields, factual StageRuns, standings/results, and optional sponsor display remain independent reads | Resolve canonical existence before streaming; cache stable detail separately from short-cache field, StageRun, standings, and result modules; omit prize/reward data and unavailable optional modules independently | Derive schedule-relative presentation from occurrence facts and the Website clock; use factual StageRun status only; expose explicit standings/result refresh and bounded local presentation | Personal rank/qualification/participation and ordinary edit/delete permissions compose request-time; admin-only bracket/runtime mutation remains outside Website V2 | Direction C approved at the 2026-07-23 read-only checkpoint; Eventun G03 commit `cb79df3` clears the overlap gate, while detail implementation remains pending |
+| `/gauntlets` | Eventun `GET /v1/public/gauntlet/discovery`, using identity and complete occurrence facts; accept the preceding response and deployed `0e4d656` replacement while ignoring transport time and redundant presentation fields | Cache only the normalized factual collection with ordinary source-data TTL/invalidation; after the cached read resolves, obtain one fresh Website-server timestamp outside the shared cache and derive the initial presentation snapshot | Hydrate from the exact server presentation timestamp, advance time monotonically with suspension recovery, and recalculate Current/Upcoming/Past, active/next/latest, ordering, scope, and Schedule locally at the nearest boundary, bounded fallback, visibility recovery, and replacement data; never refetch only because time passed | Optional participation summaries compose separately and must not make the public collection private | Eventun removal is deployed in shared development through `0f2a1de`; the compatible Website consumer is reviewed, verified, and committed as `ar-web` `7d1d00c` but not deployed |
+| `/gauntlets/[id]` | A compact domain-neutral Eventun public detail projection for stable identity, approved media, normalized scoring configuration, occurrence facts, qualifiers, and stage/circuit structure; current/exact fields, factual StageRuns, standings/results, and optional sponsor display remain independent reads | Resolve canonical existence before streaming; cache stable detail separately from short-cache field, StageRun, standings, and result modules; omit prize/reward data and unavailable optional modules independently | Derive schedule-relative presentation from occurrence facts and the Website clock; use factual StageRun status only; expose explicit standings/result refresh and bounded local presentation | Personal rank/qualification/participation and ordinary edit/delete permissions compose request-time; admin-only bracket/runtime mutation remains outside Website V2 | Primary detail plus factual StageRun timeline are implemented, fixture-verified, and committed as `ar-web` `f06bc6d3f093cfabb0c77b9c8b4e951d5369d602`; standings, fields, and accepted results remain typed deferrals. The Website revision is not deployed |
 | `/gauntlets/create` | Eventun player-facing core gauntlet mutation, media-purpose lookup, signed upload, scoped sponsor lookup | Authenticate server-side; obtain form options and signed upload intent; submit one authoritative create mutation; invalidate collection/entity tags after success | Form state, client validation, direct signed media transfer, retry, and unsaved-change handling | Route requires `gauntlet_creator` or administrator according to Eventun; ordinary players cannot render protected form data | Existing mutation/upload contracts require final post-team field and failure-model review |
 | `/gauntlets/[id]/edit` | Eventun authorized full core-edit record, mutation, delete, media, and scoped sponsor reads | Enforce creator ownership/role or administrator access before prefill; recheck in Eventun; invalidate detail/collection/dependent tags after success | Prefilled form, direct signed uploads, preservation of existing ids/media/relationships, conflict and retry handling | Owning creator with current role or administrator | Existing contracts require optimistic-concurrency and post-team field review; bracket graph mutation excluded |
 
@@ -159,21 +159,21 @@ infrastructure failures retain sanitized `Internal` or `Unavailable`. The legacy
 conversion of every database error to `NotFound` is tracked as a separate cleanup and is not a
 reason to consume that endpoint.
 
-Eventun G03 field/runtime work was reviewed and committed as `cb79df3`. The public-detail contract
-may now use that clean baseline. Its route-order tests and generated contracts still belong to the
-detail slice, while the unsafe legacy detail error mapping remains a separate cleanup.
+Eventun T03D implements the approved public-detail contract and factual StageRun lifecycle from the
+G03 baseline and is reviewed and committed as `0f2a1de`. Generated route-order tests prove the
+parameterized detail route does not capture the specific public-gauntlet routes. The unsafe legacy
+detail error mapping remains a separate cleanup. The owner reports the Eventun dependency and
+ordered post-development delta deployed in shared development; this does not implement or deploy the
+Website route.
 
 ### Gauntlet Contract Gaps
 
-- verify both the preceding and `0e4d656` compact discovery response generations against matching
-  development services and representative media; Website V2 accepts both and ignores transport
-  time plus redundant snapshot-derived timing fields;
-- coordinate development adoption of the committed Eventun field removal only after the compatible
-  Website consumer revision passes review;
-- implement the approved compact public detail projection after the Eventun worktree ownership
-  handoff; do not revise or normalize the broad legacy response into the Website;
-- add the factual StageRun status replacement and dispatch-order coverage in the same reviewed
-  contract slice;
+- verify the compatible Website discovery consumer against the deployed `0e4d656`-and-later
+  development response and representative media; it ignores transport time plus redundant
+  snapshot-derived timing fields when reading an older response;
+- review and deploy the compatible Website discovery consumer;
+- review and live-verify the locally implemented Website detail consumer against deployed Eventun
+  T03D `0f2a1de`; it does not consume or normalize the broad legacy response;
 - constrain legacy overall/qualifier standings to recognized player-owned qualification models,
   and add a separate owner-aware public projection before showing team-owned qualification;
 - keep current and historical field capacity in their respective field projections; never conflate

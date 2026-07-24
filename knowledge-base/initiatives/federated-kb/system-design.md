@@ -502,6 +502,13 @@ one component without scope or corroborating terms.
 All tools accept logical source, project, document, task, feature, or entry identifiers. They do
 not accept arbitrary filesystem paths.
 
+`kb_capture` accepts destinations as a structured array. Every element is independently validated
+as a stable logical id or normalized repository-relative Markdown path; an empty array means that
+the destination is not yet known. The server rejects duplicates and delimiter-packed values, then
+renders the human-readable task entry in one canonical form. A free-form delimited string is not a
+supported tool contract: initial dogfood showed that a semicolon-separated list could otherwise be
+mistaken for one syntactically valid but nonexistent path.
+
 Personal mutating tools accept a natural one-sentence change description from the active agent.
 Automatic mode uses that sentence unchanged as the visible commit message after basic one-line
 validation. It adds no conventional prefix, work id, tool identity, trailer, or model name.
@@ -542,10 +549,12 @@ normal end-of-turn audit from invoking publication or deployment mutations.
 
 ## Work Handles And Client Sessions
 
+`kb_begin_work` accepts a concise stable work title separately from the natural change description
+used by its operation receipt. The title becomes the task-log H1 only when the log is created; a
+later resume preserves the existing title and does not treat new receipt prose as identity.
 `kb_begin_work` returns a stable opaque work handle bound to owner, project, task id, agent role,
 and optional parent feature. When a client exposes a stable task/thread identifier, its adapter
-supplies it. Otherwise `kb` generates an id and the active agent retains the handle in task
-context.
+supplies it. Otherwise `kb` generates an id and the active agent retains the handle in task context.
 
 Reused coder or coordinator tasks resume the same handle. Separate parallel agents receive
 different handles and therefore different log files. A lost handle can be recovered by owner,
